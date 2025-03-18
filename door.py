@@ -1,4 +1,7 @@
-from typing import Tuple, List, Any, Dict
+from typing import Tuple, List, Any, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from door import Door  # Wird nur während der Typprüfung importiert
 
 
 class Door:
@@ -19,4 +22,5 @@ class Door:
         coordinates = geometry.get("coordinates", [])
         self.coordinates = (float(coordinates[0]), float(coordinates[1]))
 
-        self.rooms: List[Any] = []
+        # cant really import Room as this would result in a circular import
+        self.rooms: List["Room"] = []

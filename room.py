@@ -1,7 +1,13 @@
+import heapq
+import math
 from typing import Tuple, List, Any, Dict
+from door import Door
 
 
 class Room:
+    # Definiere die Größe eines Gitterschritts (abhängig von den verwendeten GPS-Koordinaten)
+    grid_size_x = 0.00001
+    grid_size_y = 0.00001
 
     def __init__(self, json: Dict[str, Any]):
         """
@@ -20,8 +26,33 @@ class Room:
             (float(coord[0]), float(coord[1])) for coord in geometry.get("coordinates", [])
         ]
 
-        self.doors: List[Any] = []
+        self.doors: List[Door] = []
+        self.graph = {}
 
+        # assuming most rooms are rectangular precomputing this is more efficient to use in is_walkable()
+        # (compared to the ray-cast, but this cant be used in all cases)
+        self.bounding_box = self._compute_bounding_box()
+
+    def __repr__(self):
+        return f"Room (name={self.name!r}, level={self.level}, bounding_box={self.bounding_box})"
+
+    def _compute_bounding_box(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        """
+        Berechnet eine quadratische Bounding Box um die Raumgeometrie.
+
+        :return: Ein Tupel mit zwei Punkten (min_x, min_y) und (max_x, max_y), die die Bounding Box definieren.
+        """
+        if not self.coordinates:
+            return (0, 0), (0, 0)
+
+        min_x = min(coord[0] for coord in self.coordinates)
+        max_x = max(coord[0] for coord in self.coordinates)
+        min_y = min(coord[1] for coord in self.coordinates)
+        max_y = max(coord[1] for coord in self.coordinates)
+
+        size = max(max_x - min_x, max_y - min_y)
+
+        return (min_x, min_y), (min_x + size, min_y + size)
 
     def is_point_on_outline(self, point: Tuple[float, float], tolerance: float = 0.00001) -> bool:
         """
@@ -67,3 +98,132 @@ class Room:
                 return True
 
         return False
+
+    def setup_graph(self):
+        """
+        Erstellt einen Graphen, der für jedes Türpaar (A, B) den Pfad speichert.
+        """
+        self.graph = {}
+
+        for i, start in enumerate(self.doors):
+            self.graph[start] = {}
+
+            for j, goal in enumerate(self.doors):
+                if goal not in self.graph:
+                    self.graph[goal] = {}
+
+                if i < j:  # Nur einmal berechnen, wenn i < j (vermeidet doppelte Berechnung)
+                    path = self._a_star_pathfinding(start, goal)
+                    if path:
+                        self.graph[start][goal] = path
+                        self.graph[goal][start] = path[::-1]  # Einfach umkehren
+
+    def _a_star_pathfinding(self, start: Door, goal: Door) -> List[Tuple[int, int]]:
+        """
+        Führt A* auf einem Raster aus, um einen Weg zwischen zwei Türen zu finden.
+        Wandelt gps coordinated in grid-koordinaten um, wo gridsize = 1
+
+        :param start: Die Start-Tür.
+        :param goal: Die Ziel-Tür.
+        :return: Eine Liste von Raster-Koordinaten [(x, y), ...] für den gefundenen Pfad.
+        """
+
+        # todo test different distance approach and its implications for the graph
+        def heuristic(a: Tuple[int, int], b: Tuple[int, int]) -> float:
+            """
+            Berechnet die heuristische Distanz zwischen zwei Punkten.
+            Hier wird die Euklidische Distanz verwendet, weil wir auch diagonale Bewegungen zulassen.
+            """
+            return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)  # Euklidische Distanz
+
+        # Wandle die echten Koordinaten in Raster-Koordinaten um
+        start_grid = (int(start.coordinates[0] / Room.grid_size_x), int(start.coordinates[1] / Room.grid_size_y))
+        goal_grid = (int(goal.coordinates[0] / Room.grid_size_x), int(goal.coordinates[1] / Room.grid_size_y))
+
+        # Priority Queue für A* (beste Position zuerst)
+        open_set = []
+        heapq.heappush(open_set, (0, start_grid))
+
+        # Speichert die Rückverfolgbarkeit für den besten Pfad
+        came_from = {}
+
+        # Speichert die aktuellen besten bekannten Kosten von Start -> Knoten
+        g_score = {start_grid: 0}
+
+        # Speichert die geschätzten Kosten von Start -> Ziel über den aktuellen Knoten
+        f_score = {start_grid: heuristic(start_grid, goal_grid)}
+
+        while open_set:
+            _, current = heapq.heappop(open_set)  # Knoten mit den geringsten f-Kosten nehmen
+
+            # Wenn das Ziel erreicht wurde, rekonstruiere den Pfad
+            if current == goal_grid:
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.append(start_grid)
+                path.reverse()
+                return path  # Rückgabe des rekonstruierten Pfads
+
+            # Nachbarn definieren (nur horizontale/vertikale Bewegungen)
+            # Nachbarn definieren (horizontale/vertikale und diagonale Bewegungen)
+            neighbors = [
+                (current[0] + 1, current[1]),  # rechts
+                (current[0] - 1, current[1]),  # links
+                (current[0], current[1] + 1),  # oben
+                (current[0], current[1] - 1),  # unten
+                (current[0] + 1, current[1] + 1),  # rechts oben
+                (current[0] + 1, current[1] - 1),  # rechts unten
+                (current[0] - 1, current[1] + 1),  # links oben
+                (current[0] - 1, current[1] - 1)  # links unten
+            ]
+
+            for neighbor in neighbors:
+                if not self.is_walkable((neighbor[0] * Room.grid_size_x, (neighbor[1] * Room.grid_size_y))):
+                    continue  # Skip this neighbor if it's not walkable
+
+                # Berechne die Kosten für die Bewegung (1 für horizontal/vertikal, √2 für diagonal)
+                is_diagonal = neighbor[0] != current[0] and neighbor[1] != current[1]
+                move_cost = 1.414 if is_diagonal else 1  # quicker than actually calculating it
+
+                tentative_g_score = g_score[current] + move_cost
+
+                # Falls ein besserer Weg zum Nachbarn gefunden wurde, aktualisiere die Werte
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + heuristic(neighbor, goal_grid)
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))  # In Warteschlange einfügen
+
+        return []  # Kein Pfad gefunden
+
+    def is_walkable(self, point_gps_pos: Tuple[int, int]) -> bool:
+        """
+        Bestimmt, ob eine Position begehbar ist, indem überprüft wird, ob sie sich innerhalb des Raum-Polygons befindet.
+
+        :param point_gps_pos: Tuple aus (x, y)-Koordinaten des Punktes.
+        :return: True, wenn die Position innerhalb des Raumpolygons liegt, sonst False.
+        """
+        x, y = point_gps_pos
+        (min_x, min_y), (max_x, max_y) = self.bounding_box
+        if not (min_x <= x <= max_x and min_y <= y <= max_y):
+            return False
+
+        # Raycasting-Algorithmus mit Bounding-Box-Begrenzung
+        inside = False
+        j = len(self.coordinates) - 1
+
+        for i in range(len(self.coordinates)):
+            xi, yi = self.coordinates[i]
+            xj, yj = self.coordinates[j]
+
+            # Prüft, ob der Strahl eine Kante schneidet
+            if (yi > y) != (yj > y):
+                x_intersect = (xj - xi) * (y - yi) / (yj - yi) + xi
+                if x <= x_intersect <= max_x:  # Begrenzt den Strahl auf die Bounding Box
+                    inside = not inside
+
+            j = i
+
+        return inside
