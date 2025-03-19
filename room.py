@@ -16,7 +16,7 @@ class Room:
         :param json: Das JSON-Objekt, das die Raumdaten enthält.
         """
         properties = json.get("properties", {})
-        self.level: int = properties.get("level")
+        self.level: int = int(properties.get("level"))
         self.name: str = properties.get("name", "")
 
         geometry = json.get("geometry", {})
@@ -53,6 +53,14 @@ class Room:
         size = max(max_x - min_x, max_y - min_y)
 
         return (min_x, min_y), (min_x + size, min_y + size)
+
+    def get_center(self) -> Tuple[float, float]:
+        """
+        Berechnet den Mittelpunkt der Bounding Box.
+        """
+        (min_x, min_y), (max_x, max_y) = self.bounding_box
+        return (min_x + max_x) / 2, (min_y + max_y) / 2
+
 
     def is_point_on_outline(self, point: Tuple[float, float], tolerance: float = 0.00001) -> bool:
         """
@@ -198,6 +206,17 @@ class Room:
 
         return []  # Kein Pfad gefunden
 
+    def is_in_bounding_box(self, point_gps_pos: Tuple[int, int]) -> bool:
+        """
+        Prüft, ob eine Position innerhalb der Bounding Box liegt.
+
+        :param point_gps_pos: Tuple aus (x, y)-Koordinaten des Punktes.
+        :return: True, wenn die Position innerhalb der Bounding Box liegt, sonst False.
+        """
+        x, y = point_gps_pos
+        (min_x, min_y), (max_x, max_y) = self.bounding_box
+        return min_x <= x <= max_x and min_y <= y <= max_y
+
     def is_walkable(self, point_gps_pos: Tuple[int, int]) -> bool:
         """
         Bestimmt, ob eine Position begehbar ist, indem überprüft wird, ob sie sich innerhalb des Raum-Polygons befindet.
@@ -205,11 +224,10 @@ class Room:
         :param point_gps_pos: Tuple aus (x, y)-Koordinaten des Punktes.
         :return: True, wenn die Position innerhalb des Raumpolygons liegt, sonst False.
         """
-        x, y = point_gps_pos
-        (min_x, min_y), (max_x, max_y) = self.bounding_box
-        if not (min_x <= x <= max_x and min_y <= y <= max_y):
+        if not self.is_in_bounding_box(point_gps_pos):
             return False
 
+        x, y = point_gps_pos
         # Raycasting-Algorithmus mit Bounding-Box-Begrenzung
         inside = False
         j = len(self.coordinates) - 1
@@ -221,7 +239,7 @@ class Room:
             # Prüft, ob der Strahl eine Kante schneidet
             if (yi > y) != (yj > y):
                 x_intersect = (xj - xi) * (y - yi) / (yj - yi) + xi
-                if x <= x_intersect <= max_x:  # Begrenzt den Strahl auf die Bounding Box
+                if x <= x_intersect <= self.bounding_box[1][0]:  # Begrenzt den Strahl auf die Bounding Box
                     inside = not inside
 
             j = i

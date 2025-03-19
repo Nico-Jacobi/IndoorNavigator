@@ -79,9 +79,36 @@ def link_rooms(rooms: Dict[int, List[Room]], doors: Dict[int, List[Door]], stair
                     room.doors.append(door)
 
 
+    all_stairs = [stair for stair_list in stairs.values() for stair in stair_list]
+    link_stairs(all_stairs)
+
+
+def link_stairs(stairs: List['Stair']):
+    """
+    Verknüpft eine Liste von Treppen nach ihrer tatsächlichen Position.
+
+    :param stairs: Liste von Stair-Objekten
+    """
+    stairs_by_level = {}
+    for stair in stairs:
+        stairs_by_level.setdefault(stair.level, []).append(stair)
+
+    for stair in stairs:
+        center = stair.get_center()
+
+        # Prüfe, ob es eine Treppe auf dem Level darüber gibt, die den Mittelpunkt enthält
+        if stair.level + 1 in stairs_by_level:
+            for candidate in stairs_by_level[stair.level + 1]:
+                if candidate.is_in_bounding_box(center):
+                    stair.above = candidate
+                    candidate.below = stair
+                    break
+
+
 def process_room(room: Room):
     room.setup_graph()  # Verändert das Objekt intern
     return room  # Gibt das veränderte Objekt zurück
+
 
 def process_stair(stair: Stair):
     stair.setup_graph()
