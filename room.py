@@ -2,12 +2,13 @@ import heapq
 import math
 from typing import Tuple, List, Any, Dict
 from door import Door
+from graph import Vertex, Edge
 
 
 class Room:
     # Definiere die Größe eines Gitterschritts (abhängig von den verwendeten GPS-Koordinaten)
-    grid_size_x = 0.00001
-    grid_size_y = 0.00001
+    grid_size_x = 0.00002
+    grid_size_y = 0.00002
 
     def __init__(self, json: Dict[str, Any]):
         """
@@ -123,17 +124,24 @@ class Room:
                 if i < j:  # Nur einmal berechnen, wenn i < j (vermeidet doppelte Berechnung)
                     path = self._a_star_pathfinding(start, goal)
                     if path:
+                        # todo fix, doesent work as this makes pickeling imposible due to shared data across whole graph
+                        # Connect vertices in the path with bidirectional edges
+                        #for v in range(len(path) - 1):  # Stop at the second-to-last element
+                        #    path[v].add_edge(Edge(path[v], path[v + 1]))
+                        #    path[v + 1].add_edge(Edge(path[v + 1], path[v]))
+
+                        # add the path to the path-map for the room
                         self.graph[start][goal] = path
                         self.graph[goal][start] = path[::-1]  # Einfach umkehren
 
-    def _a_star_pathfinding(self, start: Door, goal: Door) -> List[Tuple[int, int]]:
+    def _a_star_pathfinding(self, start: Door, goal: Door) -> List[Vertex]:
         """
         Führt A* auf einem Raster aus, um einen Weg zwischen zwei Türen zu finden.
         Wandelt gps coordinated in grid-koordinaten um, wo gridsize = 1
 
         :param start: Die Start-Tür.
         :param goal: Die Ziel-Tür.
-        :return: Eine Liste von Raster-Koordinaten [(x, y), ...] für den gefundenen Pfad.
+        :return: Eine Liste von Vertex-Objekten für den gefundenen Pfad.
         """
 
         # todo test different distance approach and its implications for the graph
@@ -166,15 +174,31 @@ class Room:
 
             # Wenn das Ziel erreicht wurde, rekonstruiere den Pfad
             if current == goal_grid:
-                path = []
+                path_grid = []
                 while current in came_from:
-                    path.append(current)
+                    path_grid.append(current)
                     current = came_from[current]
-                path.append(start_grid)
-                path.reverse()
-                return path  # Rückgabe des rekonstruierten Pfads
+                path_grid.append(start_grid)
+                path_grid.reverse()
 
-            # Nachbarn definieren (nur horizontale/vertikale Bewegungen)
+                # Konvertiere den Pfad von Grid-Koordinaten zu Vertex-Objekten
+                path_vertices = []
+                for i, grid_pos in enumerate(path_grid):
+                    # Konvertiere Grid-Koordinaten zurück zu echten Koordinaten
+                    real_x = grid_pos[0] * Room.grid_size_x
+                    real_y = grid_pos[1] * Room.grid_size_y
+
+                    # Verwende die Vertices der Türen für Start und Ziel
+                    if i == 0:
+                        path_vertices.append(start.vertex)
+                    elif i == len(path_grid) - 1:
+                        path_vertices.append(goal.vertex)
+                    else:
+                        # Für Zwischenpunkte erstelle neue Vertex-Objekte mit Platzhalternamen
+                        path_vertices.append(Vertex(self.name, real_x, real_y))
+
+                return path_vertices  # Rückgabe des rekonstruierten Pfads als Vertex-Objekte
+
             # Nachbarn definieren (horizontale/vertikale und diagonale Bewegungen)
             neighbors = [
                 (current[0] + 1, current[1]),  # rechts
@@ -188,7 +212,7 @@ class Room:
             ]
 
             for neighbor in neighbors:
-                if not self.is_walkable((neighbor[0] * Room.grid_size_x, (neighbor[1] * Room.grid_size_y))):
+                if not self.is_walkable((neighbor[0] * Room.grid_size_x, neighbor[1] * Room.grid_size_y)):
                     continue  # Skip this neighbor if it's not walkable
 
                 # Berechne die Kosten für die Bewegung (1 für horizontal/vertikal, √2 für diagonal)
@@ -204,7 +228,7 @@ class Room:
                     f_score[neighbor] = tentative_g_score + heuristic(neighbor, goal_grid)
                     heapq.heappush(open_set, (f_score[neighbor], neighbor))  # In Warteschlange einfügen
 
-        return []  # Kein Pfad gefunden
+        return []  # Kein Pfad gefunden oder leere Liste zurückgeben, wenn kein Pfad gefunden wurde
 
     def is_in_bounding_box(self, point_gps_pos: Tuple[int, int]) -> bool:
         """

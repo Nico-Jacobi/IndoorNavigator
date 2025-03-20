@@ -1,7 +1,6 @@
 from typing import Tuple, List, Any, Dict, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from door import Door  # Wird nur während der Typprüfung importiert
+from graph import Vertex
 
 
 class Door:
@@ -24,3 +23,5 @@ class Door:
 
         # cant really import Room as this would result in a circular import
         self.rooms: List["Room"] = []
+
+        self.vertex = Vertex("Door", coordinates[0], coordinates[1])

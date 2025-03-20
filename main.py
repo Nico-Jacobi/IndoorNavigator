@@ -143,18 +143,22 @@ def setup_graphs_parallel(rooms: Dict[int, List[Room]], stairs: Dict[int, List[S
     print("Graph processing finished")
 
 
-def visualize_level(parsed_data, level):  #
+# todo visualize graph (connect first)
+def visualize_level(parsed_data, level):
     """
-        Visualizes a specific level by plotting rooms, doors, and stairs.
+    Visualizes a specific level by plotting rooms, doors, stairs, and the complete navigation graph.
 
-        Args:
-            parsed_data (List[Dict[int, List[Room]], Dict[int, List[Door]], Dict[int, List[Stair]]]):
-                Parsed data containing rooms, doors, and stairs.
-            level (int): The level to visualize.
+    Args:
+        parsed_data (List[Dict[int, List[Room]], Dict[int, List[Door]], Dict[int, List[Stair]]]):
+            Parsed data containing rooms, doors, and stairs.
+        level (int): The level to visualize.
     """
-
     rooms, doors, stairs = parsed_data
-    plt.figure(figsize=(10, 10))
+    rooms = rooms[level]
+    doors = doors[level]
+    stairs = stairs[level]
+
+    plt.figure(figsize=(12, 12))
 
     def plot_linestring(features, color) -> None:
         for room in features:
@@ -166,17 +170,29 @@ def visualize_level(parsed_data, level):  #
             x, y = value.coordinates
             plt.scatter(x, y, color=color, alpha=0.8)  # Use scatter for points
 
-    plot_linestring(rooms[level], "blue")
-    plot_points(doors[level], "red")
-    plot_linestring(stairs[level], "green")
+    # Plot the basic elements first
+    plot_linestring(rooms, "blue")
+    plot_points(doors, "red")
+    plot_linestring(stairs, "green")
 
     plt.gca().set_aspect(1 / np.cos(np.deg2rad(50.8)))
     plt.xlabel("X Coordinate")
     plt.ylabel("Y Coordinate")
-    plt.title(f"Visualization of Level {level}")
+    plt.title(f"Visualization of Level {level} with Complete Navigation Graph")
     plt.grid(True)
-    plt.show()
 
+    # Add a legend
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='blue', alpha=0.5, label='Rooms'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='red', alpha=0.8, label='Doors/Door Vertices'),
+        Line2D([0], [0], color='green', alpha=0.5, label='Stairs'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='purple', alpha=0.8, label='Path Vertices'),
+        Line2D([0], [0], color='orange', alpha=0.6, label='Navigation Edges')
+    ]
+    plt.legend(handles=legend_elements, loc='upper right')
+
+    plt.show()
 
 if __name__ == "__main__":
     LEVEL_TO_DISPLAY = "3"  # Change this to the level you want to visualize
