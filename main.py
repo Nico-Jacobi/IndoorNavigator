@@ -2,7 +2,6 @@ import json
 from itertools import chain
 from typing import List, Dict
 import concurrent.futures
-
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import matplotlib
@@ -145,14 +144,6 @@ def setup_graphs_parallel(rooms: Dict[int, List[Room]], stairs: Dict[int, List[S
 
 # todo visualize graph (connect first)
 def visualize_level(parsed_data, level):
-    """
-    Visualizes a specific level by plotting rooms, doors, stairs, and the complete navigation graph.
-
-    Args:
-        parsed_data (List[Dict[int, List[Room]], Dict[int, List[Door]], Dict[int, List[Stair]]]):
-            Parsed data containing rooms, doors, and stairs.
-        level (int): The level to visualize.
-    """
     rooms, doors, stairs = parsed_data
     rooms = rooms[level]
     doors = doors[level]
@@ -160,20 +151,16 @@ def visualize_level(parsed_data, level):
 
     plt.figure(figsize=(12, 12))
 
-    def plot_linestring(features, color) -> None:
-        for room in features:
-            x, y = zip(*room.coordinates) if isinstance(room.coordinates[0], tuple) else ([], [])
-            plt.plot(x, y, color=color, alpha=0.5)
 
-    def plot_points(features, color) -> None:
-        for value in features:
-            x, y = value.coordinates
-            plt.scatter(x, y, color=color, alpha=0.8)  # Use scatter for points
+    # Räume direkt über ihre eigene Methode plotten
+    for room in rooms:
+        room.plot(color="blue")
 
-    # Plot the basic elements first
-    plot_linestring(rooms, "blue")
-    plot_points(doors, "red")
-    plot_linestring(stairs, "green")
+
+    # Treppen kannst du ggf. ähnlich als Methode einer `Stair`-Klasse auslagern
+    for stair in stairs:
+        x, y = zip(*stair.coordinates) if isinstance(stair.coordinates[0], tuple) else ([], [])
+        plt.plot(x, y, color="green", alpha=0.5)
 
     plt.gca().set_aspect(1 / np.cos(np.deg2rad(50.8)))
     plt.xlabel("X Coordinate")
@@ -194,11 +181,17 @@ def visualize_level(parsed_data, level):
 
     plt.show()
 
+
 if __name__ == "__main__":
     LEVEL_TO_DISPLAY = "3"  # Change this to the level you want to visualize
 
-    geojson_string = open("resources/h4.geojson", encoding="utf-8").read()
+    geojson_string = open("resources/h4Test.geojson", encoding="utf-8").read()
     geojson_data = json.loads(geojson_string)
     parsed = parse_geojson(geojson_data)
 
     visualize_level(parsed, LEVEL_TO_DISPLAY)
+
+
+# todo improve pathfinding by precomputing all vertecies inside a room and then connecting them, instead of checking all possible moves if they are inside a room each step
+# todo merge vertecies in room
+# todo remove first and last vertex in a path if the last and first edge are too short

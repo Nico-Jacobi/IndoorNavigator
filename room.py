@@ -1,14 +1,17 @@
 import heapq
 import math
 from typing import Tuple, List, Any, Dict
+
+from matplotlib import pyplot as plt
+
 from door import Door
 from graph import Vertex, Edge
 
 
 class Room:
     # Definiere die Größe eines Gitterschritts (abhängig von den verwendeten GPS-Koordinaten)
-    grid_size_x = 0.00002
-    grid_size_y = 0.00002
+    grid_size_x = 0.00001
+    grid_size_y = 0.00001
 
     def __init__(self, json: Dict[str, Any]):
         """
@@ -29,6 +32,8 @@ class Room:
 
         self.doors: List[Door] = []
         self.graph = {}
+        self.edges = []
+        self.vertices = []
 
         # assuming most rooms are rectangular precomputing this is more efficient to use in is_walkable()
         # (compared to the ray-cast, but this cant be used in all cases)
@@ -63,7 +68,7 @@ class Room:
         return (min_x + max_x) / 2, (min_y + max_y) / 2
 
 
-    def is_point_on_outline(self, point: Tuple[float, float], tolerance: float = 0.00001) -> bool:
+    def is_point_on_outline(self, point: Tuple[float, float], tolerance: float = 0.000001) -> bool:
         """
         Überprüft, ob ein gegebener Punkt auf der Umrandung des Raums liegt (innerhalb der Toleranz).
         for gps (non-planar) coordinates not perfectly accurate, but close enough as long as the distances stay short
@@ -124,11 +129,14 @@ class Room:
                 if i < j:  # Nur einmal berechnen, wenn i < j (vermeidet doppelte Berechnung)
                     path = self._a_star_pathfinding(start, goal)
                     if path:
-                        # todo fix, doesent work as this makes pickeling imposible due to shared data across whole graph
+
                         # Connect vertices in the path with bidirectional edges
-                        #for v in range(len(path) - 1):  # Stop at the second-to-last element
-                        #    path[v].add_edge(Edge(path[v], path[v + 1]))
-                        #    path[v + 1].add_edge(Edge(path[v + 1], path[v]))
+                        for v in range(len(path) - 1):  # Stop at the second-to-last element
+                            vert = path[v]
+                            edge = Edge(vert, path[v+1])
+
+                            self.vertices.append(vert)
+                            self.edges.append(edge)
 
                         # add the path to the path-map for the room
                         self.graph[start][goal] = path
@@ -136,43 +144,30 @@ class Room:
 
     def _a_star_pathfinding(self, start: Door, goal: Door) -> List[Vertex]:
         """
-        Führt A* auf einem Raster aus, um einen Weg zwischen zwei Türen zu finden.
-        Wandelt gps coordinated in grid-koordinaten um, wo gridsize = 1
-
-        :param start: Die Start-Tür.
-        :param goal: Die Ziel-Tür.
-        :return: Eine Liste von Vertex-Objekten für den gefundenen Pfad.
+        A* pathfinding from a start Door to the goal Door, avoiding walls.
         """
 
-        # todo test different distance approach and its implications for the graph
         def heuristic(a: Tuple[int, int], b: Tuple[int, int]) -> float:
-            """
-            Berechnet die heuristische Distanz zwischen zwei Punkten.
-            Hier wird die Euklidische Distanz verwendet, weil wir auch diagonale Bewegungen zulassen.
-            """
-            return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)  # Euklidische Distanz
+            """Euclidean distance heuristic."""
+            return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
 
-        # Wandle die echten Koordinaten in Raster-Koordinaten um
+        # Convert start and goal to grid coordinates
         start_grid = (int(start.coordinates[0] / Room.grid_size_x), int(start.coordinates[1] / Room.grid_size_y))
         goal_grid = (int(goal.coordinates[0] / Room.grid_size_x), int(goal.coordinates[1] / Room.grid_size_y))
 
-        # Priority Queue für A* (beste Position zuerst)
+        # Priority queue for A* (smallest f-score first)
         open_set = []
         heapq.heappush(open_set, (0, start_grid))
 
-        # Speichert die Rückverfolgbarkeit für den besten Pfad
+        # Tracking best paths
         came_from = {}
-
-        # Speichert die aktuellen besten bekannten Kosten von Start -> Knoten
         g_score = {start_grid: 0}
-
-        # Speichert die geschätzten Kosten von Start -> Ziel über den aktuellen Knoten
         f_score = {start_grid: heuristic(start_grid, goal_grid)}
 
         while open_set:
-            _, current = heapq.heappop(open_set)  # Knoten mit den geringsten f-Kosten nehmen
+            _, current = heapq.heappop(open_set)
 
-            # Wenn das Ziel erreicht wurde, rekonstruiere den Pfad
+            # If current position is the goal, reconstruct path
             if current == goal_grid:
                 path_grid = []
                 while current in came_from:
@@ -181,54 +176,55 @@ class Room:
                 path_grid.append(start_grid)
                 path_grid.reverse()
 
-                # Konvertiere den Pfad von Grid-Koordinaten zu Vertex-Objekten
+                # Convert grid path to Vertex objects
                 path_vertices = []
                 for i, grid_pos in enumerate(path_grid):
-                    # Konvertiere Grid-Koordinaten zurück zu echten Koordinaten
                     real_x = grid_pos[0] * Room.grid_size_x
                     real_y = grid_pos[1] * Room.grid_size_y
 
-                    # Verwende die Vertices der Türen für Start und Ziel
                     if i == 0:
                         path_vertices.append(start.vertex)
                     elif i == len(path_grid) - 1:
                         path_vertices.append(goal.vertex)
                     else:
-                        # Für Zwischenpunkte erstelle neue Vertex-Objekte mit Platzhalternamen
                         path_vertices.append(Vertex(self.name, real_x, real_y))
 
-                return path_vertices  # Rückgabe des rekonstruierten Pfads als Vertex-Objekte
+                return path_vertices
 
-            # Nachbarn definieren (horizontale/vertikale und diagonale Bewegungen)
+            # Get neighboring positions (horizontal, vertical, diagonal)
             neighbors = [
-                (current[0] + 1, current[1]),  # rechts
-                (current[0] - 1, current[1]),  # links
-                (current[0], current[1] + 1),  # oben
-                (current[0], current[1] - 1),  # unten
-                (current[0] + 1, current[1] + 1),  # rechts oben
-                (current[0] + 1, current[1] - 1),  # rechts unten
-                (current[0] - 1, current[1] + 1),  # links oben
-                (current[0] - 1, current[1] - 1)  # links unten
+                (current[0] + 1, current[1]), (current[0] - 1, current[1]),  # left/right
+                (current[0], current[1] + 1), (current[0], current[1] - 1),  # up/down
+                (current[0] + 1, current[1] + 1), (current[0] + 1, current[1] - 1),  # diagonal
+                (current[0] - 1, current[1] + 1), (current[0] - 1, current[1] - 1)
             ]
 
             for neighbor in neighbors:
-                if not self.is_walkable((neighbor[0] * Room.grid_size_x, neighbor[1] * Room.grid_size_y)):
-                    continue  # Skip this neighbor if it's not walkable
+                real_x = neighbor[0] * Room.grid_size_x
+                real_y = neighbor[1] * Room.grid_size_y
 
-                # Berechne die Kosten für die Bewegung (1 für horizontal/vertikal, √2 für diagonal)
+                if not self.is_walkable((real_x, real_y)):
+                    continue  # Skip unwalkable tiles
+
                 is_diagonal = neighbor[0] != current[0] and neighbor[1] != current[1]
-                move_cost = 1.414 if is_diagonal else 1  # quicker than actually calculating it
+                base_cost = 1.414 if is_diagonal else 1  # Normal movement cost
 
+                # Get distance to the nearest wall
+                distance_to_wall: float = self.distance_to_wall((real_x, real_y))
+
+                # Penalty for going near walls
+                penalty = 2.0 - min(1.0, distance_to_wall * 100000)
+
+                move_cost = base_cost * penalty
                 tentative_g_score = g_score[current] + move_cost
 
-                # Falls ein besserer Weg zum Nachbarn gefunden wurde, aktualisiere die Werte
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score[neighbor] = tentative_g_score + heuristic(neighbor, goal_grid)
-                    heapq.heappush(open_set, (f_score[neighbor], neighbor))  # In Warteschlange einfügen
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
 
-        return []  # Kein Pfad gefunden oder leere Liste zurückgeben, wenn kein Pfad gefunden wurde
+        return []  # No path found
 
     def is_in_bounding_box(self, point_gps_pos: Tuple[int, int]) -> bool:
         """
@@ -269,3 +265,79 @@ class Room:
             j = i
 
         return inside
+
+    def plot(self, color="blue", edge_color="orange"):
+        # Zeichne die Raumumrisse
+        x, y = zip(*self.coordinates) if isinstance(self.coordinates[0], tuple) else ([], [])
+        plt.plot(x, y, color=color, alpha=0.5)
+        print("plotting room", self.name, "with ", len(self.edges), len(self.vertices), "edges and vertices")
+        for door in self.doors:
+            print(door.coordinates)
+        # Zeichne die Knoten (Vertices), falls vorhanden
+        if len(self.vertices) < 500:
+            for vertex in self.vertices:
+                plt.scatter(vertex.x, vertex.y, color="purple", alpha=0.8)  # Punkte für Knoten
+
+        if len(self.edges) < 500:
+            # Zeichne die Kanten (Edges) in einer anderen Farbe
+            for edge in self.edges:
+                x_vals = [edge.vertex1.x, edge.vertex2.x]
+                y_vals = [edge.vertex1.y, edge.vertex2.y]
+                plt.plot(x_vals, y_vals, color=edge_color, alpha=0.6)  # Kanten zeichnen
+
+        for door in self.doors:
+            x, y = door.coordinates
+            plt.scatter(x, y, color=color, alpha=0.8)
+
+    def distance_to_wall(self, point: Tuple[float, float]) -> float:
+        """
+        Calculates the minimum distance from a point to any wall (edge) of the room.
+
+        :param point: The point (x, y) to check distance from
+        :return: The minimum distance to any wall
+        """
+        if not self.coordinates or len(self.coordinates) < 2:
+            return 0.0  # No walls to measure distance from
+
+        min_distance = float('inf')
+
+        # Helper function to calculate distance from point to line segment
+        def distance_to_segment(p, a, b):
+            """Calculate distance from point p to line segment (a, b)"""
+            x, y = p
+            x1, y1 = a
+            x2, y2 = b
+
+            # Vector from a to b
+            dx = x2 - x1
+            dy = y2 - y1
+
+            # If segment is just a point, return distance to that point
+            if dx == 0 and dy == 0:
+                return math.sqrt((x - x1) ** 2 + (y - y1) ** 2)
+
+            # Calculate projection of point onto line
+            t = ((x - x1) * dx + (y - y1) * dy) / (dx ** 2 + dy ** 2)
+
+            # Constrain t to line segment
+            t = max(0, min(1, t))
+
+            # Calculate closest point on segment
+            closest_x = x1 + t * dx
+            closest_y = y1 + t * dy
+
+            # Return distance to closest point
+            return math.sqrt((x - closest_x) ** 2 + (y - closest_y) ** 2)
+
+        # Check distance to each wall segment
+        for i in range(len(self.coordinates)):
+            j = (i + 1) % len(self.coordinates)  # Next point, wrapping around to first point
+
+            # Calculate distance to this wall segment
+            distance = distance_to_segment(point, self.coordinates[i], self.coordinates[j])
+
+            # Update minimum distance if this is smaller
+            min_distance = min(min_distance, distance)
+
+        return min_distance
+
