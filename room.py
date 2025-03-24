@@ -1,6 +1,6 @@
 import heapq
 import math
-from typing import Tuple, List, Any, Dict
+from typing import Tuple, List, Any, Dict, Optional
 
 from matplotlib import pyplot as plt
 
@@ -31,13 +31,12 @@ class Room:
         ]
 
         self.doors: List[Door] = []
-        self.graph = {}
-        self.edges = []
-        self.vertices = []
 
         # assuming most rooms are rectangular precomputing this is more efficient to use in is_walkable()
         # (compared to the ray-cast, but this cant be used in all cases)
-        self.bounding_box = self._compute_bounding_box()
+        self.bounding_box: Tuple[Tuple[float, float], Tuple[float, float]] = self._compute_bounding_box()
+        self.grid: List[List[Optional[Vertex]]] = self._generate_grid()
+
 
     def __repr__(self):
         return f"Room (name={self.name!r}, level={self.level}, bounding_box={self.bounding_box})"
@@ -56,9 +55,65 @@ class Room:
         min_y = min(coord[1] for coord in self.coordinates)
         max_y = max(coord[1] for coord in self.coordinates)
 
-        size = max(max_x - min_x, max_y - min_y)
+        return (min_x, min_y), (max_x, max_y)
 
-        return (min_x, min_y), (min_x + size, min_y + size)
+    def _generate_grid(self) -> List[List[Optional[Vertex]]]:
+        min_x, min_y = self.bounding_box[0]
+        max_x, max_y = self.bounding_box[1]
+
+        grid: List[List[Optional[Vertex]]] = []
+
+        y = min_y
+        while y <= max_y:
+            row = []
+            x = min_x
+            while x <= max_x:
+                vertex = Vertex(self.name, x, y, self.distance_to_wall((x, y))) if self.is_walkable((x, y)) else None
+                row.append(vertex)
+                x += Room.grid_size_x
+            grid.append(row)
+            y += Room.grid_size_y
+
+        # Setze Nachbarn
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                if grid[i][j] is None:
+                    continue
+
+                neighbours = [
+                    (i - 1, j),  # oben
+                    (i + 1, j),  # unten
+                    (i, j - 1),  # links
+                    (i, j + 1),  # rechts
+                    (i - 1, j - 1),  # oben links
+                    (i - 1, j + 1),  # oben rechts
+                    (i + 1, j - 1),  # unten links
+                    (i + 1, j + 1)  # unten rechts
+                ]
+
+                for ni, nj in neighbours:
+                    if 0 <= ni < len(grid) and 0 <= nj < len(grid[i]) and grid[ni][nj] is not None:
+                        grid[i][j].neighbours.add(grid[ni][nj])
+        return grid
+
+
+    def get_closest_grid_position(self, position: Tuple[float, float]) -> Optional[Vertex]:
+        """
+        Gibt die nächstgelegene Position auf dem Gitter zurück, an der sich ein Vertex befindet.
+        """
+        x, y = position
+        closest_vertex = None
+        min_distance = float("inf")
+
+        for row in self.grid:
+            for vertex in row:
+                if vertex:
+                    dist = (vertex.x - x) ** 2 + (vertex.y - y) ** 2
+                    if dist < min_distance:
+                        min_distance = dist
+                        closest_vertex = vertex
+
+        return closest_vertex
 
     def get_center(self) -> Tuple[float, float]:
         """
@@ -117,112 +172,90 @@ class Room:
         """
         Erstellt einen Graphen, der für jedes Türpaar (A, B) den Pfad speichert.
         """
-        self.graph = {}
 
         for i, start in enumerate(self.doors):
-            self.graph[start] = {}
-
             for j, goal in enumerate(self.doors):
-                if goal not in self.graph:
-                    self.graph[goal] = {}
 
                 if i < j:  # Nur einmal berechnen, wenn i < j (vermeidet doppelte Berechnung)
-                    path = self._a_star_pathfinding(start, goal)
-                    if path:
 
-                        # Connect vertices in the path with bidirectional edges
-                        for v in range(len(path) - 1):  # Stop at the second-to-last element
-                            vert = path[v]
-                            edge = Edge(vert, path[v+1])
+                    closest_start = self.get_closest_grid_position(start.coordinates)
+                    closest_goal = self.get_closest_grid_position(goal.coordinates)
 
-                            self.vertices.append(vert)
-                            self.edges.append(edge)
+                    path = self._a_star_pathfinding(closest_start, closest_goal)
+                    full_path = [start.vertex] + path + [goal.vertex]
 
-                        # add the path to the path-map for the room
-                        self.graph[start][goal] = path
-                        self.graph[goal][start] = path[::-1]  # Einfach umkehren
+                    if full_path[0].distance_to(full_path[1]) < Room.grid_size_x:
+                        full_path.pop(1)
 
-    def _a_star_pathfinding(self, start: Door, goal: Door) -> List[Vertex]:
+                    if full_path[-1].distance_to(full_path[-2]) < Room.grid_size_x:
+                        full_path.pop(-2)
+
+                    # Pfad verketten
+                    for k in range(0, len(path)-1):
+                        path[k].add_edge_bidirectional(path[k + 1])
+
+        print("setup graph for room", self.name)
+
+    def _a_star_pathfinding(self, start: Vertex, goal: Vertex) -> List[Vertex]:
         """
-        A* pathfinding from a start Door to the goal Door, avoiding walls.
+        A* pathfinding from a start Vertex to the goal Vertex using vertex neighbors.
         """
 
-        def heuristic(a: Tuple[int, int], b: Tuple[int, int]) -> float:
-            """Euclidean distance heuristic."""
-            return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+        def heuristic(a: Vertex, b: Vertex) -> float:
+            """Euclidean distance heuristic between vertices."""
+            return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
 
-        # Convert start and goal to grid coordinates
-        start_grid = (int(start.coordinates[0] / Room.grid_size_x), int(start.coordinates[1] / Room.grid_size_y))
-        goal_grid = (int(goal.coordinates[0] / Room.grid_size_x), int(goal.coordinates[1] / Room.grid_size_y))
-
-        # Priority queue for A* (smallest f-score first)
+        # Use a counter to break ties and prevent comparing Vertex objects
+        counter = 0
         open_set = []
-        heapq.heappush(open_set, (0, start_grid))
+        heapq.heappush(open_set, (0, counter, start))
+        counter += 1
+
+        # Convert to set for O(1) lookups
+        open_set_hash = {start}
 
         # Tracking best paths
         came_from = {}
-        g_score = {start_grid: 0}
-        f_score = {start_grid: heuristic(start_grid, goal_grid)}
+        g_score = {start: 0}
+        f_score = {start: heuristic(start, goal)}
 
         while open_set:
-            _, current = heapq.heappop(open_set)
+            current_f, _, current = heapq.heappop(open_set)
+            open_set_hash.remove(current)
 
             # If current position is the goal, reconstruct path
-            if current == goal_grid:
-                path_grid = []
+            if current == goal:
+                path = []
                 while current in came_from:
-                    path_grid.append(current)
+                    path.append(current)
                     current = came_from[current]
-                path_grid.append(start_grid)
-                path_grid.reverse()
+                path.append(start)
+                path.reverse()
+                return path
 
-                # Convert grid path to Vertex objects
-                path_vertices = []
-                for i, grid_pos in enumerate(path_grid):
-                    real_x = grid_pos[0] * Room.grid_size_x
-                    real_y = grid_pos[1] * Room.grid_size_y
+            # Check all neighbor vertices
+            for neighbor in current.neighbours:
+                # Calculate movement cost between vertices
+                move_cost = heuristic(current, neighbor)
 
-                    if i == 0:
-                        path_vertices.append(start.vertex)
-                    elif i == len(path_grid) - 1:
-                        path_vertices.append(goal.vertex)
-                    else:
-                        path_vertices.append(Vertex(self.name, real_x, real_y))
+                # Add wall proximity penalty if needed
+                if hasattr(self, 'distance_to_wall'):
+                    distance_to_wall = neighbor.distance_to_wall
+                    penalty = 2.0 - min(1.0, distance_to_wall * 100000)
+                    move_cost *= penalty
 
-                return path_vertices
-
-            # Get neighboring positions (horizontal, vertical, diagonal)
-            neighbors = [
-                (current[0] + 1, current[1]), (current[0] - 1, current[1]),  # left/right
-                (current[0], current[1] + 1), (current[0], current[1] - 1),  # up/down
-                (current[0] + 1, current[1] + 1), (current[0] + 1, current[1] - 1),  # diagonal
-                (current[0] - 1, current[1] + 1), (current[0] - 1, current[1] - 1)
-            ]
-
-            for neighbor in neighbors:
-                real_x = neighbor[0] * Room.grid_size_x
-                real_y = neighbor[1] * Room.grid_size_y
-
-                if not self.is_walkable((real_x, real_y)):
-                    continue  # Skip unwalkable tiles
-
-                is_diagonal = neighbor[0] != current[0] and neighbor[1] != current[1]
-                base_cost = 1.414 if is_diagonal else 1  # Normal movement cost
-
-                # Get distance to the nearest wall
-                distance_to_wall: float = self.distance_to_wall((real_x, real_y))
-
-                # Penalty for going near walls
-                penalty = 2.0 - min(1.0, distance_to_wall * 100000)
-
-                move_cost = base_cost * penalty
                 tentative_g_score = g_score[current] + move_cost
 
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + heuristic(neighbor, goal_grid)
-                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                    f_value = tentative_g_score + heuristic(neighbor, goal)
+                    f_score[neighbor] = f_value
+
+                    if neighbor not in open_set_hash:
+                        heapq.heappush(open_set, (f_value, counter, neighbor))
+                        counter += 1
+                        open_set_hash.add(neighbor)
 
         return []  # No path found
 
@@ -266,24 +299,10 @@ class Room:
 
         return inside
 
-    def plot(self, color="blue", edge_color="orange"):
+    def plot(self, color="blue"):
         # Zeichne die Raumumrisse
         x, y = zip(*self.coordinates) if isinstance(self.coordinates[0], tuple) else ([], [])
         plt.plot(x, y, color=color, alpha=0.5)
-        print("plotting room", self.name, "with ", len(self.edges), len(self.vertices), "edges and vertices")
-        for door in self.doors:
-            print(door.coordinates)
-        # Zeichne die Knoten (Vertices), falls vorhanden
-        if len(self.vertices) < 500:
-            for vertex in self.vertices:
-                plt.scatter(vertex.x, vertex.y, color="purple", alpha=0.8)  # Punkte für Knoten
-
-        if len(self.edges) < 500:
-            # Zeichne die Kanten (Edges) in einer anderen Farbe
-            for edge in self.edges:
-                x_vals = [edge.vertex1.x, edge.vertex2.x]
-                y_vals = [edge.vertex1.y, edge.vertex2.y]
-                plt.plot(x_vals, y_vals, color=edge_color, alpha=0.6)  # Kanten zeichnen
 
         for door in self.doors:
             x, y = door.coordinates

@@ -7,6 +7,7 @@ from collections import defaultdict
 import matplotlib
 import numpy as np
 from door import Door
+from graph import export_json
 from room import Room
 from stairs import Stair
 
@@ -114,30 +115,43 @@ def process_stair(stair: Stair):
     return stair
 
 
-def setup_graphs_parallel(rooms: Dict[int, List[Room]], stairs: Dict[int, List[Stair]]):
+def setup_graphs_parallel(rooms: Dict[int, List[Room]], stairs: Dict[int, List[Stair]], parallel: bool = False):
     """
-    Initialisiert die Graphen für alle Räume und Treppen parallel.
+    Initialisiert die Graphen für alle Räume und Treppen, mit Option für parallele oder sequentielle Verarbeitung.
 
     :param rooms: Ein Dictionary mit Leveln als Keys und Listen von Room-Objekten als Values.
     :param stairs: Ein Dictionary mit Leveln als Keys und Listen von Treppen-Objekten als Values.
+    :param parallel: Boolean, der angibt, ob die Verarbeitung parallel (True) oder sequentiell (False) erfolgen soll.
     """
-    print("startet processing graphs for individual rooms")
+    print("Started processing graphs for individual rooms")
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        room_futures = {executor.submit(process_room, room): (level, i)
-                        for level in rooms for i, room in enumerate(rooms[level])}
+    if parallel:
+        # Parallele Verarbeitung mit ProcessPoolExecutor
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            room_futures = {executor.submit(process_room, room): (level, i)
+                            for level in rooms for i, room in enumerate(rooms[level])}
 
-        stair_futures = {executor.submit(process_stair, stair): (level, i)
-                         for level in stairs for i, stair in enumerate(stairs[level])}
+            stair_futures = {executor.submit(process_stair, stair): (level, i)
+                             for level in stairs for i, stair in enumerate(stairs[level])}
 
-        # Ergebnisse zurück in die Dictionaries schreiben
-        for future in concurrent.futures.as_completed(room_futures):
-            level, i = room_futures[future]
-            rooms[level][i] = future.result()
+            # Ergebnisse zurück in die Dictionaries schreiben
+            for future in concurrent.futures.as_completed(room_futures):
+                level, i = room_futures[future]
+                rooms[level][i] = future.result()
 
-        for future in concurrent.futures.as_completed(stair_futures):
-            level, i = stair_futures[future]
-            stairs[level][i] = future.result()
+            for future in concurrent.futures.as_completed(stair_futures):
+                level, i = stair_futures[future]
+                stairs[level][i] = future.result()
+    else:
+        # Sequentielle Verarbeitung für Debugging
+        print("Running in sequential mode for debugging")
+        for level in rooms:
+            for i, room in enumerate(rooms[level]):
+                rooms[level][i] = process_room(room)
+
+        for level in stairs:
+            for i, stair in enumerate(stairs[level]):
+                stairs[level][i] = process_stair(stair)
 
     print("Graph processing finished")
 
@@ -185,13 +199,14 @@ def visualize_level(parsed_data, level):
 if __name__ == "__main__":
     LEVEL_TO_DISPLAY = "3"  # Change this to the level you want to visualize
 
-    geojson_string = open("resources/h4Test.geojson", encoding="utf-8").read()
+    geojson_string = open("resources/h4.geojson", encoding="utf-8").read()
     geojson_data = json.loads(geojson_string)
     parsed = parse_geojson(geojson_data)
 
-    visualize_level(parsed, LEVEL_TO_DISPLAY)
+    #visualize_level(parsed, LEVEL_TO_DISPLAY)
+
+    with open("resources/graph.json", "w") as f:
+        f.write(export_json())
 
 
-# todo improve pathfinding by precomputing all vertecies inside a room and then connecting them, instead of checking all possible moves if they are inside a room each step
-# todo merge vertecies in room
 # todo remove first and last vertex in a path if the last and first edge are too short

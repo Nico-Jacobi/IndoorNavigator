@@ -1,0 +1,285 @@
+{
+    "type": "FeatureCollection",
+    "generator": "JOSM",
+    "features": [
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "name": "Flur (03C94)",
+                "indoor": "room"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        8.81037121110,
+                        50.80912663922
+                    ],
+                    [
+                        8.81035399368,
+                        50.80912664117
+                    ],
+                    [
+                        8.81033743653,
+                        50.80912663903
+                    ],
+                    [
+                        8.81033748905,
+                        50.80908303000
+                    ],
+                    [
+                        8.81026862833,
+                        50.80908289844
+                    ],
+                    [
+                        8.81026860748,
+                        50.80904005341
+                    ],
+                    [
+                        8.81027668290,
+                        50.80904003527
+                    ],
+                    [
+                        8.81027662514,
+                        50.80902892727
+                    ],
+                    [
+                        8.81030308255,
+                        50.80902907924
+                    ],
+                    [
+                        8.81030260247,
+                        50.80907259026
+                    ],
+                    [
+                        8.81039734150,
+                        50.80907285052
+                    ],
+                    [
+                        8.81044055048,
+                        50.80907265430
+                    ],
+                    [
+                        8.81050912511,
+                        50.80907248778
+                    ],
+                    [
+                        8.81057763558,
+                        50.80907251545
+                    ],
+                    [
+                        8.81057763834,
+                        50.80908223944
+                    ],
+                    [
+                        8.81057764077,
+                        50.80908822370
+                    ],
+                    [
+                        8.81050045980,
+                        50.80908832700
+                    ],
+                    [
+                        8.81045786395,
+                        50.80908826215
+                    ],
+                    [
+                        8.81039765922,
+                        50.80908814901
+                    ],
+                    [
+                        8.81037135252,
+                        50.80908804370
+                    ],
+                    [
+                        8.81037121110,
+                        50.80912663922
+                    ]
+                ]
+            }
+        },
+ {
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81044680174, 50.80907264276
+                ]
+            }
+        },
+ {
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81049161383, 50.80908836338
+                ]
+            }
+        },
+ {
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81035489849, 50.80907282066
+                ]
+            }
+        },
+ {
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81054277619, 50.80908823933
+                ]
+            }
+        },
+ {
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81057763834, 50.80908223944
+                ]
+            }
+        },
+ {
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81053394721, 50.80907247901
+                ]
+            }
+        }, 
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81028971147, 50.80902900243
+                ]
+            }
+        },
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81039754145, 50.80909468448
+                ]
+            }
+        },
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81026858844, 50.80904547993
+                ]
+            }
+        },
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81035399368, 50.80912664117
+                ]
+            }
+        },
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81026860613, 50.80906207176
+                ]
+            }
+        },
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81037136652, 50.80909439754
+                ]
+            }
+        },
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81028133862, 50.80908297267
+                ]
+            }
+        },
+{
+            "type": "Feature",
+            "properties": {
+                "level": "3",
+                "door": "yes"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    8.81058713847, 50.80908813293
+                ]
+            }
+        }
+    ]
+}
