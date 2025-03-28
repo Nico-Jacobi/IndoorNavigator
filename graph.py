@@ -7,10 +7,11 @@ from typing import Set, Dict, Any
 class Vertex:
     all_vertices: Set[Vertex] = set()
 
-    def __init__(self, name: str, x: float, y: float, distance_to_wall: float):
+    def __init__(self, name: str, x: float, y: float, floor: int,distance_to_wall: float):
         self.name: str = name
         self.x: float = x
         self.y: float = y
+        self.floor = floor
         self.distance_to_wall: float = distance_to_wall
         self.edges: Set[Edge] = set()
         self.neighbours: Set[Vertex] = set()    # these are the vertices next to it in the grid, not necessarily connected by an edge
@@ -89,7 +90,7 @@ def export_json(filter_bidirectional: bool = True) -> str:
 
     # Filtere Knoten ohne Kanten
     vertices_list = [
-        {"id": i, "x": v.x, "y": v.y, "name": v.name}
+        {"id": i, "x": v.x, "y": v.y, "floor": v.floor, "name": v.name}
         for v, i in vertex_map.items() if v in connected_vertices
     ]
 

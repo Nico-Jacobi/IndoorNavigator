@@ -63,16 +63,31 @@ class Room:
 
         grid: List[List[Optional[Vertex]]] = []
 
+        has_vertex = False # Flag to check if any vertex was added
         y = min_y
         while y <= max_y:
             row = []
             x = min_x
+
             while x <= max_x:
-                vertex = Vertex(self.name, x, y, self.distance_to_wall((x, y))) if self.is_walkable((x, y)) else None
-                row.append(vertex)
+                if self.is_walkable((x, y)):
+                    vertex = Vertex(self.name, x, y, self.level, self.distance_to_wall((x, y)))
+                    row.append(vertex)
+                    has_vertex = True
+                else:
+                    # this is needed to the indices are correct in the grid
+                    row.append(None)
+
                 x += Room.grid_size_x
+
             grid.append(row)
             y += Room.grid_size_y
+
+        if not has_vertex:
+            center: Tuple[float, float] = self.get_center()
+            default_vertex = Vertex(self.name, center[0], center[1], self.level, 0)
+            grid = [[default_vertex]]
+
 
         # Setze Nachbarn
         for i in range(len(grid)):
@@ -97,7 +112,7 @@ class Room:
         return grid
 
 
-    def get_closest_grid_position(self, position: Tuple[float, float]) -> Optional[Vertex]:
+    def get_closest_grid_position(self, position: Tuple[float, float]) -> Vertex:
         """
         Gibt die nächstgelegene Position auf dem Gitter zurück, an der sich ein Vertex befindet.
         """
@@ -112,6 +127,9 @@ class Room:
                     if dist < min_distance:
                         min_distance = dist
                         closest_vertex = vertex
+
+        if closest_vertex is None:
+            raise ValueError(f"No vertex found in grid for the given position. Grid {self}")
 
         return closest_vertex
 
@@ -173,26 +191,32 @@ class Room:
         Erstellt einen Graphen, der für jedes Türpaar (A, B) den Pfad speichert.
         """
 
+        if len(self.doors) == 1:
+            # if there only is one door, connect it to one vertex in the room, to have a connection
+            self.doors[0].vertex.add_edge_bidirectional(self.get_closest_grid_position(self.doors[0].coordinates))
+            return
+
         for i, start in enumerate(self.doors):
             for j, goal in enumerate(self.doors):
 
-                if i < j:  # Nur einmal berechnen, wenn i < j (vermeidet doppelte Berechnung)
+                if i > j:  # Nur einmal berechnen, wenn i < j (vermeidet doppelte Berechnung)
+                    continue
 
-                    closest_start = self.get_closest_grid_position(start.coordinates)
-                    closest_goal = self.get_closest_grid_position(goal.coordinates)
+                closest_start = self.get_closest_grid_position(start.coordinates)
+                closest_goal = self.get_closest_grid_position(goal.coordinates)
 
-                    path = self._a_star_pathfinding(closest_start, closest_goal)
-                    full_path = [start.vertex] + path + [goal.vertex]
+                path = self._a_star_pathfinding(closest_start, closest_goal)
+                full_path = [start.vertex] + path + [goal.vertex]
 
-                    if full_path[0].distance_to(full_path[1]) < Room.grid_size_x:
-                        full_path.pop(1)
+                if full_path[0].distance_to(full_path[1]) < Room.grid_size_x:
+                    full_path.pop(1)
 
-                    if full_path[-1].distance_to(full_path[-2]) < Room.grid_size_x:
-                        full_path.pop(-2)
+                if full_path[-1].distance_to(full_path[-2]) < Room.grid_size_x:
+                    full_path.pop(-2)
 
-                    # Pfad verketten
-                    for k in range(0, len(path)-1):
-                        path[k].add_edge_bidirectional(path[k + 1])
+                # Pfad verketten
+                for k in range(0, len(path)-1):
+                    path[k].add_edge_bidirectional(path[k + 1])
 
         print("setup graph for room", self.name)
 

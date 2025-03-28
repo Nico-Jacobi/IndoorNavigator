@@ -55,6 +55,10 @@ def parse_geojson(geojson_data):
             broken.append(feature)
 
     link_rooms(rooms, doors, stairs)
+
+    all_stairs = [stair for stair_list in stairs.values() for stair in stair_list]
+    Stair.link_stairs(all_stairs)
+
     setup_graphs_parallel(rooms, stairs)
 
     return [rooms, doors, stairs]
@@ -75,34 +79,8 @@ def link_rooms(rooms: Dict[int, List[Room]], doors: Dict[int, List[Door]], stair
             for room in chain(rooms[level], stairs[level]):
 
                 if room.is_point_on_outline(door.coordinates):
-                    door.rooms.append(room)
+                    door.add_room(room)
                     room.doors.append(door)
-
-
-    all_stairs = [stair for stair_list in stairs.values() for stair in stair_list]
-    link_stairs(all_stairs)
-
-
-def link_stairs(stairs: List['Stair']):
-    """
-    Verknüpft eine Liste von Treppen nach ihrer tatsächlichen Position.
-
-    :param stairs: Liste von Stair-Objekten
-    """
-    stairs_by_level = {}
-    for stair in stairs:
-        stairs_by_level.setdefault(stair.level, []).append(stair)
-
-    for stair in stairs:
-        center = stair.get_center()
-
-        # Prüfe, ob es eine Treppe auf dem Level darüber gibt, die den Mittelpunkt enthält
-        if stair.level + 1 in stairs_by_level:
-            for candidate in stairs_by_level[stair.level + 1]:
-                if candidate.is_in_bounding_box(center):
-                    stair.above = candidate
-                    candidate.below = stair
-                    break
 
 
 def process_room(room: Room):
@@ -156,7 +134,6 @@ def setup_graphs_parallel(rooms: Dict[int, List[Room]], stairs: Dict[int, List[S
     print("Graph processing finished")
 
 
-# todo visualize graph (connect first)
 def visualize_level(parsed_data, level):
     rooms, doors, stairs = parsed_data
     rooms = rooms[level]
@@ -209,4 +186,3 @@ if __name__ == "__main__":
         f.write(export_json())
 
 
-# todo remove first and last vertex in a path if the last and first edge are too short
