@@ -82,16 +82,16 @@ class Edge:
 
 
 def export_json(filter_bidirectional: bool = True) -> str:
-    # Nummeriere die Knoten
-    vertex_map = {v: i for i, v in enumerate(Vertex.all_vertices)}
-
     # Set aller Knoten, die in einer Kante vorkommen
     connected_vertices = {e.vertex1 for e in Edge.all_edges} | {e.vertex2 for e in Edge.all_edges}
 
+    # Nummeriere nur die Knoten, die in einer Kante vorkommen
+    vertex_map = {v: i for i, v in enumerate(connected_vertices)}
+
     # Filtere Knoten ohne Kanten
     vertices_list = [
-        {"id": i, "x": v.x, "y": v.y, "floor": v.floor, "name": v.name}
-        for v, i in vertex_map.items() if v in connected_vertices
+        {"id": vertex_map[v], "x": v.x, "y": v.y, "floor": v.floor, "name": v.name}
+        for v in connected_vertices
     ]
 
     if filter_bidirectional:
