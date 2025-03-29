@@ -108,4 +108,4 @@ def export_json(filter_bidirectional: bool = True) -> str:
             for e in Edge.all_edges
         ]
 
-    return json.dumps({"vertices": vertices_list, "edges": edges_list})
+    return json.dumps({"bidirectional": filter_bidirectional, "vertices": vertices_list, "edges": edges_list})
