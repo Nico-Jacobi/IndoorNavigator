@@ -5,9 +5,6 @@ import 'model/graph.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Graph graph = Graph();
-  await graph.loadFromJson('lib/resources/graph.json');
-
   runApp(const MyApp());
 }
 
@@ -35,9 +32,6 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('${context.hashCode}');
-    print("efef");
-
     return Scaffold(
       appBar: AppBar(
         title: Text(title),

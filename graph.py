@@ -89,8 +89,9 @@ def export_json(filter_bidirectional: bool = True) -> str:
     vertex_map = {v: i for i, v in enumerate(connected_vertices)}
 
     # Filtere Knoten ohne Kanten
+    # lat lon bei geojson "vertauscht" zu standard, daher hier so herum
     vertices_list = [
-        {"id": vertex_map[v], "x": v.x, "y": v.y, "floor": v.floor, "name": v.name}
+        {"id": vertex_map[v], "lat": v.y, "lon": v.x, "floor": v.floor, "name": v.name}
         for v in connected_vertices
     ]
 
