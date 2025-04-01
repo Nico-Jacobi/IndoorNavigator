@@ -173,17 +173,23 @@ class _IndoorWebViewState extends State<IndoorWebView> {
 // Updated onPressed method to use the single layer function
   void _onPressed() {
     Vertex? startVert = current.vertices[2];
-    String? goalName = current.vertices[70]?.name;
+    Vertex? goalVert = current.vertices[70];
 
-    List<Edge> path = current.edges; //current.findShortestPathByName(startVert!, goalName!);
+    print(startVert?.name);
+    print(startVert?.floor);
+
+    print(goalVert?.name);
+    print(goalVert?.floor);
+
+    List<Edge> path = current.findShortestPathByName(startVert!, goalVert!.name); //current.findShortestPathByName(startVert!, goalName!);
     List<Edge> edgesToDisplay = [];
-    int i = 0;
+
+
 
     for (Edge edge in path) {
-      if (edge.vertex1.floor == 3 && i < 5000) {
-        i++;
         edgesToDisplay.add(edge);
-      }
+        //todo problem: orthogonal is not really orthogonal as latitude and longitude is stretched
+      //todo maybe save distnaces with doors, and only pathfind over them, and the actualy ways are only view
     }
 
     // Plot all collected edges as a single layer
