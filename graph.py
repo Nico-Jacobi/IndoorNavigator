@@ -7,20 +7,20 @@ from typing import Set, Dict, Any
 class Vertex:
     all_vertices: Set[Vertex] = set()
 
-    def __init__(self, name: str, x: float, y: float, floor: int,distance_to_wall: float):
+    def __init__(self, name: str, x: float, y: float, floor: int):
         self.name: str = name
+        self.rooms: Set["Room"] = set()
         self.x: float = x
         self.y: float = y
         self.floor = floor
-        self.distance_to_wall: float = distance_to_wall
         self.edges: Set[Edge] = set()
         self.neighbours: Set[Vertex] = set()    # these are the vertices next to it in the grid, not necessarily connected by an edge
 
         Vertex.all_vertices.add(self)
 
-    def add_edge_bidirectional(self, vertex: Vertex) -> None:
-        self.edges.add(Edge(self, vertex))
-        vertex.edges.add(Edge(vertex, self))    #dont use the method, this would be circular
+    def add_edge_bidirectional(self, vertex: Vertex, weight: float = float('inf')) -> None:
+        self.edges.add(Edge(self, vertex, weight))
+        vertex.edges.add(Edge(vertex, self, weight))    #dont use the method, this would be circular
 
     def remove_edge_bidirectional(self, vertex: Vertex) -> None:
         e1 = Edge(self, vertex)
@@ -37,12 +37,7 @@ class Vertex:
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
 
     def to_json(self) -> Dict[str, Any]:
-        return {
-            "name": self.name,
-            "x": self.x,
-            "y": self.y,
-            "edges": [edge.to_json() for edge in self.edges],
-        }
+        return {"lat": self.y, "lon": self.x, "floor": self.floor, "name": self.name, "rooms": [room.name for room in self.rooms]}
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Vertex):
@@ -55,13 +50,23 @@ class Vertex:
     def __repr__(self) -> str:
         return f"Vertex({self.name}, x={self.x}, y={self.y})"
 
+    def __lt__(self, other: Vertex) -> bool:
+        """Sorts by x-coordinate first, then y-coordinate."""
+        return (self.x, self.y) < (other.x, other.y)
+
+
+    def add_room(self, room):
+        self.floor = room.level
+        self.rooms.add(room.name)
+
 
 class Edge:
-    all_edges: Set[Edge] = set()
+    all_edges: Set["Edge"] = set()
 
-    def __init__(self, vertex1: Vertex, vertex2: Vertex):
-        self.vertex1: Vertex = vertex1
-        self.vertex2: Vertex = vertex2
+    def __init__(self, vertex1: "Vertex", vertex2: "Vertex", weight: float = float('inf')):
+        self.vertex1: "Vertex" = vertex1
+        self.vertex2: "Vertex" = vertex2
+        self.weight: float = weight
         Edge.all_edges.add(self)
 
     def __eq__(self, other: object) -> bool:
@@ -73,11 +78,10 @@ class Edge:
         return hash(frozenset((self.vertex1, self.vertex2)))
 
     def __repr__(self) -> str:
-        return f"Edge({self.vertex1.name}, {self.vertex2.name})"
+        return f"Edge({self.vertex1.name}, {self.vertex2.name}, weight={self.weight})"
 
     def to_json(self) -> Dict[str, Any]:
-        return {"vertex1": self.vertex1.name, "vertex2": self.vertex2.name}
-
+        return {"vertex1": self.vertex1.name, "vertex2": self.vertex2.name, "weight": self.weight}
 
 
 
@@ -91,7 +95,7 @@ def export_json(filter_bidirectional: bool = True) -> str:
     # Filtere Knoten ohne Kanten
     # lat lon bei geojson "vertauscht" zu standard, daher hier so herum
     vertices_list = [
-        {"id": vertex_map[v], "lat": v.y, "lon": v.x, "floor": v.floor, "name": v.name}
+        {"id": vertex_map[v], "lat": v.y, "lon": v.x, "floor": v.floor, "name": v.name, "rooms": [r.name for r in v.rooms]}
         for v in connected_vertices
     ]
 

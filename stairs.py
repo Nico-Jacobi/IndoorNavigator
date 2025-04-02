@@ -1,5 +1,5 @@
-from typing import Tuple, List, Any, Dict
-
+from typing import Tuple, List, Any, Dict, Optional
+from graph import Vertex
 from room import Room
 
 
@@ -12,8 +12,12 @@ class Stair(Room):
         :param json: Das JSON-Objekt, das die Raumdaten enthält.
         """
         super().__init__(json)
-        self.above: Stair = None
-        self.below: Stair = None
+        self.above: Optional[Stair] = None
+        self.below: Optional[Stair] = None
+
+        x,y = self.get_center()
+
+        self.vertex = Vertex(self.name, x,y, self.level)
 
 
     def __repr__(self):
@@ -23,16 +27,12 @@ class Stair(Room):
     def setup_graph(self):
         super().setup_graph()   # setting up the rooms connections
 
-
         # connecting stairs to the level above
         # below not needed, as this stair calls this method also
         if not self.above or len(self.doors) == 0 or len(self.above.doors) == 0:
             return
 
-        v1 = self.get_closest_grid_position(self.doors[0].coordinates)
-        v2 = self.above.get_closest_grid_position(self.above.doors[0].coordinates)
-
-        v1.add_edge_bidirectional(v2)
+        self.vertex.add_edge_bidirectional(self.above.vertex)
 
 
     @staticmethod

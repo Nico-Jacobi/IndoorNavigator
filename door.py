@@ -24,8 +24,13 @@ class Door:
         # cant really import Room as this would result in a circular import
         self.rooms: List["Room"] = []
 
-        self.vertex = Vertex("Door", coordinates[0], coordinates[1],0, 0)
+        self.vertex = Vertex("Door", coordinates[0], coordinates[1],0)
+
+    def __lt__(self, other: "Door") -> bool:
+        """Sorts by x-coordinate first, then y-coordinate."""
+        return (self.coordinates[0], self.coordinates[1]) < (other.coordinates[0], other.coordinates[1])
 
     def add_room(self, room):
         self.rooms.append(room)
-        self.vertex.floor = room.level
+        self.vertex.add_room(room)
+

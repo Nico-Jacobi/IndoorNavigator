@@ -144,8 +144,11 @@ def visualize_level(parsed_data, level):
 
 
     # Räume direkt über ihre eigene Methode plotten
+    i = 10
     for room in rooms:
-        room.plot(color="blue")
+        i+= 1
+        if i < 20:
+            room.plot(color="blue")
 
 
     # Treppen kannst du ggf. ähnlich als Methode einer `Stair`-Klasse auslagern
@@ -180,7 +183,7 @@ if __name__ == "__main__":
     geojson_data = json.loads(geojson_string)
     parsed = parse_geojson(geojson_data)
 
-    #visualize_level(parsed, LEVEL_TO_DISPLAY)
+    visualize_level(parsed, LEVEL_TO_DISPLAY)
 
     with open("resources/graph.json", "w") as f:
         f.write(export_json())
