@@ -14,7 +14,7 @@ class Door:
         if not properties.get("door", "") == "yes":
             raise ValueError("non-door data passed to door constructor")
 
-        self.level: int = properties.get("level")
+        self.level: int =  int(properties.get("level"))
 
         geometry = json.get("geometry", {})
         self.geometry_type: str = geometry.get("type", "")
@@ -36,4 +36,7 @@ class Door:
     def add_room(self, room):
         self.rooms.append(room)
         self.vertex.add_room(room)
+        if len(self.rooms) > 2:
+            print(f"Warning: {self.vertex.name} has more than 2 rooms linked to it.")
+            print([r.name for r in self.rooms])
 

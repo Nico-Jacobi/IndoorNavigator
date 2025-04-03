@@ -33,7 +33,7 @@ class Stair(Room):
         if not self.above or len(self.doors) == 0 or len(self.above.doors) == 0:
             return
 
-        self.graph.add_edge_bidirectional(self.vertex, self.above.vertex, NavigationPath(0, []))
+        self.graph.add_edge_bidirectional(self.vertex, self.above.vertex, NavigationPath(0.0, []))
 
 
     @staticmethod

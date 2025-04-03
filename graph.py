@@ -69,6 +69,11 @@ class NavigationPath:
     weight: float
     points: List[Tuple[float, float]]
 
+    def __init__(self, weight: float, points: List[Tuple[float, float]]):
+        # Flip each point (swap x and y)
+        self.weight = weight
+        self.points = [(y, x) for x, y in points]
+
     def flip(self) -> "NavigationPath":
         # Create a flipped version of the path by reversing the points
         flipped_points = list(reversed(self.points))

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -13,7 +14,6 @@ class IndoorWebView extends StatefulWidget {
 
 class _IndoorWebViewState extends State<IndoorWebView> {
   InAppWebViewController? _controller;
-  String? _currentLayerId;
 
   Graph current;
   int zoom = 20;
@@ -110,8 +110,6 @@ class _IndoorWebViewState extends State<IndoorWebView> {
       features.add(feature);
     }
 
-    // Store the layer ID for later removal
-    _currentLayerId = layerId;
 
     // Add the source first, then the layer that references it
     String jsCode = '''
@@ -133,6 +131,86 @@ class _IndoorWebViewState extends State<IndoorWebView> {
       }
     }, 0);
   ''';
+
+    _controller!.evaluateJavascript(source: jsCode);
+  }
+
+  void _plotVerticesOnSingleLayer(List<Vertex> vertices, {String color = "#0000ff"}) {
+    if (_controller == null) return;
+
+    String layerId = "all-vertices-layer";
+    String sourceId = "all-vertices-source";
+
+    // First, ensure we remove any existing layer and source
+    _removeLayerAndSource(layerId, sourceId);
+
+    // Create a single GeoJSON layer with multiple features
+    Map<String, dynamic> geoJson = {
+      "id": layerId,
+      "type": "fill-extrusion",
+      "source": sourceId,
+      "paint": {
+        "fill-extrusion-color": color,
+        "fill-extrusion-height": 0.5,
+        "fill-extrusion-opacity": 0.8,
+      }
+    };
+
+    // Collect all features for the GeoJSON source
+    List<Map<String, dynamic>> features = [];
+    for (Vertex vertex in vertices) {
+      // Create a circle approximation with points
+      List<List<double>> circleCoordinates = [];
+      int segments = 16;
+      double radius = 0.000008;
+
+      for (int i = 0; i <= segments; i++) {
+        double angle = 2 * 3.14159265359 * i / segments;
+        // Adjust longitude based on latitude to account for Earth's curvature
+        double latRadians = vertex.lat * (3.14159265359 / 180.0);
+        double lonOffset = radius * cos(angle) / cos(latRadians);
+        double latOffset = radius * sin(angle);
+
+        circleCoordinates.add([vertex.lon + lonOffset, vertex.lat + latOffset]);
+      }
+
+      Map<String, dynamic> feature = {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [circleCoordinates]
+        },
+        "properties": {
+          "id": vertex.id,
+          "name": vertex.name,
+          "floor": vertex.floor
+        }
+      };
+
+      features.add(feature);
+    }
+
+
+    // Add the source first, then the layer that references it
+    String jsCode = '''
+  setTimeout(function() {
+    if (typeof my_openindoor !== 'undefined' && my_openindoor.map_) {
+      // Add the source
+      my_openindoor.map_.addSource("$sourceId", {
+        "type": "geojson",
+        "data": {
+          "type": "FeatureCollection",
+          "features": ${json.encode(features)}
+        }
+      });
+      
+      // Then add the layer that references the source
+      my_openindoor.map_.addLayer(${json.encode(geoJson)});
+    } else {
+      console.error("my_openindoor is not defined.");
+    }
+  }, 0);
+''';
 
     _controller!.evaluateJavascript(source: jsCode);
   }
@@ -163,36 +241,38 @@ class _IndoorWebViewState extends State<IndoorWebView> {
 
 // Update the existing removeLayer method to also remove the source
   void _removeLayer() {
-    print("removeLayer");
-    if (_controller == null || _currentLayerId == null) return;
+    print("removed Layer");
+    if (_controller == null) return;
 
-    _removeLayerAndSource(_currentLayerId!, "all-edges-source");
-    _currentLayerId = null;
+    _removeLayerAndSource( "all-edges-layer", "all-edges-source");
+    _removeLayerAndSource( "all-vertices-layer", "all-vertices-source");
   }
 
 // Updated onPressed method to use the single layer function
   void _onPressed() {
-    Vertex? startVert = current.vertices[2];
-    Vertex? goalVert = current.vertices[70];
+    Vertex? startVert = current.vertices[127];
 
     print(startVert?.name);
     print(startVert?.floor);
+    print(startVert?.rooms);
 
-    print(goalVert?.name);
-    print(goalVert?.floor);
 
-    List<Edge> path = current.findShortestPathByName(startVert!, goalVert!.name); //current.findShortestPathByName(startVert!, goalName!);
+    List<Edge> path = current.findShortestPathByName(startVert!, "Büro (04B09a)"); //current.findShortestPathByName(startVert!, goalName!);
+
+    print(path);
+    List<Vertex> vertsToDisplayPath = [];
     List<Edge> edgesToDisplay = [];
 
-
-
     for (Edge edge in path) {
-        edgesToDisplay.add(edge);
-        //todo problem: orthogonal is not really orthogonal as latitude and longitude is stretched
-      //todo maybe save distnaces with doors, and only pathfind over them, and the actualy ways are only view
-    }
 
-    // Plot all collected edges as a single layer
+        edgesToDisplay.add(edge);
+        vertsToDisplayPath.add(edge.vertex1);
+        //todo problem: orthogonal is not really orthogonal as latitude and longitude is stretched
+    }
+    vertsToDisplayPath.add(path.last.vertex2);
+
+
+    _plotVerticesOnSingleLayer(vertsToDisplayPath);
     _plotEdgesOnSingleLayer(edgesToDisplay);
   }
 

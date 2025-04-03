@@ -151,16 +151,16 @@ class Room:
         return (min_x + max_x) / 2, (min_y + max_y) / 2
 
 
-    def is_point_on_outline(self, point: Tuple[float, float], tolerance: float = 0.000001) -> bool:
+    def is_point_on_outline(self, door: Door, tolerance: float = 0.000001) -> bool:
         """
         Überprüft, ob ein gegebener Punkt auf der Umrandung des Raums liegt (innerhalb der Toleranz).
         for gps (non-planar) coordinates not perfectly accurate, but close enough as long as the distances stay short
 
-        :param point: Der zu überprüfende Punkt als (x, y)-Tupel.
+        :param door:
         :param tolerance: Die maximale Abweichung, um als "auf der Linie" zu gelten.
         :return: True, wenn der Punkt auf der Umrandung liegt, sonst False.
         """
-        if len(self.coordinates) < 2:
+        if len(self.coordinates) < 2 or self.level != door.level:
             return False  # Ein einzelner Punkt oder leere Geometrie kann keine Umrandung haben
 
         def distance_to_segment(point, a, b):
@@ -186,12 +186,12 @@ class Room:
             return ((point_x - closest_x) ** 2 + (point_y - closest_y) ** 2) ** 0.5
 
         for i in range(len(self.coordinates) - 1):
-            if distance_to_segment(point, self.coordinates[i], self.coordinates[i + 1]) <= tolerance:
+            if distance_to_segment(door.coordinates, self.coordinates[i], self.coordinates[i + 1]) <= tolerance:
                 return True
 
         # das letzte Segment prüfen (letzter zu erster Punkt)
         if self.coordinates[0] == self.coordinates[-1]:
-            if distance_to_segment(point, self.coordinates[-1], self.coordinates[0]) <= tolerance:
+            if distance_to_segment(door.coordinates, self.coordinates[-1], self.coordinates[0]) <= tolerance:
                 return True
 
         return False
@@ -449,4 +449,6 @@ class Room:
             min_distance = min(min_distance, distance)
 
         return min_distance
+
+
 
