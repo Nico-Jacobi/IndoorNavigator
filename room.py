@@ -5,6 +5,8 @@ from door import Door
 from dataclasses import dataclass
 import heapq
 
+from graph import Graph, NavigationPath
+
 
 @dataclass
 class PathVertex:
@@ -32,7 +34,7 @@ class Room:
     grid_size_x = 0.00001
     grid_size_y = 0.00001
 
-    def __init__(self, json: Dict[str, Any]):
+    def __init__(self, json: Dict[str, Any], graph: Graph):
         """
         Erstellt ein Room-Objekt.
 
@@ -50,7 +52,8 @@ class Room:
         ]
 
         self.doors: List[Door] = []
-        self.paths: {} = {}
+
+        self.graph = graph
 
         # assuming most rooms are rectangular precomputing this is more efficient to use in is_walkable()
         # (compared to the ray-cast, but this cant be used in all cases)
@@ -237,12 +240,8 @@ class Room:
                     total_length = path_length + start_dist + goal_dist
 
                     # Create direct edge between door vertices with weight
-                    start_door.vertex.add_edge_bidirectional(goal_door.vertex, weight=total_length)
-                    goal_door.vertex.add_edge_bidirectional(start_door.vertex, weight=total_length)
+                    self.graph.add_edge_bidirectional(start_door.vertex, goal_door.vertex, NavigationPath(weight=total_length, points=path))
 
-                    # Store the path using door identifiers as keys
-                    door_pair = tuple(sorted([start_door.vertex, goal_door.vertex]))
-                    self.paths[door_pair] = [start_door.coordinates] + path + [goal_door.coordinates]
 
         print("Setup graph for room", self.name)
 
@@ -397,17 +396,7 @@ class Room:
             x, y = door.coordinates
             plt.scatter(x, y, color=color, alpha=0.8, s=20)  # Doors are plotted slightly larger
 
-        # Plot the paths between doors
-        for door_pair, path in self.paths.items():
-            # Generate a random color for this path
-            path_color = (random.random(), random.random(), random.random())
 
-            # Extract x and y coordinates for plotting
-            path_x = [point[0] for point in path]
-            path_y = [point[1] for point in path]
-
-            # Plot the path
-            plt.plot(path_x, path_y, color=path_color, linewidth=1.0, alpha=0.7)
 
     def distance_to_wall(self, point: Tuple[float, float]) -> float:
         """
