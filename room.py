@@ -1,9 +1,12 @@
 import math
 from typing import Tuple, List, Any, Dict, Optional
 from matplotlib import pyplot as plt
+from shapely.geometry.point import Point
+
 from door import Door
 from dataclasses import dataclass
 import heapq
+from shapely.geometry import Polygon
 
 from graph import Graph, NavigationPath
 
@@ -28,11 +31,41 @@ class PathVertex:
         """Calculate the Euclidean distance to another PathVertex"""
         return math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 
+@dataclass
+class BoundingBox:
+    #(min_x, min_y), (max_x, max_y)
+    min_x: float
+    min_y: float
+
+    max_x: float
+    max_y: float
+
+    def size(self) -> float:
+        return (self.max_x - self.min_x) * (self.max_y - self.min_y)
+
+    def get_center(self) -> Tuple[float, float]:
+        """
+        Berechnet den Mittelpunkt der Bounding Box.
+        """
+        return (self.min_x + self.max_x) / 2, (self.min_y + self.max_y) / 2
+
+
+    def is_inside(self, point_gps_pos: Tuple[int, int]) -> bool:
+        """
+        Prüft, ob eine Position innerhalb der Bounding Box liegt.
+
+        :param point_gps_pos: Tuple aus (x, y)-Koordinaten des Punktes.
+        :return: True, wenn die Position innerhalb der Bounding Box liegt, sonst False.
+        """
+        x, y = point_gps_pos
+        return self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y
 
 class Room:
     # Definiere die Größe eines Gitterschritts (abhängig von den verwendeten GPS-Koordinaten)
-    grid_size_x = 0.00001
-    grid_size_y = 0.00001
+    grid_size_x: float = 0.00001
+    grid_size_y: float = 0.00001
+
+    wall_thickness: float = 0.000001
 
     def __init__(self, json: Dict[str, Any], graph: Graph):
         """
@@ -50,53 +83,137 @@ class Room:
         self.coordinates: List[Tuple[float, float]] = [
             (float(coord[0]), float(coord[1])) for coord in geometry.get("coordinates", [])
         ]
+        self.holes: List[List[Tuple[float, float]]]= [] # this is more compatible and easier to troubleshoot as nested rooms, which would also be a valid solution
 
         self.doors: List[Door] = []
-
         self.graph = graph
 
         # assuming most rooms are rectangular precomputing this is more efficient to use in is_walkable()
         # (compared to the ray-cast, but this cant be used in all cases)
-        self.bounding_box: Tuple[Tuple[float, float], Tuple[float, float]] = self._compute_bounding_box()
-        self.grid: List[List[Optional[PathVertex]]] = self._generate_grid()
+        self.bounding_box: BoundingBox = self._compute_bounding_box() #(min_x, min_y), (max_x, max_y)
+        self.grid: List[List[Optional[PathVertex]]] = []
 
 
 
     def __repr__(self):
         return f"Room (name={self.name!r}, level={self.level}, bounding_box={self.bounding_box})"
 
-    def _compute_bounding_box(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    def _compute_bounding_box(self) -> BoundingBox:
         """
         Berechnet eine quadratische Bounding Box um die Raumgeometrie.
 
         :return: Ein Tupel mit zwei Punkten (min_x, min_y) und (max_x, max_y), die die Bounding Box definieren.
         """
         if not self.coordinates:
-            return (0, 0), (0, 0)
+            return BoundingBox(0, 0, 0, 0)
 
         min_x = min(coord[0] for coord in self.coordinates)
         max_x = max(coord[0] for coord in self.coordinates)
         min_y = min(coord[1] for coord in self.coordinates)
         max_y = max(coord[1] for coord in self.coordinates)
 
-        return (min_x, min_y), (max_x, max_y)
+        return BoundingBox(min_x, min_y, max_x, max_y)
+
+
+    @staticmethod
+    def setup_all_rooms(rooms: List["Room"]) -> None:
+
+        # check each unique pair of rooms
+        for i in range(len(rooms)):
+            for j in range(i + 1, len(rooms)):
+                rooms[i]._fix_intersections(rooms[j])
+
+
+        for room in rooms:
+            room.grid = room._generate_grid()
+
+
+
+
+    # todo doesent work with rooms completely in other rooms it seems, loot at innenhof in lobby
+    def _fix_intersections(self, other: "Room") -> bool:
+        """
+        Subtracts another polygon area from this room's coordinates.
+
+        Will remove overlapping areas from the bigger room.
+        Will also handle holes in the room.
+
+        :param other:
+        :return: A new list of coordinates representing the room with the subtracted area
+        """
+
+
+        if self.level != other.level:
+            return False
+
+        # Check if the bounding boxes intersect (as this is much faster than checking the polygon)
+        bounding_box_intersect = not (
+            self.bounding_box.max_x < other.bounding_box.min_x or
+            self.bounding_box.min_x > other.bounding_box.max_x or
+            self.bounding_box.max_y < other.bounding_box.min_y or
+            self.bounding_box.min_y > other.bounding_box.max_y
+        )
+        if not bounding_box_intersect:
+            return False
+
+        # Convert room coordinates to a Shapely polygon
+        room_polygon = Polygon(self.coordinates)
+
+        # Convert the other coordinates to a Shapely polygon
+        other_polygon = Polygon(other.coordinates)
+
+        # Check if the polygons intersect
+        if not room_polygon.intersects(other_polygon):
+            # If there's no intersection, return the original coordinates
+            return False
+
+        if other_polygon.area > room_polygon.area:
+            # if this room is contained in the other one, remove parts from the other
+            return other._fix_intersections(self)
+
+        # Perform the subtraction (difference operation)
+        result_polygon = (room_polygon - other_polygon)
+        for hole in self.holes:
+            result_polygon = result_polygon - Polygon(hole)
+
+        # buffer in and then out, to keep the geometry but remove extremely thin parts, which happen due to the -
+        # this causes rounded geometry, wich is not directly a problem, but leads to longer calculations
+        result_polygon = result_polygon.buffer(-Room.wall_thickness).buffer(Room.wall_thickness)
+
+        # Convert the result back to a list of coordinates
+        if result_polygon.geom_type == 'Polygon':
+            # For simple polygons
+            self.coordinates = list(result_polygon.exterior.coords)[:-1]  # Remove the last point as it's the same as the first
+            self.holes = [list(interior.coords)[:-1] for interior in result_polygon.interiors]  # Hole coordinates
+            return True
+
+        elif result_polygon.geom_type == 'MultiPolygon':
+
+            # this is not a problem, as the room is not a simple polygon in this case
+            largest_polygon = max(result_polygon.geoms, key=lambda p: p.area)
+            self.coordinates = list(largest_polygon.exterior.coords)[:-1]
+            self.holes = [list(interior.coords)[:-1] for interior in largest_polygon.interiors]  # Hole coordinates
+            return True
+        else:
+            # If the result is not a polygon (unlikely), return the original
+            return False
+
+
 
     def _generate_grid(self) -> List[List[Optional[PathVertex]]]:
-        min_x, min_y = self.bounding_box[0]
-        max_x, max_y = self.bounding_box[1]
 
         grid: List[List[Optional[PathVertex]]] = []
 
         has_vertex = False  # Flag to check if any vertex was added
-        y = min_y
+        y = self.bounding_box.min_y
         y_index = 0
 
-        while y <= max_y:
+        while y <= self.bounding_box.max_y:
             row = []
-            x = min_x
+            x = self.bounding_box.min_x
             x_index = 0
 
-            while x <= max_x:
+            while x <= self.bounding_box.max_x:
                 if self.is_walkable((x, y)):
                     # Create PathVertex with coordinates and indices
                     vertex = PathVertex(x=x, y=y, x_index=x_index, y_index=y_index, distance_to_wall=self.distance_to_wall((x,y)))
@@ -114,7 +231,7 @@ class Room:
             y_index += 1
 
         if not has_vertex:
-            center: Tuple[float, float] = self.get_center()
+            center: Tuple[float, float] = self.bounding_box.get_center()
             # Create a single PathVertex at the center
             center_vertex = PathVertex(x=center[0], y=center[1], x_index=0, y_index=0, distance_to_wall=self.distance_to_wall((center[0],center[1])))
             grid = [[center_vertex]]
@@ -143,15 +260,9 @@ class Room:
 
         return closest_point
 
-    def get_center(self) -> Tuple[float, float]:
-        """
-        Berechnet den Mittelpunkt der Bounding Box.
-        """
-        (min_x, min_y), (max_x, max_y) = self.bounding_box
-        return (min_x + max_x) / 2, (min_y + max_y) / 2
 
 
-    def is_point_on_outline(self, door: Door, tolerance: float = 0.000001) -> bool:
+    def is_door_on_outline(self, door: Door, tolerance: float = wall_thickness) -> bool:
         """
         Überprüft, ob ein gegebener Punkt auf der Umrandung des Raums liegt (innerhalb der Toleranz).
         for gps (non-planar) coordinates not perfectly accurate, but close enough as long as the distances stay short
@@ -190,9 +301,17 @@ class Room:
                 return True
 
         # das letzte Segment prüfen (letzter zu erster Punkt)
-        if self.coordinates[0] == self.coordinates[-1]:
-            if distance_to_segment(door.coordinates, self.coordinates[-1], self.coordinates[0]) <= tolerance:
+        if distance_to_segment(door.coordinates, self.coordinates[-1], self.coordinates[0]) <= tolerance:
+            return True
+
+        for hole in self.holes:
+            for i in range(len(hole) - 1):
+                if distance_to_segment(door.coordinates, hole[i], hole[i + 1]) <= tolerance:
+                    return True
+
+            if distance_to_segment(door.coordinates, hole[-1], hole[0]) <= tolerance:
                 return True
+
 
         return False
 
@@ -332,75 +451,76 @@ class Room:
 
         return []  # No path found
 
-
-    def is_in_bounding_box(self, point_gps_pos: Tuple[int, int]) -> bool:
-        """
-        Prüft, ob eine Position innerhalb der Bounding Box liegt.
-
-        :param point_gps_pos: Tuple aus (x, y)-Koordinaten des Punktes.
-        :return: True, wenn die Position innerhalb der Bounding Box liegt, sonst False.
-        """
-        x, y = point_gps_pos
-        (min_x, min_y), (max_x, max_y) = self.bounding_box
-        return min_x <= x <= max_x and min_y <= y <= max_y
-
     def is_walkable(self, point_gps_pos: Tuple[int, int]) -> bool:
         """
-        Bestimmt, ob eine Position begehbar ist, indem überprüft wird, ob sie sich innerhalb des Raum-Polygons befindet.
+        Determines whether a position is walkable by checking if it is within the room's polygon
+        but outside any holes.
 
-        :param point_gps_pos: Tuple aus (x, y)-Koordinaten des Punktes.
-        :return: True, wenn die Position innerhalb des Raumpolygons liegt, sonst False.
+        :param point_gps_pos: Tuple of (x, y) coordinates of the point.
+        :return: True if the position is within the room polygon and not in a hole, otherwise False.
         """
-        if not self.is_in_bounding_box(point_gps_pos):
+        if not self.bounding_box.is_inside(point_gps_pos):
             return False
 
-        x, y = point_gps_pos
-        # Raycasting-Algorithmus mit Bounding-Box-Begrenzung
-        inside = False
-        j = len(self.coordinates) - 1
+        # Create a Point object for the given coordinates
+        point = Point(point_gps_pos)
 
-        for i in range(len(self.coordinates)):
-            xi, yi = self.coordinates[i]
-            xj, yj = self.coordinates[j]
+        # Check if the point is inside the main room polygon
+        room_polygon = Polygon(self.coordinates)
+        if not room_polygon.contains(point):
+            return False
 
-            # Prüft, ob der Strahl eine Kante schneidet
-            if (yi > y) != (yj > y):
-                x_intersect = (xj - xi) * (y - yi) / (yj - yi) + xi
-                if x <= x_intersect <= self.bounding_box[1][0]:  # Begrenzt den Strahl auf die Bounding Box
-                    inside = not inside
+        # Check if the point is inside any of the holes (interior polygons)
+        for hole in self.holes:
+            hole_polygon = Polygon(hole)
+            if hole_polygon.contains(point):
+                return False  # The point is inside a hole, so it's not walkable
 
-            j = i
+        # If the point is inside the room and not in any holes, it's walkable
+        return True
 
-        return inside
 
-    def plot(self, color=None):
+
+    def plot(self, color=None, scale=1.0):
         import random
 
         # Generate a random color if none provided
         if color is None:
             color = (random.random(), random.random(), random.random())
 
-        # Plot room outline
-        x, y = zip(*self.coordinates) if isinstance(self.coordinates[0], tuple) else ([], [])
-        plt.plot(x, y, color=color, alpha=0.5)
+        # Plot room outline slightly scaled toward the center
+        if len(self.coordinates) > 0 and isinstance(self.coordinates[0], tuple):
+            cx, cy = self.bounding_box.get_center()
+            scaled_coords = [
+                (
+                    cx + scale * (x - cx),
+                    cy + scale * (y - cy)
+                )
+                for x, y in self.coordinates
+            ]
+            scaled_coords.append(scaled_coords[0])  # close the loop
+            x, y = zip(*scaled_coords)
+        else:
+            x, y = [], []
 
-        # Plot all points in the grid
-        for row in self.grid:
-            for point in row:
-                if point is not None:
-                    x,y = point.get_coordinates()
-                    plt.scatter(x,y, color=color, s=1, alpha=0.5)
+        plt.plot(x, y, color=color, alpha=0.5)
 
         # Plot the doors
         for door in self.doors:
             x, y = door.coordinates
-            plt.scatter(x, y, color=color, alpha=0.8, s=20)  # Doors are plotted slightly larger
+            if len(door.rooms) == 1:
+                plt.scatter(x, y, color="orange", alpha=0.8, s=20)
+            if len(door.rooms) == 2:
+                plt.scatter(x, y, color="green", alpha=0.8, s=20)
+            if len(door.rooms) == 3:
+                plt.scatter(x, y, color="red", alpha=0.8, s=20)
+            if len(door.rooms) > 3:
+                plt.scatter(x, y, color="blue", alpha=0.8, s=20)
 
-
-
+    # Plot the holes
     def distance_to_wall(self, point: Tuple[float, float]) -> float:
         """
-        Calculates the minimum distance from a point to any wall (edge) of the room.
+        Calculates the minimum distance from a point to any wall (edge) of the room, considering holes.
 
         :param point: The point (x, y) to check distance from
         :return: The minimum distance to any wall
@@ -438,7 +558,7 @@ class Room:
             # Return distance to closest point
             return math.sqrt((x - closest_x) ** 2 + (y - closest_y) ** 2)
 
-        # Check distance to each wall segment
+        # Check distance to each wall segment of the room
         for i in range(len(self.coordinates)):
             j = (i + 1) % len(self.coordinates)  # Next point, wrapping around to first point
 
@@ -448,7 +568,21 @@ class Room:
             # Update minimum distance if this is smaller
             min_distance = min(min_distance, distance)
 
-        return min_distance
+        # the segment looping the thing around
+        min_distance = min(min_distance, distance_to_segment(point, self.coordinates[0], self.coordinates[-1]))
 
+        # Now check the holes (interior polygons)
+        for hole in self.holes:
+            # The hole is a polygon, so we check the distance to its walls (edges)
+            for i in range(len(hole)):
+                j = (i + 1) % len(hole)  # Next point, wrapping around to first point
+
+                # Calculate distance to this wall segment of the hole
+                distance = distance_to_segment(point, hole[i], hole[j])
+
+                # Update minimum distance if this is smaller
+                min_distance = min(min_distance, distance)
+
+        return min_distance
 
 

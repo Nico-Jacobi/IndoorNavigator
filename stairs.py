@@ -1,4 +1,4 @@
-from typing import Tuple, List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional
 from graph import Vertex, Graph, NavigationPath
 from room import Room
 
@@ -15,7 +15,7 @@ class Stair(Room):
         self.above: Optional[Stair] = None
         self.below: Optional[Stair] = None
 
-        x,y = self.get_center()
+        x,y = self.bounding_box.get_center()
 
         self.graph = graph
         self.vertex = Vertex(self.name, x,y, self.level)
@@ -48,12 +48,12 @@ class Stair(Room):
             stairs_by_level.setdefault(stair.level, []).append(stair)
 
         for stair in stairs:
-            center = stair.get_center()
+            center = stair.bounding_box.get_center()
 
             # Prüfe, ob es eine Treppe auf dem Level darüber gibt, die den Mittelpunkt enthält
             if stair.level + 1 in stairs_by_level:
                 for candidate in stairs_by_level[stair.level + 1]:
-                    if candidate.is_in_bounding_box(center):
+                    if candidate.bounding_box.is_inside(center):
                         stair.above = candidate
                         candidate.below = stair
                         break

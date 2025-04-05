@@ -1,4 +1,5 @@
 import json
+import random
 from itertools import chain
 from typing import List, Dict
 import concurrent.futures
@@ -14,12 +15,12 @@ from stairs import Stair
 matplotlib.use('TkAgg')  # Oder 'Agg', falls TkAgg nicht funktioniert
 
 
-def parse_geojson(geojson_data):
+def parse_geojson(geojson_string):
     """
     Parses a GeoJSON file and extracts rooms, doors, and stairs, categorizing them by level.
 
     Args:
-        geojson_data (dict): The parsed GeoJSON data.
+        geojson_string (dict): The parsed GeoJSON data.
 
     Returns:
         List[Dict[int, List[Room]], Dict[int, List[Door]], Dict[int, List[Stair]]]:
@@ -28,12 +29,12 @@ def parse_geojson(geojson_data):
 
     graph = Graph()
 
-    doors = defaultdict(list)
-    stairs = defaultdict(list)
-    rooms = defaultdict(list)
+    doors_dict = defaultdict(list)
+    stairs_dict = defaultdict(list)
+    rooms_dict = defaultdict(list)
     broken = []
 
-    for feature in geojson_data.get("features", []):
+    for feature in geojson_string.get("features", []):
         properties = feature.get("properties")
         if not isinstance(properties, dict):
             broken.append(feature)
@@ -45,25 +46,29 @@ def parse_geojson(geojson_data):
 
         if level is not None:
             if is_door:
-                doors[level].append(Door(feature, graph))
+                doors_dict[level].append(Door(feature, graph))
             elif is_stairs:
-                stairs[level].append(Stair(feature, graph))
+                stairs_dict[level].append(Stair(feature, graph))
             else:
                 if len(feature.get("geometry", {}).get("coordinates", [])) <= 2:
                     continue
-                rooms[level].append(Room(feature, graph))
+                rooms_dict[level].append(Room(feature, graph))
 
         else:
             broken.append(feature)
 
-    link_rooms(rooms, doors, stairs)
 
-    all_stairs = [stair for stair_list in stairs.values() for stair in stair_list]
+    all_stairs = [stair for stair_list in stairs_dict.values() for stair in stair_list]
     Stair.link_stairs(all_stairs)
 
-    setup_graphs_parallel(rooms, stairs)
+    all_rooms = [room for room_list in rooms_dict.values() for room in room_list]
+    Room.setup_all_rooms(all_rooms + all_stairs)
+    link_rooms(rooms_dict, doors_dict, stairs_dict)
 
-    return [rooms, doors, stairs]
+
+    setup_graphs_parallel(rooms_dict, stairs_dict)
+
+    return [rooms_dict, doors_dict, stairs_dict]
 
 
 def link_rooms(rooms: Dict[int, List[Room]], doors: Dict[int, List[Door]], stairs: Dict[int, List[Stair]]):
@@ -80,7 +85,7 @@ def link_rooms(rooms: Dict[int, List[Room]], doors: Dict[int, List[Door]], stair
         for door in doors[level]:
             for room in chain(rooms[level], stairs[level]):
 
-                if room.is_point_on_outline(door.coordinates):
+                if room.is_door_on_outline(door):
                     door.add_room(room)
                     room.doors.append(door)
 
@@ -95,6 +100,7 @@ def process_stair(stair: Stair):
     return stair
 
 
+#todo make simpler by using stais and rooms as list
 def setup_graphs_parallel(rooms: Dict[int, List[Room]], stairs: Dict[int, List[Stair]], parallel: bool = False):
     """
     Initialisiert die Graphen für alle Räume und Treppen, mit Option für parallele oder sequentielle Verarbeitung.
@@ -141,12 +147,14 @@ def visualize_level(rooms, stairs, max_features):
 
     plotted_features = 0
 
-    # Räume direkt über ihre eigene Methode plotten
+    def random_color():
+        return "#{:06x}".format(random.randint(0, 0xFFFFFF))
+
     for room in rooms:
-        plotted_features +=1
+        plotted_features += 1
         if plotted_features >= max_features:
             break
-        room.plot(color="blue")
+        room.plot(color=random_color())
 
 
     # Treppen kannst du ggf. ähnlich als Methode einer `Stair`-Klasse auslagern
@@ -154,24 +162,14 @@ def visualize_level(rooms, stairs, max_features):
         plotted_features +=1
         if plotted_features >= max_features:
             break
-        x, y = zip(*stair.coordinates) if isinstance(stair.coordinates[0], tuple) else ([], [])
-        plt.plot(x, y, color="green", alpha=0.5)
+        if len(stair.coordinates) > 0:
+            x, y = zip(*stair.coordinates) if isinstance(stair.coordinates[0], tuple) else ([], [])
+            plt.plot(x, y, color="green", alpha=0.5)
 
     plt.gca().set_aspect(1 / np.cos(np.deg2rad(50.8)))
     plt.xlabel("X Coordinate")
     plt.ylabel("Y Coordinate")
     plt.grid(True)
-
-    # Add a legend
-    from matplotlib.lines import Line2D
-    legend_elements = [
-        Line2D([0], [0], color='blue', alpha=0.5, label='Rooms'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='red', alpha=0.8, label='Doors/Door Vertices'),
-        Line2D([0], [0], color='green', alpha=0.5, label='Stairs'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='purple', alpha=0.8, label='Path Vertices'),
-        Line2D([0], [0], color='orange', alpha=0.6, label='Navigation Edges')
-    ]
-    plt.legend(handles=legend_elements, loc='upper right')
 
     plt.show()
 
@@ -183,7 +181,7 @@ if __name__ == "__main__":
     geojson_data = json.loads(geojson_string)
     rooms, doors, stairs = parse_geojson(geojson_data)
 
-    #visualize_level(rooms[LEVEL_TO_DISPLAY], stairs[LEVEL_TO_DISPLAY], 10)
+    visualize_level(rooms[LEVEL_TO_DISPLAY], stairs[LEVEL_TO_DISPLAY], 1000)
 
     with open("resources/graph.json", "w") as f:
         f.write(rooms[LEVEL_TO_DISPLAY][0].graph.export_json())
