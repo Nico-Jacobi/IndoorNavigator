@@ -49,6 +49,10 @@ class BoundingBox:
         """
         return (self.min_x + self.max_x) / 2, (self.min_y + self.max_y) / 2
 
+    def overlaps_with(self, other):
+        return not (self.max_x < other.min_x or self.min_x > other.max_x or
+                    self.max_y < other.min_y or self.min_y > other.max_y)
+
 
     def is_inside(self, point_gps_pos: Tuple[int, int]) -> bool:
         """
@@ -61,10 +65,11 @@ class BoundingBox:
         return self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y
 
 class Room:
-    # Definiere die Größe eines Gitterschritts (abhängig von den verwendeten GPS-Koordinaten)
+    # Definiere die Größe eines Gitterschritts (in gps coords)
     grid_size_x: float = 0.00001
     grid_size_y: float = 0.00001
 
+    # used to remove extremely thin parts of the geometry and for linking doors with walls (in gps)
     wall_thickness: float = 0.000001
 
     def __init__(self, json: Dict[str, Any], graph: Graph):
@@ -129,8 +134,6 @@ class Room:
 
 
 
-
-    # todo doesent work with rooms completely in other rooms it seems, loot at innenhof in lobby
     def _fix_intersections(self, other: "Room") -> bool:
         """
         Subtracts another polygon area from this room's coordinates.

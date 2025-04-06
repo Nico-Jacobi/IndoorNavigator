@@ -28,13 +28,16 @@ class Stair(Room):
     def setup_graph(self):
         super().setup_graph()   # setting up the rooms connections
 
+        print("setting up stairs graph...")
         # connecting stairs to the level above
         # below not needed, as this stair calls this method also
         if not self.above or len(self.doors) == 0 or len(self.above.doors) == 0:
             return
 
-        self.graph.add_edge_bidirectional(self.vertex, self.above.vertex, NavigationPath(0.0, []))
+        for door in self.doors:
+            self.graph.add_edge_bidirectional(self.vertex, door.vertex, NavigationPath(0.0, []))
 
+        self.graph.add_edge_bidirectional(self.vertex, self.above.vertex, NavigationPath(0.0, []))
 
     @staticmethod
     def link_stairs(stairs: List['Stair']):
@@ -43,17 +46,14 @@ class Stair(Room):
 
         :param stairs: Liste von Stair-Objekten
         """
-        stairs_by_level = {}
-        for stair in stairs:
-            stairs_by_level.setdefault(stair.level, []).append(stair)
+        print("linking stairs...")
 
-        for stair in stairs:
-            center = stair.bounding_box.get_center()
+        for stair1 in stairs:
+            for stair2 in stairs:
 
-            # Prüfe, ob es eine Treppe auf dem Level darüber gibt, die den Mittelpunkt enthält
-            if stair.level + 1 in stairs_by_level:
-                for candidate in stairs_by_level[stair.level + 1]:
-                    if candidate.bounding_box.is_inside(center):
-                        stair.above = candidate
-                        candidate.below = stair
+                # Prüfe, ob es eine Treppe auf dem Level darüber gibt, deren Bounding Box überlappt
+                if stair1.level +1 == stair2.level:
+                    if stair1.bounding_box.overlaps_with(stair2.bounding_box):
+                        stair1.above = stair2
+                        stair2.below = stair1
                         break
