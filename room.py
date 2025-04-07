@@ -123,13 +123,18 @@ class Room:
     @staticmethod
     def setup_all_rooms(rooms: List["Room"]) -> None:
 
+        print("setting up rooms...")
+
         # check each unique pair of rooms
         for i in range(len(rooms)):
+            print("checking geometry of",  rooms[i].name)
+
             for j in range(i + 1, len(rooms)):
                 rooms[i]._fix_intersections(rooms[j])
 
 
         for room in rooms:
+            print("setting up grid for room", room.name)
             room.grid = room._generate_grid()
 
 
@@ -318,7 +323,7 @@ class Room:
 
         return False
 
-    def setup_graph(self):
+    def setup_paths(self):
         """
         Creates a graph that connects each door pair (A, B) with a direct edge
         weighted by the path length. Stores paths in self.paths dictionary.
@@ -361,11 +366,45 @@ class Room:
 
                     total_length = path_length + start_dist + goal_dist
 
+                    path = Room.cleanup_path(path[1:-1]) # Remove start and end points + cleanup
                     # Create direct edge between door vertices with weight
                     self.graph.add_edge_bidirectional(start_door.vertex, goal_door.vertex, NavigationPath(weight=total_length, points=path))
 
 
         print("Setup graph for room", self.name)
+
+
+
+    @staticmethod
+    def cleanup_path(path: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """
+        Remove unnecessary vertices from a path.
+        A vertex is considered unnecessary if it lies on a straight line between its neighbors.
+
+        Args:
+            path: List of (x, y) coordinates representing vertices on a path
+
+        Returns:
+            Cleaned path with unnecessary vertices removed
+        """
+
+        points = path.copy()
+
+        for i in range(1, len(path) - 1):
+            prev_point = path[i - 1]
+            curr_point = path[i]
+            next_point = path[i + 1]
+
+            # Check if the current point is collinear with its neighbors
+            if (curr_point[0] - prev_point[0]) * (next_point[1] - curr_point[1]) == (curr_point[1] - prev_point[1]) * (next_point[0] - curr_point[0]):
+                # Remove the current point
+                points[i] = None
+
+        return [item for item in points if item is not None]
+
+
+
+
 
     def _a_star_pathfinding(self, start_vertex: PathVertex, goal_vertex: PathVertex) -> List[Tuple[float, float]]:
         """

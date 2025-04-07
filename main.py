@@ -1,7 +1,7 @@
 import json
 import random
 from itertools import chain
-from typing import List, Dict
+from typing import List, Dict, Union
 import concurrent.futures
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -29,9 +29,9 @@ def parse_geojson(geojson_string):
 
     graph = Graph()
 
-    doors_dict = defaultdict(list)
-    stairs_dict = defaultdict(list)
-    rooms_dict = defaultdict(list)
+    doors = []
+    stairs = []
+    rooms = []
     broken = []
 
     for feature in geojson_string.get("features", []):
@@ -46,103 +46,62 @@ def parse_geojson(geojson_string):
 
         if level is not None:
             if is_door:
-                doors_dict[level].append(Door(feature, graph))
+                doors.append(Door(feature, graph))
             elif is_stairs:
-                stairs_dict[level].append(Stair(feature, graph))
+                stairs.append(Stair(feature, graph))
             else:
                 if len(feature.get("geometry", {}).get("coordinates", [])) <= 2:
                     continue
-                rooms_dict[level].append(Room(feature, graph))
+                rooms.append(Room(feature, graph))
 
         else:
             broken.append(feature)
 
+    Stair.link_stairs(stairs)
 
-    all_stairs = [stair for stair_list in stairs_dict.values() for stair in stair_list]
-    Stair.link_stairs(all_stairs)
+    Room.setup_all_rooms(rooms + stairs)
 
-    all_rooms = [room for room_list in rooms_dict.values() for room in room_list]
-    Room.setup_all_rooms(all_rooms + all_stairs)
-    link_rooms(rooms_dict, doors_dict, stairs_dict)
+    link_rooms(rooms, doors, stairs)
 
+    setup_graphs_parallel(rooms, stairs)
 
-    setup_graphs_parallel(rooms_dict, stairs_dict)
-
-    return [rooms_dict, doors_dict, stairs_dict]
+    return [rooms, doors, stairs]
 
 
-def link_rooms(rooms: Dict[int, List[Room]], doors: Dict[int, List[Door]], stairs: Dict[int, List[Stair]]):
+def link_rooms(rooms: List[Room], doors: List[Door], stairs: List[Stair]):
     """
        Links doors to rooms and stairs if they are on the outline of a structure.
-
-       Args:
-           rooms (Dict[int, List[Room]]): Dictionary of rooms indexed by level.
-           doors (Dict[int, List[Door]]): Dictionary of doors indexed by level.
-           stairs (Dict[int, List[Stair]]): Dictionary of stairs indexed by level.
     """
+    for room in chain(rooms, stairs):
+        print("linking doors for room", room.name)
+        for door in doors:
 
-    for level in rooms.keys():
-        for door in doors[level]:
-            for room in chain(rooms[level], stairs[level]):
-
-                if room.is_door_on_outline(door):
-                    door.add_room(room)
-                    room.doors.append(door)
-
-
-def process_room(room: Room):
-    room.setup_graph()  # Verändert das Objekt intern
-    return room  # Gibt das veränderte Objekt zurück
+            if room.is_door_on_outline(door):
+                door.add_room(room)
+                room.doors.append(door)
 
 
-def process_stair(stair: Stair):
-    stair.setup_graph()
-    return stair
 
 
-#todo make simpler by using stais and rooms as list
-def setup_graphs_parallel(rooms: Dict[int, List[Room]], stairs: Dict[int, List[Stair]], parallel: bool = False):
+def setup_graphs_parallel(rooms: List[Room], stairs: List[Stair]):
     """
     Initialisiert die Graphen für alle Räume und Treppen, mit Option für parallele oder sequentielle Verarbeitung.
 
-    :param rooms: Ein Dictionary mit Leveln als Keys und Listen von Room-Objekten als Values.
-    :param stairs: Ein Dictionary mit Leveln als Keys und Listen von Treppen-Objekten als Values.
-    :param parallel: Boolean, der angibt, ob die Verarbeitung parallel (True) oder sequentiell (False) erfolgen soll.
+    :param rooms: Liste von Room-Objekten.
+    :param stairs: Liste von Stair-Objekten.
     """
     print("Started processing graphs for individual rooms")
 
-    if parallel:
-        # Parallele Verarbeitung mit ProcessPoolExecutor
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            room_futures = {executor.submit(process_room, room): (level, i)
-                            for level in rooms for i, room in enumerate(rooms[level])}
+    rooms_and_stairs = rooms + stairs
 
-            stair_futures = {executor.submit(process_stair, stair): (level, i)
-                             for level in stairs for i, stair in enumerate(stairs[level])}
-
-            # Ergebnisse zurück in die Dictionaries schreiben
-            for future in concurrent.futures.as_completed(room_futures):
-                level, i = room_futures[future]
-                rooms[level][i] = future.result()
-
-            for future in concurrent.futures.as_completed(stair_futures):
-                level, i = stair_futures[future]
-                stairs[level][i] = future.result()
-    else:
-        # Sequentielle Verarbeitung für Debugging
-        print("Running in sequential mode for debugging")
-        for level in rooms:
-            for i, room in enumerate(rooms[level]):
-                rooms[level][i] = process_room(room)
-
-        for level in stairs:
-            for i, stair in enumerate(stairs[level]):
-                stairs[level][i] = process_stair(stair)
+    for item in rooms_and_stairs:
+        item.setup_paths()
 
     print("Graph processing finished")
 
 
-def visualize_level(rooms, stairs, max_features):
+
+def visualize_level(rooms, stairs, level, max_features):
     plt.figure(figsize=(12, 12))
 
     plotted_features = 0
@@ -151,6 +110,9 @@ def visualize_level(rooms, stairs, max_features):
         return "#{:06x}".format(random.randint(0, 0xFFFFFF))
 
     for room in rooms:
+        if room.level != level:
+            continue
+
         plotted_features += 1
         if plotted_features >= max_features:
             break
@@ -159,6 +121,9 @@ def visualize_level(rooms, stairs, max_features):
 
     # Treppen kannst du ggf. ähnlich als Methode einer `Stair`-Klasse auslagern
     for stair in stairs:
+        if stairs != level:
+            continue
+
         plotted_features +=1
         if plotted_features >= max_features:
             break
@@ -181,9 +146,12 @@ if __name__ == "__main__":
     geojson_data = json.loads(geojson_string)
     rooms, doors, stairs = parse_geojson(geojson_data)
 
-    visualize_level(rooms[LEVEL_TO_DISPLAY], stairs[LEVEL_TO_DISPLAY], 1000)
+    #visualize_level(rooms, stairs, 7, 1000)
 
     with open("resources/graph.json", "w") as f:
+        f.write(rooms[LEVEL_TO_DISPLAY][0].graph.export_json())
+
+    with open("C:\\Users\\nico\\Desktop\\Alles\\Projekte\\geoJsonParser\\navigator\\lib\\resources\\graph.json", "w") as f:
         f.write(rooms[LEVEL_TO_DISPLAY][0].graph.export_json())
 
 

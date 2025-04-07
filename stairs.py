@@ -25,8 +25,8 @@ class Stair(Room):
         return f"Stair (name={self.name!r}, level={self.level}, bounding_box={self.bounding_box})"
 
 
-    def setup_graph(self):
-        super().setup_graph()   # setting up the rooms connections
+    def setup_paths(self):
+        super().setup_paths()   # setting up the rooms connections
 
         print("setting up stairs graph...")
         # connecting stairs to the level above
@@ -46,8 +46,6 @@ class Stair(Room):
 
         :param stairs: Liste von Stair-Objekten
         """
-        print("linking stairs...")
-
         for stair1 in stairs:
             for stair2 in stairs:
 
