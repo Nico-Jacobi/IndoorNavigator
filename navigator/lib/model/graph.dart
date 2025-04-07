@@ -282,7 +282,7 @@ class Graph {
       //no vertex found
       if (current == null) {
         print('No path found from ${start.name} to $targetName');
-        throw Exception('No path found from $start to $targetName');
+        throw Exception('No path found from ${start.rooms[0]} to $targetName');
       }
 
       print('Selected vertex ${current.name} with distance $minDistance');
@@ -308,41 +308,7 @@ class Graph {
         }
 
         print('Path reconstruction complete');
-
-
-        List<Edge> cleanedEdges = [];
-        // clean poath of vertices that can be skipped
-        for (int i = 0; i < pathEdges.length - 1; i++) {
-          Vertex v1 = pathEdges[i].vertex1;
-          //Vertex v2 = pathEdges[i].vertex2;
-          Vertex v3 = pathEdges[i + 1].vertex2;
-
-          bool foundAlternative = false;
-          for (String r in v3.rooms) {
-            if (v1.rooms.contains(r)) {
-              // found a vertex that's not needed (can happen, as distance is not a perfect indicator for natural ways)
-              for (Edge e in v1.edges) {
-                if (e.vertex2 == v3) {
-                  // found alternative e
-                  cleanedEdges.add(e);
-                  foundAlternative=true;
-                  i++;
-                  break;
-                }
-              }
-            }
-          }
-
-          if (!foundAlternative) {
-            // first edge is not replaceable
-            cleanedEdges.add(pathEdges[i]);
-
-            if (i == pathEdges.length - 1){
-              cleanedEdges.add(pathEdges[i+1]);
-            }
-          }
-        }
-        return cleanedEdges;
+        return optimizePath(pathEdges);
       }
 
       // Mark as visited
@@ -368,5 +334,69 @@ class Graph {
         }
       }
     }
+  }
+
+
+  List<Edge> optimizePath(List<Edge> pathEdges) {
+    if (pathEdges.isEmpty) return [];
+    if (pathEdges.length == 1) return List<Edge>.from(pathEdges);
+
+    List<Edge> cleanedEdges = [];
+    int i = 0;
+
+    while (i < pathEdges.length) {
+      // Get the current vertex we're starting from
+      Vertex current = pathEdges[i].vertex1;
+
+      // Look ahead as far as possible
+      int furthestIndex = -1;
+      Edge? directEdge; // Initialize as nullable
+
+      // Try to find the furthest vertex we can skip to
+      for (int j = i + 1; j < pathEdges.length; j++) {
+        Vertex candidate = pathEdges[j].vertex2;
+
+        // Check if there's a common room (meaning we might be able to directly connect)
+        bool shareRoom = false;
+        for (String r in candidate.rooms) {
+          if (current.rooms.contains(r)) {
+            shareRoom = true;
+            break;
+          }
+        }
+
+        // If they share a room, check if there's a direct edge
+        if (shareRoom) {
+          for (Edge e in current.edges) {
+            if (e.vertex2 == candidate) {
+              // Found a potential skip - save this as our furthest candidate so far
+              furthestIndex = j;
+              directEdge = e;
+              break;
+            }
+          }
+        }
+      }
+
+      if (furthestIndex != -1 && directEdge != null) {
+        // We found a vertex we can skip to - add the direct edge
+        cleanedEdges.add(directEdge);
+
+        // Continue from the vertex after our furthest skipped vertex
+        i = furthestIndex + 1;
+      } else {
+        // No skippable vertices found, add the current edge and move to the next
+        cleanedEdges.add(pathEdges[i]);
+        i++;
+      }
+
+      // Handle the last edge if we haven't processed it yet
+      if (i == pathEdges.length - 1) {
+        cleanedEdges.add(pathEdges[i]);
+        i++;
+      }
+    }
+
+    return cleanedEdges;
   }
 }
