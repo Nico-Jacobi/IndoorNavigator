@@ -64,6 +64,11 @@ class BoundingBox:
         x, y = point_gps_pos
         return self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y
 
+    def diagonal_length(self) -> float:
+        # Calculate the Euclidean distance between the bottom-left and top-right corners
+        return math.sqrt((self.max_x - self.min_x) ** 2 + (self.max_y - self.min_y) ** 2)
+
+
 class Room:
     # Definiere die Größe eines Gitterschritts (in gps coords)
     grid_size_x: float = 0.00001

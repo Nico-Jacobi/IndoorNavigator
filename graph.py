@@ -223,3 +223,141 @@ class Graph:
             "vertices": vertices_list,
             "edges": edges_list
         })
+
+    def get_disconnected_vertices(self) -> List[Vertex]:
+        """
+        Returns a list of vertices that have no connections to any other vertices.
+
+        Returns:
+            List[Vertex]: List of vertices with no connections
+        """
+        disconnected = []
+        for vertex in self.vertices.values():
+            if len(vertex.neighbours) == 0:
+                disconnected.append(vertex)
+        return disconnected
+
+    def get_disconnected_components(self) -> List[Set[Vertex]]:
+        """
+        Returns a list of disconnected components in the graph.
+        Each component is a set of vertices that are connected to each other,
+        but not to vertices in other components.
+
+        Returns:
+            List[Set[Vertex]]: List of disconnected components
+        """
+        # Set of all unvisited vertices
+        unvisited = set(self.vertices.values())
+        components = []
+
+        # Keep exploring until we've visited all vertices
+        while unvisited:
+            # Start a new component with an arbitrary unvisited vertex
+            start_vertex = next(iter(unvisited))
+            component = set()
+
+            # Use BFS to find all vertices in this component
+            queue = [start_vertex]
+            visited = {start_vertex}
+
+            while queue:
+                current = queue.pop(0)
+                component.add(current)
+
+                for neighbor in current.neighbours:
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        queue.append(neighbor)
+
+            # Add the component to our list and remove its vertices from unvisited
+            components.append(component)
+            unvisited -= component
+
+        return components
+
+    def print_disconnected_info(self) -> None:
+        """
+        Prints information about disconnected vertices and components in the graph.
+        """
+        # Check for isolated vertices
+        isolated_vertices = self.get_disconnected_vertices()
+
+        print("=== Graph Connectivity Analysis ===")
+
+        # Print isolated vertices
+        if isolated_vertices:
+            print(f"\nFound {len(isolated_vertices)} isolated vertices:")
+            for i, vertex in enumerate(isolated_vertices, 1):
+                print(f"  {i}. Vertex at position ({vertex.x}, {vertex.y}, floor {vertex.floor}, {vertex.rooms})")
+        else:
+            print("\nNo isolated vertices found.")
+
+        # Print disconnected components
+        components = self.get_disconnected_components()
+
+        if len(components) > 1:
+            print(f"\nFound {len(components)} disconnected components:")
+            for i, component in enumerate(components, 1):
+                print(f"  Component {i}: {len(component)} vertices")
+                # Print a few vertices from each component as examples
+                examples = list(component)[:3]  # Show up to 3 vertices as examples
+                print(f"    Examples: " + ", ".join([f"({v.x}, {v.y}, floor {v.floor}, {v.rooms})" for v in examples]))
+                if len(component) > 3:
+                    print(f"    ... and {len(component) - 3} more vertices")
+        else:
+            print("\nThe graph is fully connected (1 component).")
+
+        print("\n=== End of Analysis ===")
+
+
+
+    def keep_largest_component(self) -> None:
+        """
+        Modifies the graph to keep only the largest connected component,
+        removing all other vertices and edges.
+
+        Returns:
+            None: Modifies the graph in-place
+        """
+        # Find all connected components
+        components = self.get_disconnected_components()
+
+        # If there are no components or only one component, nothing to do
+        if len(components) <= 1:
+            print("Graph already consists of a single component. No changes made.")
+            return
+
+        # Find the largest component
+        largest_component = max(components, key=len)
+
+        # Identify vertices to remove (all vertices not in the largest component)
+        vertices_to_remove = []
+        for position, vertex in self.vertices.items():
+            if vertex not in largest_component:
+                vertices_to_remove.append(position)
+
+        # Remove edges first (to avoid issues with missing vertices)
+        edges_to_remove = []
+        for edge in self.edges:
+            if edge.vertex1 not in largest_component or edge.vertex2 not in largest_component:
+                edges_to_remove.append(edge)
+
+        for edge in edges_to_remove:
+            self.edges.remove(edge)
+
+            # Also remove the edge from the vertex edge lists
+            if edge in edge.vertex1.edges:
+                edge.vertex1.edges.remove(edge)
+            if edge in edge.vertex2.edges:
+                edge.vertex2.edges.remove(edge)
+
+        # Now remove vertices
+        for position in vertices_to_remove:
+            del self.vertices[position]
+
+        # Update the neighbors lists for all remaining vertices
+        for vertex in self.vertices.values():
+            vertex.neighbours = {n for n in vertex.neighbours if n in largest_component}
+
+        print(
+            f"Kept largest component with {len(largest_component)} vertices. Removed {len(vertices_to_remove)} vertices and {len(edges_to_remove)} edges.")

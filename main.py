@@ -148,10 +148,16 @@ if __name__ == "__main__":
 
     #visualize_level(rooms, stairs, 7, 1000)
 
+    # to remove the broken parts of the graph, such as rooms with no doors (geojson errors)
+    # or rooms only accessible from the outside
+    rooms[0].graph.keep_largest_component()
+
+
+
     with open("resources/graph.json", "w") as f:
-        f.write(rooms[LEVEL_TO_DISPLAY][0].graph.export_json())
+        f.write(rooms[0].graph.export_json())
 
     with open("C:\\Users\\nico\\Desktop\\Alles\\Projekte\\geoJsonParser\\navigator\\lib\\resources\\graph.json", "w") as f:
-        f.write(rooms[LEVEL_TO_DISPLAY][0].graph.export_json())
+        f.write(rooms[0].graph.export_json())
 
-
+# todo conect outside doors?
