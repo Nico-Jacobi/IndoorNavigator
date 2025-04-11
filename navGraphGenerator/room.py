@@ -1,8 +1,11 @@
 import math
 import random
+import sys
 from typing import Tuple, List, Any, Dict, Optional
 from matplotlib import pyplot as plt
 from shapely.geometry.point import Point
+
+from coordinateUtilities import meters_to_latlon, normalize_lat_lon_to_meter
 from dataClasses import PathVertex, BoundingBox, NavigationPath
 from door import Door
 import heapq
@@ -16,7 +19,8 @@ class Room:
     grid_size_y: float = 0.00001
 
     # used to remove extremely thin parts of the geometry and for linking doors with walls (in gps)
-    wall_thickness: float = 0.000001
+    # has 2 values, as gps coordinates are not uniform (1 in lat != 1 in lon)
+    wall_thickness: (float, float) = meters_to_latlon(0.1, 0.1, 50.8, 8.8)
 
     def __init__(self, json: Dict[str, Any], graph: Graph):
         """
@@ -34,7 +38,7 @@ class Room:
         self.coordinates: List[Tuple[float, float]] = [
             (float(coord[0]), float(coord[1])) for coord in geometry.get("coordinates", [])
         ]
-
+        self.coordinates = Room.cleanup_path(self.coordinates, is_loop=True)
 
         # represents holes in the geometry
         self.holes: List[List[Tuple[float, float]]]= []
@@ -67,6 +71,56 @@ class Room:
         max_y = max(coord[1] for coord in self.coordinates)
 
         return BoundingBox(min_x, min_y, max_x, max_y)
+
+
+    def get_meter_geometry(self, origin_lat: float, origin_lon: float) -> Polygon:
+        """
+        Returns the geometry of the room as a shapely Polygon object.
+        Subtracts holes (if they were set up)
+        """
+        coordinates: List[Tuple] = [normalize_lat_lon_to_meter(lat, lon, origin_lat, origin_lon) for lat, lon in self.coordinates]
+        holes = []
+        for hole in self.holes:
+            holes.append([normalize_lat_lon_to_meter(lat, lon, origin_lat, origin_lon) for lat, lon in hole])
+
+        return Polygon(coordinates, holes=holes)
+
+
+    def get_2d_outline_wavefront(self, origin_lat: float, origin_lon: float) -> str:
+        """
+        Creates an OBJ file representation of walls from room polygons.
+
+        :param all_rooms: List of rooms.
+        :param all_doors: List of doors (unused here, but can be used for door openings).
+        :param height: Height of the walls (unused in this flat version).
+        :return: The .obj string representation of the 3D model.
+        """
+
+        vertecies = []
+        faces = []
+
+        polygon = self.get_meter_geometry(origin_lat, origin_lon)
+
+        # Define wall thickness (in meters)
+        wall_thickness = 0.2
+
+        # the outer one is buffered in and out, so both have the same number of vertices
+        inner_polygon = polygon.buffer(-wall_thickness / 2, join_style=2).exterior.coords
+        outer_polygon = polygon.buffer(-wall_thickness / 2, join_style=2).buffer(wall_thickness, join_style=2).exterior.coords
+
+        vertecies.append(f"v {inner_polygon[0][0]} 0.0 {inner_polygon[0][1]}")
+        vertecies.append(f"v {outer_polygon[0][0]} 0.0 {outer_polygon[0][1]}")
+        vertex_count = 2  # OBJ indices start at 1, not 0
+
+        for i in range(1, len(inner_polygon)):
+            vertecies.append(f"v {inner_polygon[i][0]} 0.0 {inner_polygon[i][1]}")
+            vertecies.append(f"v {outer_polygon[i][0]} 0.0 {outer_polygon[i][1]}")
+            vertex_count += 2
+
+            faces.append(f"f {vertex_count} {vertex_count - 1} {vertex_count - 3} {vertex_count - 2}")
+
+        return "\n".join(vertecies + faces)
+
 
 
     @staticmethod
@@ -150,8 +204,8 @@ class Room:
             result_polygon = result_polygon - Polygon(hole)
 
         # buffer in and then out, to keep the geometry but remove extremely thin parts, which happen due to the '-'
-        # this causes rounded geometry, wich is not directly a problem, but leads to longer calculations
-        result_polygon = result_polygon.buffer(-Room.wall_thickness).buffer(Room.wall_thickness)
+        # the "mitre" is to not causes rounded geometry, wich is not directly a problem, but leads to longer calculations
+        result_polygon = result_polygon.buffer(-Room.wall_thickness[0]).buffer(Room.wall_thickness[0], join_style="mitre")
 
         # Convert the result back to a list of coordinates, and save
         if result_polygon.geom_type == 'Polygon':
@@ -292,7 +346,7 @@ class Room:
 
 
 
-    def is_door_on_outline(self, door: Door, tolerance: float = wall_thickness) -> bool:
+    def is_door_on_outline(self, door: Door, tolerance: float = wall_thickness[0]) -> bool:
         """
         Checks if a door is on the outline of the room.
         (will not link those)
@@ -502,31 +556,58 @@ class Room:
 
         return []  # No path found
 
+
     @staticmethod
-    def cleanup_path(path: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    def cleanup_path(path: List[Tuple[float, float]], is_loop: bool = False, tolerance: float = wall_thickness[0]) -> \
+    List[Tuple[float, float]]:
         """
         Remove unnecessary vertices from a path.
-        A vertex is considered unnecessary if it lies on a straight line between its neighbors.
+        A vertex is considered unnecessary if it lies on a straight line between its neighbors within a tolerance.
         (Returns a path, original stays unmodified)
 
         :param path: List of (x, y) coordinates representing vertices on a path
+        :param tolerance: The maximum allowed distance from the line to consider the point unnecessary
+        :param is_loop: If True, the first and last points are treated as neighbors
         """
 
-        points = path.copy()
+        def distance_to_line(p: Tuple[float, float], a: Tuple[float, float], b: Tuple[float, float]) -> float:
+            """
+            Calculate the perpendicular distance from point p to the line defined by points a and b.
+            """
+            x1, y1 = p
+            x2, y2 = a
+            x3, y3 = b
 
-        # look for each point if it is unnecessary
-        for i in range(1, len(path) - 1):
-            prev_point = path[i - 1]
-            curr_point = path[i]
-            next_point = path[i + 1]
+            # Check if a and b are the same point, otherwise the whole thing would not work....?
+            if x2 == x3 and y2 == y3:
+                return float('inf')
 
-            # Check if the current point is collinear with its neighbors
-            if (curr_point[0] - prev_point[0]) * (next_point[1] - curr_point[1]) == (curr_point[1] - prev_point[1]) * (next_point[0] - curr_point[0]):
-                # remove without altering the indices
-                points[i] = None
+            num = abs((x3 - x2) * (y1 - y2) - (x1 - x2) * (y3 - y2))
+            den = math.sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2)
 
-        # collect all that "good" ones
-        return [item for item in points if item is not None]
+            return num / den if den != 0 else 0
+
+        # If the path has less than 3 points, no cleanup is needed
+        if len(path) < 3:
+            return path
+
+        points = []
+
+        for i in range(len(path)):
+            if i == 0 or i == len(path) - 1:  # Keep the first and last points
+                points.append(path[i])
+            else:
+                if distance_to_line(path[i], path[i - 1], path[i + 1]) > tolerance:
+                    points.append(path[i])
+
+        # If the path is a loop, check the first and last points also
+        if is_loop:
+            if distance_to_line(path[-1], path[-2], path[0]) > tolerance:
+                points.append(path[-1])
+            if distance_to_line(path[0], path[-1], path[1]) > tolerance:
+                points.append(path[0])
+
+        return points
 
 
 
