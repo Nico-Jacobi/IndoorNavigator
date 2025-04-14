@@ -150,7 +150,7 @@ class Room:
             print("setting up grid for room", room.name)
             room._generate_grid()
 
-        # linking doors to rooms anmd vice versa
+        # linking doors to rooms and vice versa
         for room in rooms:
             print("linking doors for room", room.name)
             for door in doors:
@@ -569,6 +569,10 @@ class Room:
         :param tolerance: The maximum allowed distance from the line to consider the point unnecessary
         :param is_loop: If True, the first and last points are treated as neighbors
         """
+
+        if is_loop:
+            polygon = Polygon(path)
+            path = polygon.buffer(0, join_style="mitre").exterior.coords[:-1]
 
         def distance_to_line(p: Tuple[float, float], a: Tuple[float, float], b: Tuple[float, float]) -> float:
             """
