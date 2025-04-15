@@ -1,10 +1,10 @@
 import math
 import random
-import sys
+from scipy.spatial import distance_matrix
 from typing import Tuple, List, Any, Dict, Optional
+import numpy as np
 from matplotlib import pyplot as plt
 from shapely.geometry.point import Point
-
 from coordinateUtilities import meters_to_latlon, normalize_lat_lon_to_meter
 from dataClasses import PathVertex, BoundingBox, NavigationPath
 from door import Door
@@ -20,7 +20,7 @@ class Room:
 
     # used to remove extremely thin parts of the geometry and for linking doors with walls (in gps)
     # has 2 values, as gps coordinates are not uniform (1 in lat != 1 in lon)
-    wall_thickness: (float, float) = meters_to_latlon(0.1, 0.1, 50.8, 8.8)
+    wall_thickness: (float, float) = meters_to_latlon(0.3, 0.3, 50.8, 8.8)
 
     def __init__(self, json: Dict[str, Any], graph: Graph):
         """
@@ -35,13 +35,17 @@ class Room:
         geometry = json.get("geometry", {})
         self.geometry_type: str = geometry.get("type", "")
 
+
         self.coordinates: List[Tuple[float, float]] = [
             (float(coord[0]), float(coord[1])) for coord in geometry.get("coordinates", [])
         ]
-        self.coordinates = Room.cleanup_path(self.coordinates, is_loop=True)
+
+        before = len(self.coordinates)
+        self.coordinates = Room.simplify(self.coordinates, loop=True)
 
         # represents holes in the geometry
         self.holes: List[List[Tuple[float, float]]]= []
+        self.polygon = Polygon(self.coordinates, self.holes)
 
         # references to the doors in this room
         self.doors: List[Door] = []
@@ -86,40 +90,126 @@ class Room:
         return Polygon(coordinates, holes=holes)
 
 
-    def get_2d_outline_wavefront(self, origin_lat: float, origin_lon: float) -> str:
+    def get_wavefront_walls(self, origin_lat: float, origin_lon: float, add_to_wavefront: "Wavefront", height: float = 2.0) -> None:
         """
         Creates an OBJ file representation of walls from room polygons.
 
-        :param all_rooms: List of rooms.
-        :param all_doors: List of doors (unused here, but can be used for door openings).
-        :param height: Height of the walls (unused in this flat version).
-        :return: The .obj string representation of the 3D model.
         """
 
-        vertecies = []
-        faces = []
+        def align_polygon_coords(inner_coords, outer_coords):
+            """alisn 2 lists, so the indices are the closest poins, will delete points, if lenth doesent match"""
+
+            inner_coords_np = np.array(inner_coords)
+            outer_coords_np = np.array(outer_coords)
+
+            # If different lengths, downsample the longer one by matching closest vertices
+            if len(inner_coords_np) != len(outer_coords_np):
+                if len(inner_coords_np) < len(outer_coords_np):
+                    shorter = inner_coords_np
+                    longer = outer_coords_np
+                else:
+                    shorter = outer_coords_np
+                    longer = inner_coords_np
+
+                # Compute distance matrix and pick closest matches
+                dists = distance_matrix(shorter, longer)
+                used_indices = set()
+                matches = []
+
+                for i in range(len(shorter)):
+                    idx = np.argmin(dists[i])
+                    while idx in used_indices:  # avoid duplicates
+                        dists[i][idx] = np.inf
+                        idx = np.argmin(dists[i])
+                    used_indices.add(idx)
+                    matches.append(idx)
+
+                matched_longer = longer[list(matches)]
+
+                if len(inner_coords_np) < len(outer_coords_np):
+                    outer_coords_np = matched_longer
+                else:
+                    inner_coords_np = matched_longer
+
+            # Find best rotation (minimizing total distance)
+            min_total_dist = float('inf')
+            best_rotation = 0
+            best_reversed = False
+
+            for reversed_flag in [False, True]:
+                outer_to_test = outer_coords_np[::-1] if reversed_flag else outer_coords_np
+                for shift in range(len(outer_to_test)):
+                    rotated = np.roll(outer_to_test, -shift, axis=0)
+                    total_dist = np.linalg.norm(inner_coords_np - rotated, axis=1).sum()
+                    if total_dist < min_total_dist:
+                        min_total_dist = total_dist
+                        best_rotation = shift
+                        best_reversed = reversed_flag
+
+            aligned_outer = outer_coords_np[::-1] if best_reversed else outer_coords_np
+            aligned_outer = np.roll(aligned_outer, -best_rotation, axis=0)
+
+            return inner_coords_np, aligned_outer
 
         polygon = self.get_meter_geometry(origin_lat, origin_lon)
 
-        # Define wall thickness (in meters)
+        # wall thickness (in meters)
         wall_thickness = 0.2
 
-        # the outer one is buffered in and out, so both have the same number of vertices
-        inner_polygon = polygon.buffer(-wall_thickness / 2, join_style=2).exterior.coords
-        outer_polygon = polygon.buffer(-wall_thickness / 2, join_style=2).buffer(wall_thickness, join_style=2).exterior.coords
 
-        vertecies.append(f"v {inner_polygon[0][0]} 0.0 {inner_polygon[0][1]}")
-        vertecies.append(f"v {outer_polygon[0][0]} 0.0 {outer_polygon[0][1]}")
-        vertex_count = 2  # OBJ indices start at 1, not 0
+        inner_geom = polygon.buffer(-wall_thickness/2, join_style="mitre")
+        outer_geom = polygon.buffer(wall_thickness/2, join_style="mitre")
 
-        for i in range(1, len(inner_polygon)):
-            vertecies.append(f"v {inner_polygon[i][0]} 0.0 {inner_polygon[i][1]}")
-            vertecies.append(f"v {outer_polygon[i][0]} 0.0 {outer_polygon[i][1]}")
-            vertex_count += 2
 
-            faces.append(f"f {vertex_count} {vertex_count - 1} {vertex_count - 3} {vertex_count - 2}")
+        if inner_geom.geom_type == "MultiPolygon":
+            # if a multipolygon is made only use the biggest (also could use all...),
+            # this is very rare and due to overlapping rooms being subtracted, so bad rooms in th geojson
+            inner_geom = max(inner_geom.geoms, key=lambda p: p.area)
+            outer_geom = inner_geom.buffer(wall_thickness, join_style="mitre")
 
-        return "\n".join(vertecies + faces)
+
+        inner_polygon = inner_geom.exterior.coords[:-1]  # Remove duplicate last point
+        outer_polygon = outer_geom.exterior.coords[:-1]
+
+        # Align the inner and outer polygons (the buffer method sometimes un-alignes them)
+        inner_aligned, outer_aligned = align_polygon_coords(inner_polygon, outer_polygon)
+
+        print("vertecies of room", self.name, len(inner_aligned), len(outer_aligned))
+
+        for i in range(len(inner_aligned)):
+            next_i = (i + 1) % len(inner_aligned)
+
+            #botton not needed, as we never view the rooms from below
+            #add_to_wavefront.add_face([
+            #    (inner_aligned[i][0], 0.0, inner_aligned[i][1]),
+            #    (outer_aligned[i][0], 0.0, outer_aligned[i][1]),
+            #    (outer_aligned[next_i][0], 0.0, outer_aligned[next_i][1]),
+            #    (inner_aligned[next_i][0], 0.0, inner_aligned[next_i][1])
+            #])
+
+            #top
+            add_to_wavefront.add_face([
+                (inner_aligned[i][0], height, inner_aligned[i][1]),
+                (outer_aligned[i][0], height, outer_aligned[i][1]),
+                (outer_aligned[next_i][0], height, outer_aligned[next_i][1]),
+                (inner_aligned[next_i][0], height, inner_aligned[next_i][1])
+            ])
+
+            #inner face
+            add_to_wavefront.add_face([
+                (inner_aligned[i][0], height, inner_aligned[i][1]),
+                (inner_aligned[next_i][0], height, inner_aligned[next_i][1]),
+                (inner_aligned[next_i][0], 0.0, inner_aligned[next_i][1]),
+                (inner_aligned[i][0], 0.0, inner_aligned[i][1])
+            ])
+
+            # outer face
+            add_to_wavefront.add_face([
+                (outer_aligned[i][0], height, outer_aligned[i][1]),
+                (outer_aligned[next_i][0], height, outer_aligned[next_i][1]),
+                (outer_aligned[next_i][0], 0.0, outer_aligned[next_i][1]),
+                (outer_aligned[i][0], 0.0, outer_aligned[i][1])
+            ])
 
 
 
@@ -137,12 +227,14 @@ class Room:
         The inputs should contain all rooms and doors that can be linked horizontally.
         (don't call twice with rooms on the same floor, otherwise the graph whill not be fully connected)
         """
+        print("setup got ", len(rooms))
 
         # fixing the geometry of the rooms, sometimes overlapping in the geojson
         for i in range(len(rooms)):
             print("checking geometry of",  rooms[i].name)
             for j in range(i + 1, len(rooms)):
                 rooms[i]._fix_intersections(rooms[j])
+
 
         # generating the grid in each room, used for computing the visual paths later
         # (precompute and cache distance_to_wall() and is_walkable() for later pathfinding)
@@ -160,6 +252,7 @@ class Room:
 
         # setting up the visual paths later shown in the app
         for room in rooms:
+            room.coordinates = Room.simplify(room.coordinates, loop=True)
             room._setup_paths()
 
 
@@ -177,6 +270,9 @@ class Room:
         if self.level != other.level:
             return False
 
+        if len(self.coordinates) < 3 or len(other.coordinates) < 3:
+            return False
+
         # Check if the bounding boxes intersect
         # (as this is much faster than checking the polygon, assuming most rooms are rectangular / don't overlap)
         bounding_box_intersect = not (
@@ -189,8 +285,8 @@ class Room:
             return False
 
         # if the bounding boxes intersect, check if the polygons actually do (done for performance)
-        room_polygon = Polygon(self.coordinates)
-        other_polygon = Polygon(other.coordinates)
+        room_polygon = self.polygon
+        other_polygon = other.polygon
         if not room_polygon.intersects(other_polygon):
             return False
 
@@ -211,6 +307,7 @@ class Room:
         if result_polygon.geom_type == 'Polygon':
             self.coordinates = list(result_polygon.exterior.coords)[:-1]  # Remove the last point as it's the same as the first
             self.holes = [list(interior.coords)[:-1] for interior in result_polygon.interiors]  # Hole coordinates
+            self.polygon = result_polygon
             return True
 
 
@@ -220,6 +317,7 @@ class Room:
             largest_polygon = max(result_polygon.geoms, key=lambda p: p.area)
             self.coordinates = list(largest_polygon.exterior.coords)[:-1]
             self.holes = [list(interior.coords)[:-1] for interior in largest_polygon.interiors]  # Hole coordinates
+            self.polygon = largest_polygon
             return True
 
         else:
@@ -289,6 +387,9 @@ class Room:
 
         # Create a Point object for the given coordinates
         point = Point(point_gps_pos)
+
+        if len(self.coordinates) < 3:
+            return False
 
         # Check if the point is inside the main room polygon
         room_polygon = Polygon(self.coordinates)
@@ -428,7 +529,7 @@ class Room:
 
                     total_length = path_length + start_dist + goal_dist
 
-                    path = Room.cleanup_path(path[1:-1]) # Remove start and end points + cleanup
+                    path = Room.simplify(path[1:-1], loop=False) # Remove start and end points + cleanup
                     # Create direct edge between door vertices with weight and path
                     self.graph.add_edge_bidirectional(start_door.vertex, goal_door.vertex, NavigationPath(weight=total_length, points=path))
 
@@ -557,62 +658,6 @@ class Room:
         return []  # No path found
 
 
-    @staticmethod
-    def cleanup_path(path: List[Tuple[float, float]], is_loop: bool = False, tolerance: float = wall_thickness[0]) -> \
-    List[Tuple[float, float]]:
-        """
-        Remove unnecessary vertices from a path.
-        A vertex is considered unnecessary if it lies on a straight line between its neighbors within a tolerance.
-        (Returns a path, original stays unmodified)
-
-        :param path: List of (x, y) coordinates representing vertices on a path
-        :param tolerance: The maximum allowed distance from the line to consider the point unnecessary
-        :param is_loop: If True, the first and last points are treated as neighbors
-        """
-
-        if is_loop:
-            polygon = Polygon(path)
-            path = polygon.buffer(0, join_style="mitre").exterior.coords[:-1]
-
-        def distance_to_line(p: Tuple[float, float], a: Tuple[float, float], b: Tuple[float, float]) -> float:
-            """
-            Calculate the perpendicular distance from point p to the line defined by points a and b.
-            """
-            x1, y1 = p
-            x2, y2 = a
-            x3, y3 = b
-
-            # Check if a and b are the same point, otherwise the whole thing would not work....?
-            if x2 == x3 and y2 == y3:
-                return float('inf')
-
-            num = abs((x3 - x2) * (y1 - y2) - (x1 - x2) * (y3 - y2))
-            den = math.sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2)
-
-            return num / den if den != 0 else 0
-
-        # If the path has less than 3 points, no cleanup is needed
-        if len(path) < 3:
-            return path
-
-        points = []
-
-        for i in range(len(path)):
-            if i == 0 or i == len(path) - 1:  # Keep the first and last points
-                points.append(path[i])
-            else:
-                if distance_to_line(path[i], path[i - 1], path[i + 1]) > tolerance:
-                    points.append(path[i])
-
-        # If the path is a loop, check the first and last points also
-        if is_loop:
-            if distance_to_line(path[-1], path[-2], path[0]) > tolerance:
-                points.append(path[-1])
-            if distance_to_line(path[0], path[-1], path[1]) > tolerance:
-                points.append(path[0])
-
-        return points
-
 
 
     def plot(self, color=None):
@@ -639,6 +684,77 @@ class Room:
             else:
                 plt.scatter(x, y, color="red", alpha=0.8, s=20) # (1 on outside walls is normal)
 
+    @classmethod
+    def simplify(cls, coordinates: List[Tuple[float, float]], loop: bool = True) -> List[Tuple[float, float]]:
+
+        def distance_from_point_to_line(p1, p2, center_point):
+            x1, y1 = p1
+            x2, y2 = p2
+            x3, y3 = center_point
+
+            numerator = abs((y2 - y1) * x3 - (x2 - x1) * y3 + x2 * y1 - y2 * x1)
+            denominator = math.sqrt((y2 - y1) ** 2 + (x2 - x1) ** 2)
+
+            # Check if denominator is zero (points are the same)
+            if denominator == 0:
+                return 0
+
+            return numerator / denominator
+
+        def distance_between_points(p1, p2):
+            x1, y1 = p1
+            x2, y2 = p2
+            return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+        def remove_close_points(coords, threshold):
+            """Remove consecutive points that are too close to each other."""
+            temp_coords = []
+            for index in range(len(coords)):
+                p1 = coords[index]
+                if len(temp_coords) > 0 and distance_between_points(p1, temp_coords[-1]) < threshold:
+                    # Skip adding p1 if it's too close to the previous point
+                    continue
+                temp_coords.append(p1)
+            return temp_coords
+
+        coordinates = remove_close_points(coordinates, Room.wall_thickness[0])
+        #visualize_shapely_polygon(Polygon(coordinates))
+
+        cleaned_something = True
+        before_count = len(coordinates)
+
+        while cleaned_something:
+
+            cleaned_something = False
+            if len(coordinates) < 4:
+                return coordinates
+
+
+            span = range(len(coordinates)) if loop else range(1,len(coordinates)-1)
+            for index in span:
+                p1 = coordinates[(index -1) % len(coordinates)] # Wrap around
+                p2 = coordinates[index]
+                p3 = coordinates[(index + 1) % len(coordinates)]
+
+                # Check the distance of point p2 from the line defined by p1 and p3
+                dist = distance_from_point_to_line(p1, p3, p2)
+
+                if dist < Room.wall_thickness[0]/4: # most "unnecessary" vertices are directly on the line, so this doesn't need to be bigger
+                    cleaned_something = True
+                    # i don't know why this has to be here, but otherwise it doesn't work correctly
+                    coordinates.remove(p2)
+                    break
+
+
+        if loop:
+            print("simplified geometry from", before_count, "to", len(coordinates), "vertecies")
+        else:
+            print("simplified path from", before_count, "to", len(coordinates), "vertecies")
+
+        #visualize_shapely_polygon(Polygon(coordinates), title="after")
+
+        return coordinates
+
 
 def distance_to_segment(point, a, b):
     """ Helper to calculate distance from point to line segment (a, b) """
@@ -661,3 +777,115 @@ def distance_to_segment(point, a, b):
 
     # distance from point to the closest point on segment
     return ((point_x - closest_x) ** 2 + (point_y - closest_y) ** 2) ** 0.5
+
+
+@staticmethod
+def visualize_shapely_polygon(polygon, figsize=(10, 8), fill_color='lightblue',
+                              edge_color='blue', alpha=0.5, title='Shapely Polygon'):
+    """
+    Visualize a Shapely polygon or MultiPolygon using matplotlib.
+
+    Parameters:
+    -----------
+    polygon : shapely.geometry.Polygon or shapely.geometry.MultiPolygon
+        The Shapely polygon or MultiPolygon to visualize
+    figsize : tuple, optional
+        Figure size as (width, height)
+    fill_color : str or list of str, optional
+        Color(s) to fill the polygons (if MultiPolygon, a list of colors is used)
+    edge_color : str, optional
+        Color for the polygon edge
+    alpha : float, optional
+        Transparency of the fill (0 to 1)
+    title : str, optional
+        Title for the plot
+
+    Returns:
+    --------
+    fig, ax : matplotlib figure and axes objects
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Polygon as MplPolygon
+    import numpy as np
+    from shapely.geometry import MultiPolygon
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # If polygon is a MultiPolygon, plot each individual polygon
+    if isinstance(polygon, MultiPolygon):
+        # If the fill_color is a single color, use it for all polygons
+        if isinstance(fill_color, str):
+            fill_color = [fill_color] * len(polygon.geoms)
+
+        for i, poly in enumerate(polygon.geoms):
+            # Extract polygon exterior coordinates
+            x, y = poly.exterior.xy
+
+            # Create matplotlib polygon patch
+            patch = MplPolygon(np.array([x, y]).T,
+                               closed=True,
+                               facecolor=fill_color[i] if i < len(fill_color) else fill_color[-1],
+                               edgecolor=edge_color,
+                               alpha=alpha)
+            ax.add_patch(patch)
+
+            # If polygon has holes (interior rings)
+            for interior in poly.interiors:
+                x_int, y_int = interior.xy
+                hole_patch = MplPolygon(np.array([x_int, y_int]).T,
+                                        closed=True,
+                                        facecolor='white',
+                                        edgecolor=edge_color,
+                                        alpha=alpha)
+                ax.add_patch(hole_patch)
+    else:
+        # Extract polygon exterior coordinates
+        x, y = polygon.exterior.xy
+
+        # Create matplotlib polygon patch
+        patch = MplPolygon(np.array([x, y]).T,
+                           closed=True,
+                           facecolor=fill_color,
+                           edgecolor=edge_color,
+                           alpha=alpha)
+        ax.add_patch(patch)
+
+        # If polygon has holes (interior rings)
+        for interior in polygon.interiors:
+            x_int, y_int = interior.xy
+            hole_patch = MplPolygon(np.array([x_int, y_int]).T,
+                                    closed=True,
+                                    facecolor='white',
+                                    edgecolor=edge_color,
+                                    alpha=alpha)
+            ax.add_patch(hole_patch)
+
+    # Set axis limits with a small margin
+    if isinstance(polygon, MultiPolygon):
+        minx = min([p.bounds[0] for p in polygon.geoms])
+        miny = min([p.bounds[1] for p in polygon.geoms])
+        maxx = max([p.bounds[2] for p in polygon.geoms])
+        maxy = max([p.bounds[3] for p in polygon.geoms])
+    else:
+        minx, miny, maxx, maxy = polygon.bounds
+
+    margin = max((maxx - minx), (maxy - miny)) * 0.05
+    ax.set_xlim(minx - margin, maxx + margin)
+    ax.set_ylim(miny - margin, maxy + margin)
+
+    # Set equal aspect ratio
+    ax.set_aspect('equal')
+
+    # Add title and labels
+    ax.set_title(title)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+
+    # Add grid
+    ax.grid(True, linestyle='--', alpha=0.7)
+
+    plt.tight_layout()
+    plt.plot()
+    plt.show()
+    return fig, ax

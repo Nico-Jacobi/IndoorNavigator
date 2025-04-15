@@ -1,13 +1,14 @@
 import math
 from typing import List, Tuple, Optional, Set
-import matplotlib.pyplot as plt
 import networkx as nx
 from dataclasses import dataclass
 from typing import Set
 from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
-
-from room import Room
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Polygon as MplPolygon
+from matplotlib.collections import PatchCollection
 from wavefront import Wavefront
 
 
@@ -34,7 +35,7 @@ class Polygon2D:
 
         self.vertices = vertices
         self.holes = holes if holes else []
-        self.polygon = Polygon(vertices, holes= self.holes)
+        self.polygon = Polygon(vertices, holes=self.holes)
 
         # Validate that vertices form a closed loop
         if len(vertices) < 3:
@@ -107,6 +108,7 @@ class Polygon2D:
             vertices_points[i].link(vertices_points[(i + 1) % len(vertices_points)])
 
 
+        # link all holes
         for hole in self.holes:
             vertices_hole_points = []
 
@@ -117,19 +119,24 @@ class Polygon2D:
                 next_vert = vertices_hole_points[(i + 1) % len(vertices_hole_points)]
                 vertices_hole_points[i].link(next_vert)
 
-            closest_on_outline = self.find_closest_point(vertices_hole_points[0], vertices_points)
-            vertices_hole_points[0].link(closest_on_outline)
-
             vertices_points.extend(vertices_hole_points)
 
 
         # now all vertices (including the holes to the outside) should be linked, and triangulation can start
+        already_linked = set()
 
         # do this in a random order (for nicer geometry)
         for v1 in vertices_points:
             for v2 in vertices_points:
+                if v2 in already_linked:
+                    continue
+
                 if v1 != v2 and not v2 in v1.neighbours and not self.would_cause_intersection(v1, v2, vertices_points):
                     v1.link(v2)
+
+            already_linked.add(v1)
+
+        #visualize_polygon_vertices(vertices_points)
 
         faces = self.find_faces(vertices_points)
         for face in faces:
@@ -190,29 +197,23 @@ class Polygon2D:
             if current_neighbours:
                 if abs(current_neighbours[-1][1] - current_neighbours[0][1]) > math.pi:
                     continue
-                faces.append(Triangle(current_neighbours[-1][0], vertex, current_neighbours[0][0]))
+                #faces.append(Triangle(current_neighbours[-1][0], vertex, current_neighbours[0][0]))
 
             vertex.remove_all_links()
 
-
+        #plot_triangles(faces)
 
         faces.sort(key=lambda x : x.area())
 
         final_faces: List[Triangle] = []
         invalid_face = set()
         for i, face in enumerate(faces):
-
             if face in invalid_face:
                 continue
 
             # if it is inside the geometry the next smallest hast to be part of it
             if self.polygon.covers(Point(face.center())):
                 final_faces.append(face)
-
-                #
-                for j in range(i+1, len(faces)):
-                    if faces[j].polygon.overlaps(face.polygon):
-                        invalid_face.add(faces[j])
 
 
         return final_faces
@@ -232,8 +233,7 @@ class Polygon2D:
         return min(points, key=lambda p: (p.lat - point.lat) ** 2 + (p.lon - point.lon) ** 2)
 
 
-    @staticmethod
-    def would_cause_intersection(v1: "PolygonVertex", v2: "PolygonVertex", all_vertices: List["PolygonVertex"]) -> bool:
+    def would_cause_intersection(self, v1: "PolygonVertex", v2: "PolygonVertex", all_vertices: List["PolygonVertex"]) -> bool:
         """
         Check whether adding an edge between v1 and v2 would intersect existing edges.
 
@@ -245,6 +245,9 @@ class Polygon2D:
         Returns:
             True if the connection would intersect an existing connection, False otherwise.
         """
+        # just a rough check, that isn't needed, but good for performance + looks nicer
+        if not self.polygon.contains(Point((v1.lat + v2.lat)/2, (v1.lon + v2.lon)/2)):
+            return True
 
         def segments_intersect(p1, p2, q1, q2):
             def ccw(a, b, c):
@@ -258,7 +261,6 @@ class Polygon2D:
         for vertex in all_vertices:
             for neighbour in vertex.neighbours:
                 # Skip if the edge shares a vertex with the proposed one
-                # todo also dont double check the same edge
                 if vertex in (v1, v2) or neighbour in (v1, v2):
                     continue
 
@@ -426,4 +428,76 @@ def visualize_polygon_vertices(vertices: list[PolygonVertex], title: str = "Poly
     plt.show()
     return fig, ax
 
+
+@staticmethod
+def plot_triangles(triangles: List['Triangle'], figsize=(10, 8), show_vertices=True,
+                   triangle_alpha=0.5, vertex_size=20):
+    """
+    Plot a list of triangles using matplotlib with flipped axes (longitude -> X, latitude -> Y).
+
+    Args:
+        triangles: List of Triangle objects to plot
+        figsize: Figure size as a tuple (width, height)
+        show_vertices: Whether to show vertex points
+        triangle_alpha: Transparency of triangle fills
+        vertex_size: Size of vertex points if shown
+    """
+
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # Use different colors for each triangle
+    colors = plt.cm.viridis(np.linspace(0, 1, len(triangles)))
+    patches = []
+
+    all_vertices = set()
+
+    for i, triangle in enumerate(triangles):
+        # Get (lat, lon) coordinates, but flip them: lat -> Y, lon -> X
+        vertices = [(v.lon, v.lat) for v in [triangle.a, triangle.b, triangle.c]]
+        polygon = MplPolygon(vertices, closed=True, alpha=triangle_alpha,
+                             edgecolor='black', facecolor=colors[i])
+        patches.append(polygon)
+
+        all_vertices.update([triangle.a, triangle.b, triangle.c])
+
+        # Add center label with flipped coordinates
+        center_lon, center_lat = triangle.center()
+        ax.text(center_lat, center_lon, f"{i}", ha='center', va='center')
+
+    # Add all triangle patches
+    collection = PatchCollection(patches, match_original=True)
+    ax.add_collection(collection)
+
+    if show_vertices:
+        # Plot vertices: lon -> X, lat -> Y
+        lons = [v.lon for v in all_vertices]
+        lats = [v.lat for v in all_vertices]
+        ax.scatter(lons, lats, s=vertex_size, c='red', zorder=5)
+        for v in all_vertices:
+            ax.text(v.lon, v.lat, f"({v.lon:.2f}, {v.lat:.2f})",
+                    fontsize=8, ha='right', va='bottom')
+
+    # Set correct limits: lon = X-axis, lat = Y-axis
+    if all_vertices:
+        lons = [v.lon for v in all_vertices]
+        lats = [v.lat for v in all_vertices]
+
+        lon_min, lon_max = min(lons), max(lons)
+        lat_min, lat_max = min(lats), max(lats)
+
+        lon_margin = (lon_max - lon_min) * 0.05 or 1
+        lat_margin = (lat_max - lat_min) * 0.05 or 1
+
+        ax.set_xlim(lon_min - lon_margin, lon_max + lon_margin)  # lon -> X
+        ax.set_ylim(lat_min - lat_margin, lat_max + lat_margin)  # lat -> Y
+
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    ax.set_title(f'Plot of {len(triangles)} Triangles')
+    ax.set_aspect('equal')  # Keep scale consistent
+
+    plt.tight_layout()
+    plt.show()
+    return fig, ax
 
