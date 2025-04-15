@@ -21,7 +21,6 @@ class Polygon2D:
         holes (List[List[Tuple[float, float]]]): List of holes, where each hole is a list of (x, y) vertex coordinates.
     """
 
-    #todo add function to split, to split big vertecies in the to triangles method, to run faster as it is n2 (or even n3?)
     def __init__(self, vertices: List[Tuple[float, float]], holes: Optional[List[List[Tuple[float, float]]]] = None):
         """
         Initialize a polygon with vertices and optional holes.

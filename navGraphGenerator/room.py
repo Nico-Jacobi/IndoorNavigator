@@ -174,8 +174,6 @@ class Room:
         # Align the inner and outer polygons (the buffer method sometimes un-alignes them)
         inner_aligned, outer_aligned = align_polygon_coords(inner_polygon, outer_polygon)
 
-        print("vertecies of room", self.name, len(inner_aligned), len(outer_aligned))
-
         for i in range(len(inner_aligned)):
             next_i = (i + 1) % len(inner_aligned)
 
