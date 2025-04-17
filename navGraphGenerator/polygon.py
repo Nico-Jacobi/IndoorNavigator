@@ -1,4 +1,5 @@
 import math
+from itertools import combinations
 from typing import List, Tuple, Optional, Set
 import networkx as nx
 from dataclasses import dataclass
@@ -32,7 +33,21 @@ class Polygon2D:
         if len(vertices) < 3:
             raise ValueError("A polygon needs at least 3 vertecies")
 
+        def is_clockwise(ring: List[Tuple[float, float]]) -> bool:
+            area = 0.0
+            for i in range(len(ring)):
+                x1, y1 = ring[i]
+                x2, y2 = ring[(i + 1) % len(ring)]
+                area += (x2 - x1) * (y2 + y1)
+            return area > 0  # Positive → clockwise in this convention
+
+            # Ensure outer ring is clockwise
+
+        if is_clockwise(vertices):
+            vertices = list(reversed(vertices))
+
         self.vertices = vertices
+
         self.holes = holes if holes else []
         self.polygon = Polygon(vertices, holes=self.holes)
 
@@ -85,17 +100,18 @@ class Polygon2D:
         return f"Polygon2D(vertices={self.vertices}, holes={self.holes})"
 
 
-    def to_wavefront(self, wavefront_to_add: Wavefront) -> None:
+    def to_wavefront_triangulation(self, wavefront_to_add: Wavefront, normal=(0,1,0)) -> None:
         """triangulates the face and adds it to the given wavefront"""
 
         print(f"adding {self} to wavefront")
 
         if not self.holes and len(self.vertices) == 4:
-            face = [(self.vertices[0][0], 0.0, self.vertices[0][1]),
-                    (self.vertices[1][0], 0.0, self.vertices[1][1]),
+            face = [(self.vertices[3][0], 0.0, self.vertices[3][1]),
                     (self.vertices[2][0], 0.0, self.vertices[2][1]),
-                    (self.vertices[3][0], 0.0, self.vertices[3][1])]
-            wavefront_to_add.add_face(face)
+                    (self.vertices[1][0], 0.0, self.vertices[1][1]),
+                    (self.vertices[0][0], 0.0, self.vertices[0][1])]
+
+            wavefront_to_add.add_face(face, [normal,normal,normal,normal])
             return
 
 
@@ -121,25 +137,30 @@ class Polygon2D:
             vertices_points.extend(vertices_hole_points)
 
 
-        # now all vertices (including the holes to the outside) should be linked, and triangulation can start
-        already_linked = set()
 
-        # do this in a random order (for nicer geometry)
-        for v1 in vertices_points:
-            for v2 in vertices_points:
-                if v2 in already_linked:
-                    continue
+        # making all possible links (starting with shortest for nicer geometry)
+        candidate_links = []
 
-                if v1 != v2 and not v2 in v1.neighbours and not self.would_cause_intersection(v1, v2, vertices_points):
-                    v1.link(v2)
+        for v1, v2 in combinations(vertices_points, 2):
+            if v2 in v1.neighbours or v1 in v2.neighbours:
+                continue
 
-            already_linked.add(v1)
+            if not self.would_cause_intersection(v1, v2, vertices_points):
+                distance = ((v1.lat - v2.lat) ** 2 + (v1.lon - v2.lon) ** 2) ** 0.5
+                candidate_links.append((distance, v1, v2))
+
+        candidate_links.sort(key=lambda x: x[0])
+
+        for _, v1, v2 in candidate_links:
+            if not self.would_cause_intersection(v1, v2, vertices_points):
+                v1.link(v2)
+
 
         #visualize_polygon_vertices(vertices_points)
 
         faces = self.find_faces(vertices_points)
         for face in faces:
-            face.to_obj(wavefront_to_add)
+            face.to_obj_triangulation(wavefront_to_add, normal)
 
         return
 
@@ -365,13 +386,13 @@ class Triangle:
     def outline(self) -> List[Tuple[float, float]]:
         return [(self.a.lat, self.a.lon), (self.b.lat, self.b.lon), (self.c.lat, self.c.lon)]
 
-    def to_obj(self, wavefront_to_add: Wavefront) -> None:
+    def to_obj_triangulation(self, wavefront_to_add: Wavefront, normal: Tuple[float, float, float]) -> None:
         """triangulates the face and adds it to the given wavefront"""
 
         face = [(self.a.lat, 0.0, self.a.lon),
                 (self.b.lat, 0.0, self.b.lon),
                 (self.c.lat, 0.0, self.c.lon)]
-        wavefront_to_add.add_face(face)
+        wavefront_to_add.add_face(face, [normal, normal, normal])
         return
 
 

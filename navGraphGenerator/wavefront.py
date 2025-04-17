@@ -8,25 +8,38 @@ class Wavefront:
 
     # the merge_threshold is 0.2 here, as meter-coordinates are used for the object (0.2 = 20cm) instead of gps.coordinates
     def __init__(self, merge_threshold=0.05):
-        self.vertices: List[Tuple[float, float, float]] = []
+        self.vertex_normal_pairs: List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = []
         self.faces: List[List[int]] = []
         self.merge_threshold: float = merge_threshold
+
 
     def _is_close(self, v1: Tuple[float, float, float], v2: Tuple[float, float, float]) -> bool:
         return math.dist(v1, v2) < self.merge_threshold
 
-    def _find_or_add_vertex(self, vertex: Tuple[float, float, float]) -> int:
+
+    def _find_or_add_vertex(self, vertex: Tuple[float, float, float],
+                            normal: Tuple[float, float, float]) -> int:
         """Find the index of a vertex or add it if it doesn't exist."""
-        for idx, v in enumerate(self.vertices):
+        if normal is None:
+            raise ValueError("Cannot add a vertex without a normal")
+
+        for idx, (v, _) in enumerate(self.vertex_normal_pairs):
             if self._is_close(v, vertex):
                 return idx
-        self.vertices.append(vertex)
-        return len(self.vertices) - 1
+        self.vertex_normal_pairs.append((vertex, normal))
+        return len(self.vertex_normal_pairs) - 1
 
-    def add_face(self, vertex_list: List[Tuple[float, float, float]]):
+
+    def add_face(self, vertex_list: List[Tuple[float, float, float]],
+                 normal_list: List[Tuple[float, float, float]]):
         """Adds a face to the model, reusing existing vertices when close enough."""
-        indices = [self._find_or_add_vertex(v) for v in vertex_list]
+        # Make sure we have the same number of vertices and normals
+        if normal_list is None or len(vertex_list) != len(normal_list):
+            raise ValueError("The number of vertices and normals must match, and normals cannot be None")
+
+        indices = [self._find_or_add_vertex(v, n) for v, n in zip(vertex_list, normal_list)]
         self.faces.append(indices)
+
 
     def remove_redundant_faces(self):
         """Cleans the object of overlapping faces"""
@@ -40,7 +53,7 @@ class Wavefront:
         # For each face, store the original face indices along with the transformed data
         for face_idx, face in enumerate(self.faces):
             orientation = self.get_orientation(face)
-            face_vertices = [self.vertices[i] for i in face]  # Get the actual vertices
+            face_vertices = [self.vertex_normal_pairs[i][0] for i in face]  # Get the actual vertices
 
             match orientation:
                 case "x":
@@ -55,6 +68,7 @@ class Wavefront:
                     z_value = face_vertices[0][2]  # Get z from first point
                     poly = Polygon([(x, y) for x, y, z in face_vertices])
                     oriented_z[face_idx] = (poly, poly.area, z_value, face)  # Store original face indices
+
 
         def remove_redundant_from_dict(face_dict):
             to_remove = set()
@@ -98,27 +112,33 @@ class Wavefront:
 
     def get_orientation(self, face1):
         """returns the orientation of a given face as string"""
-        x_values = [self.vertices[vertex][0] for vertex in face1]
+        x_values = [self.vertex_normal_pairs[vertex][0][0] for vertex in face1]
         if (max(x_values) - min(x_values)) < self.merge_threshold:
             return "x"
 
-        y_values = [self.vertices[vertex][1] for vertex in face1]
+        y_values = [self.vertex_normal_pairs[vertex][0][1] for vertex in face1]
         if (max(y_values) - min(y_values)) < self.merge_threshold:
             return "y"
 
-        z_values = [self.vertices[vertex][2] for vertex in face1]
+        z_values = [self.vertex_normal_pairs[vertex][0][2] for vertex in face1]
         if (max(z_values) - min(z_values)) < self.merge_threshold:
             return "z"
 
         return "none"
 
-
     def __str__(self):
-        self.remove_redundant_faces()
-        lines = []
-        for v in self.vertices:
-            lines.append(f"v {v[0]} {v[1]} {v[2]}")
-        for f in self.faces:
-            lines.append("f " + " ".join(str(idx + 1) for idx in f))  # OBJ format uses 1-based indices
-        return "\n".join(lines)
+        # self.remove_redundant_faces()#todo fix
 
+        lines = []
+        # Write vertices
+        for vertex, normal in self.vertex_normal_pairs:
+            lines.append(f"v {vertex[0]} {vertex[1]} {vertex[2]}")
+            lines.append(f"vn {normal[0]} {normal[1]} {normal[2]}")
+
+        # Write faces, referencing normals
+        for f in self.faces:
+            # OBJ format: f v1//vn1 v2//vn2 v3//vn3
+            face_line = "f " + " ".join(f"{idx + 1}//{idx + 1}" for idx in f)
+            lines.append(face_line)
+
+        return "\n".join(lines)

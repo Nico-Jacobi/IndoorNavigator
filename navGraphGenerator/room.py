@@ -151,6 +151,17 @@ class Room:
 
             return inner_coords_np, aligned_outer
 
+        def is_clockwise(ring: List[Tuple[float, float]]) -> bool:
+            area = 0.0
+            for i in range(len(ring)):
+                x1, y1 = ring[i]
+                x2, y2 = ring[(i + 1) % len(ring)]
+                area += (x2 - x1) * (y2 + y1)
+            return area > 0  # Positive → clockwise in this convention
+
+            # Ensure outer ring is clockwise
+
+
         polygon = self.get_meter_geometry(origin_lat, origin_lon)
 
         # wall thickness (in meters)
@@ -174,6 +185,12 @@ class Room:
         # Align the inner and outer polygons (the buffer method sometimes un-alignes them)
         inner_aligned, outer_aligned = align_polygon_coords(inner_polygon, outer_polygon)
 
+        #this needs to be done for the normals
+        if is_clockwise(inner_aligned):
+            inner_aligned = list(reversed(inner_aligned))
+            outer_aligned = list(reversed(outer_aligned))
+
+
         for i in range(len(inner_aligned)):
             next_i = (i + 1) % len(inner_aligned)
 
@@ -186,28 +203,43 @@ class Room:
             #])
 
             #top
+            normal_top = (0,1,0)
             add_to_wavefront.add_face([
-                (inner_aligned[i][0], height, inner_aligned[i][1]),
-                (outer_aligned[i][0], height, outer_aligned[i][1]),
+                (inner_aligned[next_i][0], height, inner_aligned[next_i][1]),
                 (outer_aligned[next_i][0], height, outer_aligned[next_i][1]),
-                (inner_aligned[next_i][0], height, inner_aligned[next_i][1])
-            ])
+                (outer_aligned[i][0], height, outer_aligned[i][1]),
+                (inner_aligned[i][0], height, inner_aligned[i][1])
+            ], [normal_top,normal_top,normal_top,normal_top])
+
+
+            # cross-product to find the normal pointing into the room
+            dx = inner_aligned[next_i][0] - inner_aligned[i][0]
+            dz = inner_aligned[next_i][1] - inner_aligned[i][1]
+            normal_in = (dz, 0, -dx)
+
+
+            length = math.sqrt(normal_in[0] ** 2 + normal_in[2] ** 2)
+            if length != 0:
+                normal_in = (-normal_in[0] / length, 0, -normal_in[2] / length) # Normalize
+            else:
+                normal_in = (0, 0, 0)   #just in case, shouldn't happen though
 
             #inner face
             add_to_wavefront.add_face([
-                (inner_aligned[i][0], height, inner_aligned[i][1]),
-                (inner_aligned[next_i][0], height, inner_aligned[next_i][1]),
+                (inner_aligned[i][0], 0.0, inner_aligned[i][1]),
                 (inner_aligned[next_i][0], 0.0, inner_aligned[next_i][1]),
-                (inner_aligned[i][0], 0.0, inner_aligned[i][1])
-            ])
+                (inner_aligned[next_i][0], height, inner_aligned[next_i][1]),
+                (inner_aligned[i][0], height, inner_aligned[i][1])
+            ], [normal_in,normal_in,normal_in,normal_in])
 
             # outer face
+            normal_out = (-normal_in[0], -normal_in[1], -normal_in[2])
             add_to_wavefront.add_face([
                 (outer_aligned[i][0], height, outer_aligned[i][1]),
                 (outer_aligned[next_i][0], height, outer_aligned[next_i][1]),
                 (outer_aligned[next_i][0], 0.0, outer_aligned[next_i][1]),
                 (outer_aligned[i][0], 0.0, outer_aligned[i][1])
-            ])
+            ], [normal_out,normal_out,normal_out,normal_out])
 
 
 
@@ -225,7 +257,6 @@ class Room:
         The inputs should contain all rooms and doors that can be linked horizontally.
         (don't call twice with rooms on the same floor, otherwise the graph whill not be fully connected)
         """
-        print("setup got ", len(rooms))
 
         # fixing the geometry of the rooms, sometimes overlapping in the geojson
         for i in range(len(rooms)):

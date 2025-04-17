@@ -96,7 +96,7 @@ def parse_ground_floor_obj_from_rooms(rooms: List['Room'], origin_lat: float, or
 
         if not geometry.is_empty:
             polygon = Polygon2D.from_shapely(geometry)
-            polygon.to_wavefront(wavefront)
+            polygon.to_wavefront_triangulation(wavefront)
 
     return str(wavefront)
 
