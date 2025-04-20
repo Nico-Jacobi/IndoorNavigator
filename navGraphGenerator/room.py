@@ -41,7 +41,7 @@ class Room:
         ]
 
         before = len(self.coordinates)
-        self.coordinates = Room.simplify(self.coordinates, loop=True)
+        self.coordinates = Room.simplify_geometry(self.coordinates, loop=True)
 
         # represents holes in the geometry
         self.holes: List[List[Tuple[float, float]]]= []
@@ -281,7 +281,7 @@ class Room:
 
         # setting up the visual paths later shown in the app
         for room in rooms:
-            room.coordinates = Room.simplify(room.coordinates, loop=True)
+            room.coordinates = Room.simplify_geometry(room.coordinates, loop=True)
             room._setup_paths()
 
 
@@ -558,7 +558,7 @@ class Room:
 
                     total_length = path_length + start_dist + goal_dist
 
-                    path = Room.simplify(path[1:-1], loop=False) # Remove start and end points + cleanup
+                    path = Room.simplify_geometry(path[1:-1], loop=False) # Remove start and end points + cleanup
                     # Create direct edge between door vertices with weight and path
                     self.graph.add_edge_bidirectional(start_door.vertex, goal_door.vertex, NavigationPath(weight=total_length, points=path))
 
@@ -714,7 +714,9 @@ class Room:
                 plt.scatter(x, y, color="red", alpha=0.8, s=20) # (1 on outside walls is normal)
 
     @classmethod
-    def simplify(cls, coordinates: List[Tuple[float, float]], loop: bool = True) -> List[Tuple[float, float]]:
+    def simplify_geometry(cls, coordinates: List[Tuple[float, float]], loop: bool = True, tolerance:float = None ) -> List[Tuple[float, float]]:
+        if not tolerance:
+            tolerance = Room.wall_thickness[0]
 
         def distance_from_point_to_line(p1, p2, center_point):
             x1, y1 = p1
@@ -746,7 +748,13 @@ class Room:
                 temp_coords.append(p1)
             return temp_coords
 
-        coordinates = remove_close_points(coordinates, Room.wall_thickness[0])
+        if len(coordinates) < 3:
+            return coordinates  # could also return [] prob
+
+        if coordinates[0] == coordinates[-1]:
+            coordinates = coordinates[:-1]
+
+        coordinates = remove_close_points(coordinates, tolerance)
         #visualize_shapely_polygon(Polygon(coordinates))
 
         cleaned_something = True
@@ -768,7 +776,7 @@ class Room:
                 # Check the distance of point p2 from the line defined by p1 and p3
                 dist = distance_from_point_to_line(p1, p3, p2)
 
-                if dist < Room.wall_thickness[0]/4: # most "unnecessary" vertices are directly on the line, so this doesn't need to be bigger
+                if dist < tolerance/4: # most "unnecessary" vertices are directly on the line, so this doesn't need to be bigger
                     cleaned_something = True
                     # i don't know why this has to be here, but otherwise it doesn't work correctly
                     coordinates.remove(p2)
@@ -807,114 +815,3 @@ def distance_to_segment(point, a, b):
     # distance from point to the closest point on segment
     return ((point_x - closest_x) ** 2 + (point_y - closest_y) ** 2) ** 0.5
 
-
-@staticmethod
-def visualize_shapely_polygon(polygon, figsize=(10, 8), fill_color='lightblue',
-                              edge_color='blue', alpha=0.5, title='Shapely Polygon'):
-    """
-    Visualize a Shapely polygon or MultiPolygon using matplotlib.
-
-    Parameters:
-    -----------
-    polygon : shapely.geometry.Polygon or shapely.geometry.MultiPolygon
-        The Shapely polygon or MultiPolygon to visualize
-    figsize : tuple, optional
-        Figure size as (width, height)
-    fill_color : str or list of str, optional
-        Color(s) to fill the polygons (if MultiPolygon, a list of colors is used)
-    edge_color : str, optional
-        Color for the polygon edge
-    alpha : float, optional
-        Transparency of the fill (0 to 1)
-    title : str, optional
-        Title for the plot
-
-    Returns:
-    --------
-    fig, ax : matplotlib figure and axes objects
-    """
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import Polygon as MplPolygon
-    import numpy as np
-    from shapely.geometry import MultiPolygon
-
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=figsize)
-
-    # If polygon is a MultiPolygon, plot each individual polygon
-    if isinstance(polygon, MultiPolygon):
-        # If the fill_color is a single color, use it for all polygons
-        if isinstance(fill_color, str):
-            fill_color = [fill_color] * len(polygon.geoms)
-
-        for i, poly in enumerate(polygon.geoms):
-            # Extract polygon exterior coordinates
-            x, y = poly.exterior.xy
-
-            # Create matplotlib polygon patch
-            patch = MplPolygon(np.array([x, y]).T,
-                               closed=True,
-                               facecolor=fill_color[i] if i < len(fill_color) else fill_color[-1],
-                               edgecolor=edge_color,
-                               alpha=alpha)
-            ax.add_patch(patch)
-
-            # If polygon has holes (interior rings)
-            for interior in poly.interiors:
-                x_int, y_int = interior.xy
-                hole_patch = MplPolygon(np.array([x_int, y_int]).T,
-                                        closed=True,
-                                        facecolor='white',
-                                        edgecolor=edge_color,
-                                        alpha=alpha)
-                ax.add_patch(hole_patch)
-    else:
-        # Extract polygon exterior coordinates
-        x, y = polygon.exterior.xy
-
-        # Create matplotlib polygon patch
-        patch = MplPolygon(np.array([x, y]).T,
-                           closed=True,
-                           facecolor=fill_color,
-                           edgecolor=edge_color,
-                           alpha=alpha)
-        ax.add_patch(patch)
-
-        # If polygon has holes (interior rings)
-        for interior in polygon.interiors:
-            x_int, y_int = interior.xy
-            hole_patch = MplPolygon(np.array([x_int, y_int]).T,
-                                    closed=True,
-                                    facecolor='white',
-                                    edgecolor=edge_color,
-                                    alpha=alpha)
-            ax.add_patch(hole_patch)
-
-    # Set axis limits with a small margin
-    if isinstance(polygon, MultiPolygon):
-        minx = min([p.bounds[0] for p in polygon.geoms])
-        miny = min([p.bounds[1] for p in polygon.geoms])
-        maxx = max([p.bounds[2] for p in polygon.geoms])
-        maxy = max([p.bounds[3] for p in polygon.geoms])
-    else:
-        minx, miny, maxx, maxy = polygon.bounds
-
-    margin = max((maxx - minx), (maxy - miny)) * 0.05
-    ax.set_xlim(minx - margin, maxx + margin)
-    ax.set_ylim(miny - margin, maxy + margin)
-
-    # Set equal aspect ratio
-    ax.set_aspect('equal')
-
-    # Add title and labels
-    ax.set_title(title)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-
-    # Add grid
-    ax.grid(True, linestyle='--', alpha=0.7)
-
-    plt.tight_layout()
-    plt.plot()
-    plt.show()
-    return fig, ax

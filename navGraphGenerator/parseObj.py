@@ -61,7 +61,7 @@ def parse_obj_files(geojson_string) -> None:
 
     origin_lat, origin_lon = rooms[0].coordinates[0]
 
-    walls:str = parse_walls_obj_from_rooms(all_rooms, origin_lat, origin_lon)
+    #walls:str = parse_walls_obj_from_rooms(all_rooms, origin_lat, origin_lon)
     ground:str = parse_ground_floor_obj_from_rooms(all_rooms, origin_lat, origin_lon)
 
 
