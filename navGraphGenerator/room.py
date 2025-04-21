@@ -5,6 +5,8 @@ from typing import Tuple, List, Any, Dict, Optional
 import numpy as np
 from matplotlib import pyplot as plt
 from shapely.geometry.point import Point
+from shapely.geometry.polygon import LinearRing
+
 from coordinateUtilities import meters_to_latlon, normalize_lat_lon_to_meter
 from dataClasses import PathVertex, BoundingBox, NavigationPath
 from door import Door
@@ -33,14 +35,13 @@ class Room:
         self.name: str = properties.get("name", "")
 
         geometry = json.get("geometry", {})
-        self.geometry_type: str = geometry.get("type", "")
+        #self.geometry_type: str = geometry.get("type", "")
 
 
         self.coordinates: List[Tuple[float, float]] = [
             (float(coord[0]), float(coord[1])) for coord in geometry.get("coordinates", [])
         ]
 
-        before = len(self.coordinates)
         self.coordinates = Room.simplify_geometry(self.coordinates, loop=True)
 
         # represents holes in the geometry
@@ -57,6 +58,23 @@ class Room:
         # grid for finding the visual paths
         self.grid: List[List[Optional[PathVertex]]] = []
 
+
+    @classmethod
+    def from_data(cls, level: int, name: str, coordinates: List[Tuple[float, float]], graph: Graph, holes: Optional[List[List[Tuple[float, float]]]] = None):
+        """
+        Alternative constructor to create a Room without JSON input. (usefull for speaciall rooms, not in the geojson)
+        """
+        obj = cls.__new__(cls)
+        obj.level = level
+        obj.name = name
+        obj.coordinates = Room.simplify_geometry(coordinates, loop=True)
+        obj.holes = holes if holes else []
+        obj.polygon = Polygon(obj.coordinates, obj.holes)
+        obj.doors = []
+        obj.graph = graph
+        obj.bounding_box = obj._compute_bounding_box()
+        obj.grid = []
+        return obj
 
     def __repr__(self):
         return f"Room (name={self.name}, level={self.level})"
@@ -90,7 +108,7 @@ class Room:
         return Polygon(coordinates, holes=holes)
 
 
-    def get_wavefront_walls(self, origin_lat: float, origin_lon: float, add_to_wavefront: "Wavefront", height: float = 2.0) -> None:
+    def get_wavefront_walls(self, origin_lat: float, origin_lon: float, add_to_wavefront: "Wavefront", height: float = 2.0, outside=False, inside=True, top=True) -> None:
         """
         Creates an OBJ file representation of walls from room polygons.
 
@@ -161,85 +179,91 @@ class Room:
 
             # Ensure outer ring is clockwise
 
+        def _generate_wall_faces(inner, outer, height, inside, outside):
+            for i in range(len(inner)):
+                next_i = (i + 1) % len(inner)
+                dx, dz = inner[next_i][0] - inner[i][0], inner[next_i][1] - inner[i][1]
+                length = math.hypot(dx, dz)
+                normal_in = (-dz / length, 0, dx / length) if length else (0, 0, 0)
 
-        polygon = self.get_meter_geometry(origin_lat, origin_lon)
+                if top:
+                    # top
+                    normal_top = (0, 1, 0)
+                    add_to_wavefront.add_face([
+                        (inner[next_i][0], height, inner[next_i][1]),
+                        (outer[next_i][0], height, outer[next_i][1]),
+                        (outer[i][0], height, outer[i][1]),
+                        (inner[i][0], height, inner[i][1])
+                    ], [normal_top] * 4)
 
-        # wall thickness (in meters)
+                if inside:
+                    #inner wall
+                    add_to_wavefront.add_face([
+                        (inner[i][0], 0.0, inner[i][1]),
+                        (inner[next_i][0], 0.0, inner[next_i][1]),
+                        (inner[next_i][0], height, inner[next_i][1]),
+                        (inner[i][0], height, inner[i][1])
+                    ], [normal_in] * 4)
+
+                if outside:
+                    # outer wall
+                    normal_out = tuple(-n for n in normal_in)
+                    add_to_wavefront.add_face([
+                        (outer[i][0], height, outer[i][1]),
+                        (outer[next_i][0], height, outer[next_i][1]),
+                        (outer[next_i][0], 0.0, outer[next_i][1]),
+                        (outer[i][0], 0.0, outer[i][1])
+                    ], [normal_out] * 4)
+
+        polygon: Polygon = self.get_meter_geometry(origin_lat, origin_lon)
         wall_thickness = 0.2
 
-
-        inner_geom = polygon.buffer(-wall_thickness/2, join_style="mitre")
-        outer_geom = polygon.buffer(wall_thickness/2, join_style="mitre")
-
+        inner_geom = polygon.buffer(-wall_thickness / 2, join_style="mitre")
+        outer_geom = polygon.buffer(wall_thickness / 2, join_style="mitre")
 
         if inner_geom.geom_type == "MultiPolygon":
-            # if a multipolygon is made only use the biggest (also could use all...),
-            # this is very rare and due to overlapping rooms being subtracted, so bad rooms in th geojson
             inner_geom = max(inner_geom.geoms, key=lambda p: p.area)
             outer_geom = inner_geom.buffer(wall_thickness, join_style="mitre")
 
+        inner_polygon = list(inner_geom.exterior.coords[:-1])
+        outer_polygon = list(outer_geom.exterior.coords[:-1])
 
-        inner_polygon = inner_geom.exterior.coords[:-1]  # Remove duplicate last point
-        outer_polygon = outer_geom.exterior.coords[:-1]
-
-        # Align the inner and outer polygons (the buffer method sometimes un-alignes them)
         inner_aligned, outer_aligned = align_polygon_coords(inner_polygon, outer_polygon)
 
-        #this needs to be done for the normals
         if is_clockwise(inner_aligned):
             inner_aligned = list(reversed(inner_aligned))
             outer_aligned = list(reversed(outer_aligned))
 
+        _generate_wall_faces(inner_aligned, outer_aligned, height, inside, outside)
 
-        for i in range(len(inner_aligned)):
-            next_i = (i + 1) % len(inner_aligned)
+        # For handling holes in the room polygon
+        for hole_ring in polygon.interiors:
 
-            #botton not needed, as we never view the rooms from below
-            #add_to_wavefront.add_face([
-            #    (inner_aligned[i][0], 0.0, inner_aligned[i][1]),
-            #    (outer_aligned[i][0], 0.0, outer_aligned[i][1]),
-            #    (outer_aligned[next_i][0], 0.0, outer_aligned[next_i][1]),
-            #    (inner_aligned[next_i][0], 0.0, inner_aligned[next_i][1])
-            #])
+            hole_polygon = Polygon(hole_ring)
+            inner_geom = hole_polygon.buffer(wall_thickness*0.6, join_style="mitre")
 
-            #top
-            normal_top = (0,1,0)
-            add_to_wavefront.add_face([
-                (inner_aligned[next_i][0], height, inner_aligned[next_i][1]),
-                (outer_aligned[next_i][0], height, outer_aligned[next_i][1]),
-                (outer_aligned[i][0], height, outer_aligned[i][1]),
-                (inner_aligned[i][0], height, inner_aligned[i][1])
-            ], [normal_top,normal_top,normal_top,normal_top])
+            # Handle potential geometry issues
+            if inner_geom.geom_type == "MultiPolygon":
+                inner_geom = max(inner_geom.geoms, key=lambda p: p.area)
+
+            # Extract coordinates (dropping the closing point)
+            inner =  Room.simplify_geometry(list(inner_geom.exterior.coords[:-1]))
+
+            for i in range(len(inner)):
+                next_i = (i + 1) % len(inner)
+                dx, dz = inner[next_i][0] - inner[i][0], inner[next_i][1] - inner[i][1]
+                length = math.hypot(dx, dz)
+                normal_in = (-dz / length, 0, dx / length) if length else (0, 0, 0)
+
+                # inner wall
+                add_to_wavefront.add_face([
+                    (inner[i][0], 0.0, inner[i][1]),
+                    (inner[next_i][0], 0.0, inner[next_i][1]),
+                    (inner[next_i][0], height, inner[next_i][1]),
+                    (inner[i][0], height, inner[i][1])
+                ], [normal_in] * 4)
 
 
-            # cross-product to find the normal pointing into the room
-            dx = inner_aligned[next_i][0] - inner_aligned[i][0]
-            dz = inner_aligned[next_i][1] - inner_aligned[i][1]
-            normal_in = (dz, 0, -dx)
-
-
-            length = math.sqrt(normal_in[0] ** 2 + normal_in[2] ** 2)
-            if length != 0:
-                normal_in = (-normal_in[0] / length, 0, -normal_in[2] / length) # Normalize
-            else:
-                normal_in = (0, 0, 0)   #just in case, shouldn't happen though
-
-            #inner face
-            add_to_wavefront.add_face([
-                (inner_aligned[i][0], 0.0, inner_aligned[i][1]),
-                (inner_aligned[next_i][0], 0.0, inner_aligned[next_i][1]),
-                (inner_aligned[next_i][0], height, inner_aligned[next_i][1]),
-                (inner_aligned[i][0], height, inner_aligned[i][1])
-            ], [normal_in,normal_in,normal_in,normal_in])
-
-            # outer face
-            normal_out = (-normal_in[0], -normal_in[1], -normal_in[2])
-            add_to_wavefront.add_face([
-                (outer_aligned[i][0], height, outer_aligned[i][1]),
-                (outer_aligned[next_i][0], height, outer_aligned[next_i][1]),
-                (outer_aligned[next_i][0], 0.0, outer_aligned[next_i][1]),
-                (outer_aligned[i][0], 0.0, outer_aligned[i][1])
-            ], [normal_out,normal_out,normal_out,normal_out])
 
 
 

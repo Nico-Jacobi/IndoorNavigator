@@ -11,7 +11,7 @@ from shapely.geometry.polygon import Polygon
 class Wavefront:
 
     # the merge_threshold is 0.2 here, as meter-coordinates are used for the object (0.2 = 20cm) instead of gps.coordinates
-    def __init__(self, merge_threshold=0.05):
+    def __init__(self, merge_threshold=0.02):
         self.vertex_normal_pairs: List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = []
         self.faces: List[List[int]] = []
         self.merge_threshold: float = merge_threshold
@@ -50,10 +50,16 @@ class Wavefront:
 
 
     def remove_redundant_faces(self):
-        """Removes overlapping faces that lie along the dimension axis (X, Y, Z)."""
+        """
+            Removes overlapping faces that lie along the dimension axis (X, Y, Z).
+            Actually not really needed, but nice to have, in retrospect
+        """
+
+
         def fix_overlaps(faces: List[List[int]], axis_index: int, depth_tolerance=self.merge_threshold) -> List[List[int]]:
             # Sort faces by depth
-            faces.sort(key=lambda x: x[0])
+
+            len_before = len(faces)
 
             polygons = []
             depths = []
@@ -70,10 +76,22 @@ class Wavefront:
                 polygons.append(Polygon(projected))
                 depths.append(avg_depth)
 
+            # sort by depth
+            sorted_pairs = sorted(zip(depths, polygons), key=lambda x: x[0])
+
+            if sorted_pairs:
+                depths, polygons = zip(*sorted_pairs)
+                depths = list(depths)
+                polygons = list(polygons)
+            else:
+                depths = []
+                polygons = []
+
+            buffered_polygons = [p.buffer(depth_tolerance, join_style="mitre") for p in polygons]
 
             to_delete = set()
 
-            for i, face1 in enumerate(polygons):
+            for i in range(len(polygons)):
                 if i in to_delete:
                     continue
 
@@ -91,7 +109,7 @@ class Wavefront:
                         j -= 1
                         continue
 
-                    if face1.contains(face2):
+                    if buffered_polygons[i].contains(face2):
                         to_delete.add(j)
 
                     j -= 1
@@ -110,7 +128,7 @@ class Wavefront:
                         j += 1
                         continue
 
-                    if face1.contains(face2):
+                    if buffered_polygons[i].contains(face2):
                         to_delete.add(j)
 
                     j += 1
@@ -118,12 +136,13 @@ class Wavefront:
 
             # Remove completely contained faces
             faces = [face for i, face in enumerate(faces) if i not in to_delete]
+
+            print(f"removed {len_before - len(faces)} unnecessary faces")
             return faces
 
 
         print("Removing unnecessary faces...")
 
-        print("faces before", len(self.faces))
         self.faces = [face for face in self.faces if len(set(face)) == len(face)]   #removing all where 2 or more indices are the same
 
         oriented_x : List[List[int]] = []
@@ -146,11 +165,6 @@ class Wavefront:
                     non_aligned.append(face)
 
         self.faces = non_aligned
-
-        print("oriented x", len(oriented_x))
-        print(oriented_x)
-        print("oriented y",  len(oriented_y))
-        print("oriented z",  len(oriented_z))
 
         oriented_x = fix_overlaps(oriented_x, 0)
         oriented_y = fix_overlaps(oriented_y, 1)
@@ -189,7 +203,7 @@ class Wavefront:
 
 
     def __str__(self):
-        self.remove_redundant_faces()
+        #self.remove_redundant_faces()
 
         lines = []
         # Write vertices
