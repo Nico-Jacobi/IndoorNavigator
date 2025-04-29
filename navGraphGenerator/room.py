@@ -5,8 +5,6 @@ from typing import Tuple, List, Any, Dict, Optional
 import numpy as np
 from matplotlib import pyplot as plt
 from shapely.geometry.point import Point
-from shapely.geometry.polygon import LinearRing
-
 from coordinateUtilities import meters_to_latlon, normalize_lat_lon_to_meter
 from dataClasses import PathVertex, BoundingBox, NavigationPath
 from door import Door
@@ -36,15 +34,14 @@ class Room:
 
         geometry = json.get("geometry", {})
         #self.geometry_type: str = geometry.get("type", "")
-
-
+        # Flip x and y when loading coordinates (for having it in lat lon order)
         self.coordinates: List[Tuple[float, float]] = [
-            (float(coord[0]), float(coord[1])) for coord in geometry.get("coordinates", [])
+            (float(coord[1]), float(coord[0])) for coord in geometry.get("coordinates", [])
         ]
 
         self.coordinates = Room.simplify_geometry(self.coordinates, loop=True)
 
-        # represents holes in the geometry
+        # represents holes in the geometry (used later)
         self.holes: List[List[Tuple[float, float]]]= []
         self.polygon = Polygon(self.coordinates, self.holes)
 
@@ -736,6 +733,7 @@ class Room:
                 plt.scatter(x, y, color="green", alpha=0.8, s=20)
             else:
                 plt.scatter(x, y, color="red", alpha=0.8, s=20) # (1 on outside walls is normal)
+
 
     @classmethod
     def simplify_geometry(cls, coordinates: List[Tuple[float, float]], loop: bool = True, tolerance:float = None ) -> List[Tuple[float, float]]:

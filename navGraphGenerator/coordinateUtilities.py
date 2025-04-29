@@ -1,6 +1,10 @@
 from typing import Tuple
 import math
 
+# used to normalize the coordinates for unity
+origin_lat=50.80977
+origin_lon=8.81048
+
 def meters_to_latlon(x_meter: float, y_meter: float, origin_lat: float, origin_lon: float) -> Tuple[float, float]:
     """
     Converts coordinates (x, y) in meters to latitude and longitude.
@@ -51,11 +55,11 @@ def normalize_lat_lon_to_meter(lat: float, lon: float, origin_lat: float, origin
     :param lon: Longitude coordinate to normalize
     :param origin_lat: Latitude of the origin point (reference point)
     :param origin_lon: Longitude of the origin point (reference point)
-    :param width_meters: Width of the area in meters (for normalization)
-    :param height_meters: Height of the area in meters (for normalization)
     :return: A tuple containing normalized x and y values in meters (0-100 range)
     """
+
+
     # Convert lat/lon to meters from origin
     x_meter, y_meter = latlon_to_meters(lat-origin_lat, lon-origin_lon, origin_lat, origin_lon)
 
-    return x_meter, y_meter
+    return x_meter, -y_meter

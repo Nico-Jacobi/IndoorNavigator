@@ -2,6 +2,7 @@ import json
 import random
 import matplotlib.pyplot as plt
 import matplotlib
+import coordinateUtilities
 from door import Door
 from graph import Graph
 from room import Room
@@ -11,7 +12,8 @@ import numpy as np
 matplotlib.use('TkAgg')
 
 
-def parse_geojson_to_graph(geojson_string) -> Graph:
+
+def parse_geojson_to_graph(geojson_string, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> Graph:
     """
     Parses a GeoJSON file and extracts rooms, doors, and stairs.
     Sets them up, and returns a graph representation of the building.
@@ -47,13 +49,17 @@ def parse_geojson_to_graph(geojson_string) -> Graph:
             broken.append(feature)
 
 
+
     Stair.link_stairs(stairs)
     Room.setup_all_rooms(rooms + stairs, doors)
 
-    visualize_level(rooms, stairs)
+    #visualize_level(rooms, stairs)
 
     # cutting off the broken parts of the graph (like rooms without doors / rooms only accessible from the outside)
     graph.keep_largest_component()
+
+    graph.normalize_coordinates(origin_lat, origin_lon)
+
     return graph
 
 

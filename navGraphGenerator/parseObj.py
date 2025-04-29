@@ -3,6 +3,8 @@ import matplotlib
 from matplotlib import pyplot as plt
 from shapely.geometry.polygon import Polygon
 from shapely.ops import unary_union
+
+import coordinateUtilities
 from door import Door
 from graph import Graph
 from room import Room
@@ -14,7 +16,7 @@ from wavefront import Wavefront
 matplotlib.use('TkAgg')
 
 
-def parse_obj_files(geojson_string) -> None:
+def parse_obj_files(geojson_string, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> None:
     """
     Parses a GeoJSON file and extracts rooms, doors, and stairs.
     Sets them up, and returns a graph representation of the building.
@@ -61,22 +63,33 @@ def parse_obj_files(geojson_string) -> None:
     Room.setup_all_rooms(all_rooms, doors) # this needs to be done here, so the geometry is right, maybe just fix that
     # thats faster
 
-    origin_lat, origin_lon = rooms[0].coordinates[0]
+    #origin_lat, origin_lon = rooms[0].coordinates[0]
 
-    walls:str = parse_walls_obj_from_rooms(all_rooms, origin_lat, origin_lon)
-    ground:str = parse_ground_floor_obj_from_rooms(all_rooms, origin_lat, origin_lon)
+    walls:Wavefront = parse_walls_obj_from_rooms(all_rooms, origin_lat, origin_lon)
+    ground:Wavefront = parse_ground_floor_obj_from_rooms(all_rooms, origin_lat, origin_lon)
+
 
 
     with open("resources/walls.obj", "w") as f:
-        f.write(walls)
+        f.write(str(walls))
 
     with open("resources/ground.obj", "w") as f:
-        f.write(ground)
+        f.write(str(ground))
+
+    # Export the .mtl file (if it's not already created)
+    with open("resources/WhiteMaterial.mtl", "w") as f:
+        f.write("""
+        newmtl WhiteMaterial
+        Ka 1.000 1.000 1.000  # Ambient color (white)
+        Kd 1.000 1.000 1.000  # Diffuse color (white)
+        Ks 0.500 0.500 0.500  # Specular color (gray)
+        d 1.0                 # Transparency
+        """)
 
     return
 
 
-def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origin_lon: float) -> str:
+def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origin_lon: float) -> Wavefront:
     wavefront: Wavefront = Wavefront()
 
     for room in all_rooms:
@@ -123,11 +136,11 @@ def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origi
     for outside_room in outside:
         outside_room.get_wavefront_walls(origin_lat, origin_lon, wavefront, outside=True, inside=False, top=True)
 
-    return str(wavefront)
+    return wavefront
 
 
 
-def parse_ground_floor_obj_from_rooms(rooms: List['Room'], origin_lat: float, origin_lon: float) -> str:
+def parse_ground_floor_obj_from_rooms(rooms: List['Room'], origin_lat: float, origin_lon: float) -> Wavefront:
 
     wavefront = Wavefront()
     for room in rooms:
@@ -138,7 +151,7 @@ def parse_ground_floor_obj_from_rooms(rooms: List['Room'], origin_lat: float, or
             polygon = Polygon2D.from_shapely(geometry)
             polygon.to_wavefront_triangulation(wavefront)
 
-    return str(wavefront)
+    return wavefront
 
 
 def plot_geometry_collection(geom_collection, ax=None):

@@ -75,5 +75,5 @@ class NavigationPath:
         """Convert the NavigationPath object to a dictionary."""
         return {
             "weight": self.weight,
-            "points": [(lat,lon) for lon,lat in self.points]        # as geojson, which is not convention
+            "points": [{"lat": lat, "lon": lon} for lon, lat in self.points]  # points as objects
         }

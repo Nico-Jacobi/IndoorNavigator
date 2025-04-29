@@ -1,10 +1,5 @@
 import math
-import statistics
 from typing import Tuple, List
-
-import numpy as np
-
-from room import Room
 from shapely.geometry.polygon import Polygon
 
 
@@ -201,23 +196,26 @@ class Wavefront:
         else:
             return "none"
 
-
-    def __str__(self):
+    def __str__(self, material_name="WhiteMaterial", mtl_file="WhiteMaterial.mtl"):
         #self.remove_redundant_faces()
 
-        lines = []
-        # Write vertices
+        # Initialize the list to store lines
+        lines = [f"mtllib {mtl_file}"]
+
+        # Reference the material in the OBJ file
+
+        # Write vertices and normals
         for vertex, normal in self.vertex_normal_pairs:
             lines.append(f"v {vertex[0]} {vertex[1]} {vertex[2]}")
-            lines.append(f"vn {normal[0]} {normal[1]} {normal[2]}")
+            #lines.append(f"vn {normal[0]} {normal[1]} {normal[2]}")
 
+        # Write faces and assign the material
         for f in self.faces:
-            # OBJ format: f v1//vn1 v2//vn2 v3//vn3
             face_line = "f " + " ".join(f"{idx + 1}//{idx + 1}" for idx in f)
+            lines.append(f"usemtl {material_name}")  # Use the material before the face definition
             lines.append(face_line)
 
         return "\n".join(lines)
-
 
 
 

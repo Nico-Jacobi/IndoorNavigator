@@ -15,14 +15,14 @@ class Door:
         geometry = json.get("geometry", {})
         self.geometry_type: str = geometry.get("type", "")
         coordinates = geometry.get("coordinates", [])
-        self.coordinates = (float(coordinates[0]), float(coordinates[1]))
+        self.coordinates = (float(coordinates[1]), float(coordinates[0]))
 
         # cant really import Room as this would result in a circular import
         self.rooms: List["Room"] = []
 
         self.graph = graph
 
-        self.vertex = Vertex("Door", coordinates[0], coordinates[1],self.level)
+        self.vertex = Vertex("Door", self.coordinates[0], self.coordinates[1],self.level)
         self.graph.add_vertex(self.vertex)
 
 
