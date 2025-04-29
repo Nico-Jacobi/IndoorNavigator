@@ -93,19 +93,19 @@ class Point {
 
 class NavigationPath {
   final double weight;
-  final Iterable<Point> _points; // Store the iterable
+  final Iterable<Point> points; // Store the iterable
 
   const NavigationPath({
     required this.weight,
-    required Iterable<Point> points, // Accepts an iterable
-  }) : _points = points;
+    required this.points, // Accepts an iterable
+  });
 
 
   // Method to return a new NavigationPath with reversed points
   NavigationPath reverseCopy() {
     return NavigationPath(
       weight: weight, // Keep the same weight
-      points: _points.toList().reversed, // Reverse the points iterable
+      points: points.toList().reversed, // Reverse the points iterable
     );
   }
 
@@ -127,7 +127,7 @@ class Edge {
   /// uses lon lat format (Which is against ISO 19111, but used in geojson and openindoor)
   List<(double, double)> getOutline({double width = 0.000001}) {
     // Get all points from navigation path
-    List<Point> pathPoints = navigationPath._points.toList();
+    List<Point> pathPoints = navigationPath.points.toList();
 
     pathPoints = [Point(vertex1.lat, vertex1.lon), ...pathPoints, Point(vertex2.lat, vertex2.lon)];
 
@@ -177,45 +177,6 @@ class Edge {
     return outline;
   }
 
-  Map<String, dynamic> toGeoJsonLine({double height = 1.0, String color = "#ff0000", double opacity = 0.6}) {
-    List<(double, double)> vertices = getOutline();
-
-    // Close the polygon by adding the first point at the end
-    if (vertices.isNotEmpty) {
-      vertices.add(vertices.first);
-    }
-
-    String id = "Edge ${vertex1.id} -> ${vertex2.id}";
-
-    return {
-      "id": id,
-      "type": "fill-extrusion",
-      "source": {
-        "type": "geojson",
-        "data": {
-          "type": "FeatureCollection",
-          "features": [
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                  vertices.map((v) => [v.$1, v.$2]).toList()
-                ]
-              },
-              "properties": {}
-            }
-          ]
-        }
-      },
-      "paint": {
-        "fill-extrusion-color": color,
-        "fill-extrusion-height": height,
-        "fill-extrusion-opacity": opacity,
-      }
-    };
-  }
-
 }
 
 class Graph {
@@ -254,6 +215,8 @@ class Graph {
 
   }
 
+  // will rarely throw a Exception: No path found from...
+  // for example for rooms only connected to the outside (or faulty rooms in the geojson which dont have a door)
   List<Edge> findShortestPathByName(Vertex start, String targetName) {
     Map<Vertex, double> distances = {};
     Map<Vertex, Vertex?> previous = {};
