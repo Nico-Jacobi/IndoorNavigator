@@ -11,15 +11,15 @@ namespace controller
         public TMP_Dropdown fromField;
         public TMP_Dropdown toField;
         public BuildingManager buildingManager;
-
+        public WifiManager wifiManager;
 
         void Start()
         {
             Debug.Log($"Graph Manager script initialized");
 
 
-            PopulateDropdownFromVertices(fromField, buildingManager.activeBuilding.graph.GetVertices());
-            PopulateDropdownFromStrings(toField, new List<string>(buildingManager.activeBuilding.graph.allRoomsSet));
+            PopulateDropdownFromVertices(fromField, buildingManager.GetActiveBuilding().graph.GetVertices());
+            PopulateDropdownFromStrings(toField, new List<string>(buildingManager.GetActiveGraph().allRoomsSet));
         }
 
 
@@ -41,19 +41,23 @@ namespace controller
 
         public void OnNavigateButtonPressed()
         {
-            List<Vertex> verts = buildingManager.activeBuilding.graph.GetVertices();
+            List<Vertex> verts = buildingManager.GetActiveGraph().GetVertices();
             Vertex fromVertex = verts[fromField.value];
             string toRoom = toField.options[toField.value].text;
 
             Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
 
-            List<Edge> path = buildingManager.activeBuilding.graph.FindShortestPathByName(fromVertex, toRoom);
+            List<Edge> path = buildingManager.GetActiveGraph().FindShortestPathByName(fromVertex, toRoom);
 
             Debug.Log($" path found with lenght {path.Count}");
 
+            Positioning pos = wifiManager.GetPositioning();
             foreach (Edge e in path)
             {
-                e.path.Plot();
+                if (e.source.floor == pos.GetFloor())
+                {
+                    e.path.Plot(height:pos.GetFloorHeight()+0.5f);
+                }
             }
 
             //todo plot 

@@ -76,8 +76,6 @@ namespace model.graph
             {
                 //due to the right-handed coordinate system...
                 positions.Add(new Vector3(-(float)point.lon, height, (float)point.lat));
-                Debug.Log($"{-point.lon}, {point.lat}");
-
             }
 
             List<Vector3> smoothPositions = SmoothLine(positions, smoothness);

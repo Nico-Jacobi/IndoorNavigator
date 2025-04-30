@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using model;
 using TMPro;
 using UnityEngine;
@@ -16,29 +17,49 @@ namespace controller
 
         public GameObject promptPanel;
         public Button settingsButton;
-        public Button discardButton;  
-        public TextMeshProUGUI  promptText;
+        public Button discardButton;
+        public TextMeshProUGUI promptText;
+
+        private Positioning position;
 
         void Start()
         {
-            using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            position = new Positioning();
+
+            try
             {
-                // this throws an error if not on android
-                context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+                using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                {
+                    // this throws an error if not on android
+                    context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+                    RequestLocationPermission();
+                    wifiManager = context.Call<AndroidJavaObject>("getSystemService", "wifi");
+
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Count get android API, some functionality wont work");
             }
 
-            RequestLocationPermission();
+            
             ClosePrompt();
-            wifiManager = context.Call<AndroidJavaObject>("getSystemService", "wifi");
+
+        }
+
+        public Positioning GetPositioning()
+        {
+            return position;
         }
 
         // Check if location is activated
         private bool IsLocationEnabled()
         {
             AndroidJavaObject locationManager = context.Call<AndroidJavaObject>("getSystemService", "location");
-            return locationManager.Call<bool>("isProviderEnabled", "gps") || locationManager.Call<bool>("isProviderEnabled", "network");
+            return locationManager.Call<bool>("isProviderEnabled", "gps") ||
+                   locationManager.Call<bool>("isProviderEnabled", "network");
         }
-        
+
         // Popup to turn on the location
         public void PromptUserToEnableLocation()
         {
@@ -64,7 +85,8 @@ namespace controller
             Debug.Log("Requested permission ACCESS_FINE_LOCATION");
             AndroidJavaObject unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
             AndroidJavaObject permissionActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-            permissionActivity.Call("requestPermissions", new string[] { "android.permission.ACCESS_FINE_LOCATION" }, 1);
+            permissionActivity.Call("requestPermissions", new string[] { "android.permission.ACCESS_FINE_LOCATION" },
+                1);
         }
 
         /// <summary>
@@ -90,11 +112,11 @@ namespace controller
                 AndroidJavaObject scanResult = scanResults.Call<AndroidJavaObject>("get", i);
                 WifiNetwork net = new WifiNetwork
                 {
-                    SSID = scanResult.Get<string>("SSID"),
+                    //SSID = scanResult.Get<string>("SSID"),    #to make the db faster this is excluded as its not strictly necesarry
                     BSSID = scanResult.Get<string>("BSSID"),
                     level = scanResult.Get<int>("level"),
-                    frequency = scanResult.Get<int>("frequency"),
-                    capabilities = scanResult.Get<string>("capabilities"),
+                    //frequency = scanResult.Get<int>("frequency"),
+                    //capabilities = scanResult.Get<string>("capabilities"),
                     timestamp = scanResult.Get<long>("timestamp")
                 };
 
@@ -104,21 +126,23 @@ namespace controller
             return networks;
         }
 
-        public void onButtonPressed()
-        {
-            if (!IsLocationEnabled())
-            {
-                Debug.LogWarning("Location is disabled. WiFi scan might return empty.");
-                PromptUserToEnableLocation();
-            }
-            
-            Debug.Log("Debug button pressed");
-            List<WifiNetwork> networks = GetAvailableNetworks();
-            foreach (WifiNetwork net in networks)
-            {
-                Debug.Log(net.ToString());
-            }
-        }
+     /*
+SSID: I'm watching you, BSSID: 2c:91:ab:59:83:5f, Level: -66, Frequency: 5500, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169109
+SSID: I'm watching you, BSSID: 2c:91:ab:59:83:5e, Level: -60, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169100
+SSID: MagentaWLAN-E52G, BSSID: ac:b6:87:5b:a5:fe, Level: -93, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169095
+SSID: , BSSID: fe:65:de:b4:99:92, Level: -49, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS], Timestamp: 1667079169103
+SSID: I'm watching you, BSSID: 7e:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169082
+SSID: Gastzugang Jacobi, BSSID: 7e:8a:20:08:f5:d3, Level: -81, Frequency: 2412, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169075
+SSID: , BSSID: 8a:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169090
+SSID: , BSSID: 86:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169088
+SSID: , BSSID: 86:8a:20:08:f5:d3, Level: -71, Frequency: 2412, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169080
+SSID: Gastzugang Jacobi, BSSID: 2e:91:ab:59:83:5e, Level: -60, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169098
+SSID: , BSSID: 82:8a:20:08:f5:d3, Level: -79, Frequency: 2412, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169077
+SSID: Gastzugang Jacobi, BSSID: 82:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169085
+SSID: Gastzugang Jacobi, BSSID: 2e:91:ab:59:83:5f, Level: -66, Frequency: 5500, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169105
+SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][WPA-PSK-CCMP][ESS], Timestamp: 1667079169093
+*/
+
 
         // Opens the location settings for the user to enable GPS
         private void OpenLocationSettings()
@@ -144,7 +168,7 @@ namespace controller
         {
             if (promptPanel != null)
             {
-                promptPanel.SetActive(false);  // Hide the prompt panel
+                promptPanel.SetActive(false); // Hide the prompt panel
                 Debug.Log("Prompt closed by user.");
             }
         }

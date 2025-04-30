@@ -10,12 +10,23 @@ namespace controller
         private Dictionary<string, Building> buildings = new Dictionary<string, Building>();
 
         // Store the current active building and floor
-        public Building activeBuilding;
-        public GameObject activeFloorObject;
+        private Building activeBuilding;
+        private GameObject activeFloorObject;   //the model shown
+
+        
+        public Building GetActiveBuilding()
+        {
+            return activeBuilding;
+        }
+        
+        
+        public Graph GetActiveGraph()
+        {
+            return activeBuilding.graph;
+        }
 
         void Awake()
         {
-            
             LoadBuildingConfigs();
             SpawnBuildingFloor("h4", 3); 
             // default one at the start, to initialize activeBuilding
