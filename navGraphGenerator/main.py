@@ -5,6 +5,7 @@ import matplotlib
 import coordinateUtilities
 from door import Door
 from graph import Graph
+from parseObj import parse_obj_files
 from room import Room
 from stairs import Stair
 import numpy as np
@@ -99,13 +100,14 @@ def visualize_level(rooms, stairs, level=3, max_features=10000):
 if __name__ == "__main__":
 
     geojson_string = open("resources/h4.geojson", encoding="utf-8").read()
+    building_name = "h4"
+
     geojson_data = json.loads(geojson_string)
     graph: Graph = parse_geojson_to_graph(geojson_data)
 
 
-    with open("resources/graph.json", "w") as f:
+    with open(f"resources/{building_name}_graph.json", "w") as f:
         f.write(graph.export_json())
 
-    with open("C:\\Users\\nico\\Desktop\\Alles\\Projekte\\geoJsonParser\\navigatorApp\\lib\\resources\\graph.json", "w") as f:
-        f.write(graph.export_json())
 
+    parse_obj_files(geojson_data, building_name)

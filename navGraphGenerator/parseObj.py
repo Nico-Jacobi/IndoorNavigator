@@ -15,21 +15,18 @@ from wavefront import Wavefront
 
 matplotlib.use('TkAgg')
 
+import os
 
-def parse_obj_files(geojson_string, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> None:
+def parse_obj_files(geojson_data, source_filename, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> None:
     """
-    Parses a GeoJSON file and extracts rooms, doors, and stairs.
-    Sets them up, and returns a graph representation of the building.
+    Parses the GeoJSON, generates .obj files per floor, and a config .json with output paths.
     """
     graph = Graph()
+    building_name = os.path.splitext(os.path.basename(source_filename))[0]
 
-    doors = []
-    stairs = []
-    rooms = []
-    broken = []
+    doors, stairs, rooms, broken = [], [], [], []
 
-
-    for feature in geojson_string.get("features", []):
+    for feature in geojson_data.get("features", []):
         properties = feature.get("properties")
         if not isinstance(properties, dict):
             broken.append(feature)
@@ -48,45 +45,58 @@ def parse_obj_files(geojson_string, origin_lat=coordinateUtilities.origin_lat, o
                 if len(feature.get("geometry", {}).get("coordinates", [])) <= 3:
                     continue
                 rooms.append(Room(feature, graph))
-
         else:
             broken.append(feature)
 
-
-    all_rooms = [room for room in rooms + stairs if room.level == 3]
-    print("all rooms:", len(all_rooms))
-    all_rooms = [room for room in all_rooms if len(room.coordinates) > 3]
-    print("all rooms with valid geometry:", len(all_rooms))
-
-
     Stair.link_stairs(stairs)
-    Room.setup_all_rooms(all_rooms, doors) # this needs to be done here, so the geometry is right, maybe just fix that
-    # thats faster
 
-    #origin_lat, origin_lon = rooms[0].coordinates[0]
+    levels = sorted(set(room.level for room in rooms + stairs))
+    output_config = {
+        "building": building_name,
+        "graph": f"{source_filename}_graph.json",
+        "floors": []
+    }
 
-    walls:Wavefront = parse_walls_obj_from_rooms(all_rooms, origin_lat, origin_lon)
-    ground:Wavefront = parse_ground_floor_obj_from_rooms(all_rooms, origin_lat, origin_lon)
+    for level in levels:
+        print(f"Processing level {level}")
+        floor_rooms = [r for r in rooms + stairs if r.level == level and len(r.coordinates) > 3]
+        if not floor_rooms:
+            continue
 
+        Room.setup_all_rooms(floor_rooms, doors)
 
+        walls = parse_walls_obj_from_rooms(floor_rooms, origin_lat, origin_lon)
+        ground = parse_ground_floor_obj_from_rooms(floor_rooms, origin_lat, origin_lon)
 
-    with open("resources/walls.obj", "w") as f:
-        f.write(str(walls))
+        walls_file = f"resources/{building_name}_floor{level}_walls.obj"
+        ground_file = f"resources/{building_name}_floor{level}_ground.obj"
 
-    with open("resources/ground.obj", "w") as f:
-        f.write(str(ground))
+        with open(walls_file, "w") as f:
+            f.write(str(walls))
+        with open(ground_file, "w") as f:
+            f.write(str(ground))
 
-    # Export the .mtl file (if it's not already created)
+        output_config["floors"].append({
+            "level": level,
+            "walls": os.path.basename(walls_file),
+            "ground": os.path.basename(ground_file)
+        })
+
+    # Write the material once
     with open("resources/WhiteMaterial.mtl", "w") as f:
-        f.write("""
-        newmtl WhiteMaterial
-        Ka 1.000 1.000 1.000  # Ambient color (white)
-        Kd 1.000 1.000 1.000  # Diffuse color (white)
-        Ks 0.500 0.500 0.500  # Specular color (gray)
-        d 1.0                 # Transparency
+        f.write("""newmtl WhiteMaterial
+        Ka 1.000 1.000 1.000
+        Kd 1.000 1.000 1.000
+        Ks 0.500 0.500 0.500
+        d 1.0
         """)
 
-    return
+    config_file = f"resources/{building_name}_config.json"
+    with open(config_file, "w") as f:
+        json.dump(output_config, f, indent=4)
+
+    print("Done writing config:", config_file)
+
 
 
 def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origin_lon: float) -> Wavefront:
@@ -211,10 +221,11 @@ def plot_geometry_collection(geom_collection, ax=None):
 
 
 if __name__ == "__main__":
+    input_path = "resources/h4.geojson"
+    with open(input_path, encoding="utf-8") as f:
+        geojson_data = json.load(f)
 
-    geojson_string = open("resources/h4.geojson", encoding="utf-8").read()
-    geojson_data = json.loads(geojson_string)
-    parse_obj_files(geojson_data)
+    parse_obj_files(geojson_data, "h4")
 
 
 

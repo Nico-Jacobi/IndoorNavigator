@@ -23,6 +23,7 @@ namespace controller
         {
             using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
             {
+                // this throws an error if not on android
                 context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
             }
 
