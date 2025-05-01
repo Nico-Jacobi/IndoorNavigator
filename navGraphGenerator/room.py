@@ -13,6 +13,8 @@ from shapely.geometry import Polygon
 from graph import Graph
 
 
+
+
 class Room:
     # the grid size for pathfinding the visual paths (lower = more accurate, but slower)
     grid_size_x: float = 0.00001
@@ -580,6 +582,7 @@ class Room:
                     total_length = path_length + start_dist + goal_dist
 
                     path = Room.simplify_geometry(path[1:-1], loop=False) # Remove start and end points + cleanup
+                    path = self.smooth_path(path)
                     # Create direct edge between door vertices with weight and path
                     self.graph.add_edge_bidirectional(start_door.vertex, goal_door.vertex, NavigationPath(weight=total_length, points=path))
 
@@ -815,6 +818,145 @@ class Room:
         return coordinates
 
 
+    def smooth_path(self, path: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """
+        1. First removes collinear vertices (points that lie on straight lines)
+        2. Then removes edge vertices while ensuring the path remains inside the room
+           and maintains a safe distance from walls
+
+        this is quite slow
+
+        :param path: List of coordinate tuples representing the path
+        :return: A smoothed path with unnecessary vertices removed
+        """
+        if len(path) <= 2:
+            return path
+
+        # Phase 1: Remove collinear points first
+        i = 1
+        while i < len(path) - 1:
+            prev_point = path[i - 1]
+            current_point = path[i]
+            next_point = path[i + 1]
+
+            # Check if current point is collinear with its neighbors
+            if self._is_collinear(prev_point, current_point, next_point):
+                path.pop(i)
+                # Don't increment i, as we want to check the new sequence
+            else:
+                i += 1
+
+        # Phase 2: Remove edge vertices that can be skipped while maintaining safe distance from walls
+        cleaned_something = True
+        while cleaned_something and len(path) > 2:
+            cleaned_something = False
+
+            i = 1 + random.randint(0, 1)
+            while i < len(path) - 1:
+                prev_point = path[i - 1]
+                current_point = path[i]
+                next_point = path[i + 1]
+
+                # Only remove the vertex if:
+                # 1. The edge from prev to next would be fully inside the room
+                # 2. The current point is not too close to a wall
+                # 3. The new edge would not pass too close to a wall
+                if (self._is_edge_walkable(prev_point, next_point) and
+                        not self._is_close_to_wall(current_point) and
+                        not self._edge_too_close_to_wall(prev_point, next_point)):
+                    path.pop(i)
+                    cleaned_something = True
+                    # Sometimes skip to next vertex to avoid over-smoothing
+                    i += random.randint(0, 1)
+                else:
+                    i += 1
+
+        return path
+
+    def _is_collinear(self, p1: Tuple[float, float], p2: Tuple[float, float],
+                      p3: Tuple[float, float], tolerance: float = 0.00000000001) -> bool:
+        """
+        Determines if three points are approximately collinear (on the same straight line).
+
+        Uses the area of the triangle formed by the three points. If area is near zero,
+        the points are collinear.
+
+        :param p1, p2, p3: The three points to check
+        :param tolerance: Threshold for determining collinearity
+        :return: True if points are collinear, False otherwise
+        """
+        # Calculate the area of the triangle formed by the three points
+        area = abs(p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1])) / 2.0
+
+        # print(area)
+        # Points are collinear if the area is approximately zero
+        return area < tolerance
+
+    #change the num_checks for faster performance, this takes ages
+    def _is_edge_walkable(self, point1: Tuple[float, float], point2: Tuple[float, float], num_checks: int = 30) -> bool:
+        """
+        Checks if the straight line between two points is entirely walkable within the room.
+
+        :param point1: Starting point as (x, y) tuple
+        :param point2: Ending point as (x, y) tuple
+        :param num_checks: Number of points to check along the line
+        :return: True if the entire edge is walkable, False otherwise
+        """
+        # Check if endpoints are walkable
+        if not self.is_walkable(point1) or not self.is_walkable(point2):
+            return False
+
+        # Check multiple points along the line
+        for i in range(1, num_checks):
+            t = i / num_checks
+            check_point = (
+                point1[0] + t * (point2[0] - point1[0]),
+                point1[1] + t * (point2[1] - point1[1])
+            )
+
+            if not self.is_walkable(check_point):
+                return False
+
+        return True
+
+    def _is_close_to_wall(self, point: Tuple[float, float], safety_distance: float = 0.00003) -> bool:
+        """
+        Determines if a point is too close to any wall.
+
+        :param point: The point to check as (x, y) tuple
+        :param safety_distance: Minimum safe distance from walls
+        :return: True if the point is too close to a wall, False otherwise
+        """
+        # Use the existing distance_to_wall method
+        distance = self.distance_to_wall(point)
+        return distance < safety_distance
+
+    def _edge_too_close_to_wall(self, point1: Tuple[float, float], point2: Tuple[float, float],
+                                num_checks: int = 10, safety_distance: float = 0.00003) -> bool:
+        """
+        Checks if any point along the edge between two points is too close to a wall.
+
+        :param point1: Starting point as (x, y) tuple
+        :param point2: Ending point as (x, y) tuple
+        :param num_checks: Number of points to check along the line
+        :param safety_distance: Minimum safe distance from walls
+        :return: True if the edge passes too close to a wall, False otherwise
+        """
+        # Check multiple points along the line
+        for i in range(1, num_checks):
+            t = i / num_checks
+            check_point = (
+                point1[0] + t * (point2[0] - point1[0]),
+                point1[1] + t * (point2[1] - point1[1])
+            )
+
+            # Check if this point is too close to a wall
+            if self._is_close_to_wall(check_point, safety_distance):
+                return True
+
+        return False
+
+
 def distance_to_segment(point, a, b):
     """ Helper to calculate distance from point to line segment (a, b) """
     ax, ay = a
@@ -836,4 +978,5 @@ def distance_to_segment(point, a, b):
 
     # distance from point to the closest point on segment
     return ((point_x - closest_x) ** 2 + (point_y - closest_y) ** 2) ** 0.5
+
 
