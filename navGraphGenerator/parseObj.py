@@ -17,38 +17,12 @@ matplotlib.use('TkAgg')
 
 import os
 
-def parse_obj_files(geojson_data, source_filename, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> None:
+def parse_obj_files(rooms: List[Door], stairs: List[Stair], doors: List[Door], source_filename, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> None:
     """
-    Parses the GeoJSON, generates .obj files per floor, and a config .json with output paths.
+    generates .obj files per floor, and a config .json with output paths.
+    Expects the rooms to be already parsed and setup. (the graph doesn't need to be setup)
     """
-    graph = Graph()
     building_name = os.path.splitext(os.path.basename(source_filename))[0]
-
-    doors, stairs, rooms, broken = [], [], [], []
-
-    for feature in geojson_data.get("features", []):
-        properties = feature.get("properties")
-        if not isinstance(properties, dict):
-            broken.append(feature)
-            continue
-
-        level = properties.get("level")
-        is_door = properties.get("door") == "yes"
-        is_stairs = properties.get("stairs") == "yes"
-
-        if level is not None:
-            if is_door:
-                doors.append(Door(feature, graph))
-            elif is_stairs:
-                stairs.append(Stair(feature, graph))
-            else:
-                if len(feature.get("geometry", {}).get("coordinates", [])) <= 3:
-                    continue
-                rooms.append(Room(feature, graph))
-        else:
-            broken.append(feature)
-
-    Stair.link_stairs(stairs)
 
     levels = sorted(set(room.level for room in rooms + stairs))
     output_config = {
@@ -63,7 +37,6 @@ def parse_obj_files(geojson_data, source_filename, origin_lat=coordinateUtilitie
         if not floor_rooms:
             continue
 
-        Room.setup_all_rooms(floor_rooms, doors)
 
         walls = parse_walls_obj_from_rooms(floor_rooms, origin_lat, origin_lon)
         ground = parse_ground_floor_obj_from_rooms(floor_rooms, origin_lat, origin_lon)

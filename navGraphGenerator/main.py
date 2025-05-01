@@ -14,13 +14,13 @@ matplotlib.use('TkAgg')
 
 
 
-def parse_geojson_to_graph(geojson_string, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> Graph:
+def parse_geojson_to_graph(geojson_string, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> tuple[Graph, list, list, list]:
     """
     Parses a GeoJSON file and extracts rooms, doors, and stairs.
-    Sets them up, and returns a graph representation of the building.
+    Sets them up, and returns a graph representation of the building,
+    along with the lists of rooms, stairs, and doors.
     """
     graph = Graph()
-
     doors = []
     stairs = []
     rooms = []
@@ -45,23 +45,16 @@ def parse_geojson_to_graph(geojson_string, origin_lat=coordinateUtilities.origin
                 if len(feature.get("geometry", {}).get("coordinates", [])) <= 2:
                     continue
                 rooms.append(Room(feature, graph))
-
         else:
             broken.append(feature)
 
-
-
     Stair.link_stairs(stairs)
     Room.setup_all_rooms(rooms + stairs, doors)
-
-    #visualize_level(rooms, stairs)
-
-    # cutting off the broken parts of the graph (like rooms without doors / rooms only accessible from the outside)
     graph.keep_largest_component()
-
     graph.normalize_coordinates(origin_lat, origin_lon)
 
-    return graph
+    return graph, rooms, stairs, doors
+
 
 
 
@@ -98,16 +91,13 @@ def visualize_level(rooms, stairs, level=3, max_features=10000):
 
 
 if __name__ == "__main__":
-
     geojson_string = open("resources/h4.geojson", encoding="utf-8").read()
     building_name = "h4"
-
     geojson_data = json.loads(geojson_string)
-    graph: Graph = parse_geojson_to_graph(geojson_data)
 
+    graph, rooms, stairs, doors = parse_geojson_to_graph(geojson_data)
 
     with open(f"resources/{building_name}_graph.json", "w") as f:
         f.write(graph.export_json())
 
-
-    parse_obj_files(geojson_data, building_name)
+    parse_obj_files(rooms, stairs, doors, building_name)
