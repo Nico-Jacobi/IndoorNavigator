@@ -1,8 +1,10 @@
-﻿using SQLite;
+﻿using System;
+using SQLite;
 using System.Collections.Generic;
+using System.Linq;
 using model.Database.Plugins;
 
-namespace Plugins
+namespace model.Database
 {
     [Table("Coordinates")]
     public class Coordinate
@@ -16,6 +18,50 @@ namespace Plugins
 
         [Ignore]
         public List<WifiInfo> WifiInfos { get; set; } = new();
+        
+        [Ignore]
+        public Dictionary<string, WifiInfo> WifiInfoMap => WifiInfos.ToDictionary(w => w.Bssid, w => w);
+        
+        
+        public override string ToString()
+        {
+            string wifiDetails = string.Join(", ",
+                WifiInfoMap.Select(kv => $"{kv.Key}: {kv.Value.SignalStrength}dBm"));
+
+            return $"Coordinate (Id={Id}, X={X}, Y={Y}, Floor={Floor}, Building='{BuildingName}') | WiFi: [{wifiDetails}]";
+        }
+        
+        
+        /// <summary>
+        /// Compare the Wi-Fi similarity between this Coordinate and another Coordinate.
+        /// </summary>
+        public float CompareWifiSimilarity(Coordinate other)
+        {
+            var allBssids = WifiInfoMap.Keys.Union(other.WifiInfoMap.Keys).ToList();
+
+            List<float> thisFeatureVector = new List<float>();
+            List<float> otherFeatureVector = new List<float>();
+
+            foreach (var bssid in allBssids)
+            {
+                float thisSignalStrength = WifiInfoMap.ContainsKey(bssid) ? WifiInfoMap[bssid].SignalStrength : 0.0f;
+                float otherSignalStrength = other.WifiInfoMap.ContainsKey(bssid) ? other.WifiInfoMap[bssid].SignalStrength : 0.0f;
+
+                thisFeatureVector.Add(thisSignalStrength);
+                otherFeatureVector.Add(otherSignalStrength);
+            }
+
+            // Calculate the difference sum
+            float differenceSum = 0.0f;
+            for (int i = 0; i < thisFeatureVector.Count; i++)
+            {
+                differenceSum += Math.Abs(thisFeatureVector[i] - otherFeatureVector[i]);
+            }
+
+            return differenceSum;
+        }
+
+        
     }
     
     [System.Serializable]
@@ -23,6 +69,5 @@ namespace Plugins
     {
         public List<Coordinate> Coordinates;
     }
-
     
 }

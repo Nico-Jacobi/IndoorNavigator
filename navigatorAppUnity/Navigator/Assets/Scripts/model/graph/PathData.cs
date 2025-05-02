@@ -47,7 +47,7 @@ namespace model.graph
         /// <summary>
         /// Plots this PathData as a smooth line in the scene using a LineRenderer.
         /// </summary>
-        public void Plot(string name = "PlottedPath", Color? color = null, int smoothness = 10, float height = 1)
+        public void Plot(string name = "PlottedPath", Color? startColor = null,  Color? endColor = null, int smoothness = 10, float height = 1)
         {
             if (points == null)
             {
@@ -67,8 +67,8 @@ namespace model.graph
             // Basic line settings
             line.widthMultiplier = 0.1f;
             line.material = new Material(Shader.Find("Sprites/Default"));
-            line.startColor = color ?? Color.cyan;
-            line.endColor = color ?? Color.magenta;
+            line.startColor = startColor ?? Color.cyan;
+            line.endColor = endColor ?? Color.magenta;
             line.useWorldSpace = true;
 
             List<Vector3> positions = new List<Vector3>();
@@ -89,24 +89,40 @@ namespace model.graph
         /// </summary>
         private List<Vector3> SmoothLine(List<Vector3> original, int smoothness)
         {
-            List<Vector3> smoothed = new List<Vector3>();
-            if (original.Count < 2) return original;
+            if (original == null || original.Count < 2 || smoothness < 1)
+                return original;
 
+            List<Vector3> smoothedLine = new List<Vector3>();
+    
+            // Add the first point
+            smoothedLine.Add(original[0]);
+    
+            // Process each segment between adjacent points
             for (int i = 0; i < original.Count - 1; i++)
             {
-                Vector3 p0 = original[i];
-                Vector3 p1 = original[i + 1];
-
-                smoothed.Add(p0);
-                for (int j = 1; j < smoothness; j++)
+                Vector3 start = original[i];
+                Vector3 end = original[i + 1];
+        
+                // Add intermediate points for smoothing
+                for (int j = 1; j <= smoothness; j++)
                 {
-                    float t = j / (float)smoothness;
-                    smoothed.Add(Vector3.Lerp(p0, p1, t));
+                    float t = j / (smoothness + 1.0f);
+                    Vector3 intermediatePoint = Vector3.Lerp(start, end, t);
+                    smoothedLine.Add(intermediatePoint);
+                }
+        
+                // Add the end point of the current segment
+                // (except for the last segment to avoid duplicating the final point)
+                if (i < original.Count - 2)
+                {
+                    smoothedLine.Add(end);
                 }
             }
-
-            smoothed.Add(original[^1]); // last point
-            return smoothed;
+    
+            // Add the very last point
+            smoothedLine.Add(original[original.Count - 1]);
+    
+            return smoothedLine;
         }
     }
 }

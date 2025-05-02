@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using controller;
+using model;
 using model.graph;
 using UnityEngine;
 using TMPro;
@@ -26,7 +28,10 @@ namespace controller
         void PopulateDropdownFromVertices(TMP_Dropdown dropdown, List<Vertex> verts)
         {
             dropdown.ClearOptions();
-            List<string> names = verts.ConvertAll(v => $"{v.floor}");
+            List<string> names = verts
+                .Where(v => v.rooms.Count > 0)
+                .Select(v => $"{v.rooms[0]}")
+                .ToList();
             dropdown.AddOptions(names);
         }
 
@@ -51,17 +56,25 @@ namespace controller
 
             Debug.Log($" path found with lenght {path.Count}");
 
-            Positioning pos = wifiManager.GetPositioning();
+            Position pos = wifiManager.GetPosition();
+            Color[] startColors = { Color.cyan, Color.magenta };
+            Color[] endColors = { Color.magenta, Color.cyan };
+            int i = 0;
+
             foreach (Edge e in path)
             {
-                if (e.source.floor == pos.GetFloor())
+                if (e.source.floor == pos.Floor)
                 {
-                    e.path.Plot(height:pos.GetFloorHeight()+0.5f);
+                    e.path.Plot(
+                        height: pos.GetFloorHeight() + 0.5f,
+                        startColor: startColors[i % 2],
+                        endColor: endColors[i % 2],
+                        smoothness: 100
+                    );
+                    i++;
                 }
             }
 
-            //todo plot 
-            //todo normalize coordinates of graph
         }
 
 
