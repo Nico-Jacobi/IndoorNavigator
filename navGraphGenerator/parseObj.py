@@ -3,10 +3,8 @@ import matplotlib
 from matplotlib import pyplot as plt
 from shapely.geometry.polygon import Polygon
 from shapely.ops import unary_union
-
 import coordinateUtilities
 from door import Door
-from graph import Graph
 from room import Room
 from stairs import Stair
 from typing import List, Tuple
@@ -37,39 +35,61 @@ def parse_obj_files(rooms: List[Door], stairs: List[Stair], doors: List[Door], s
         if not floor_rooms:
             continue
 
-
+        floor_doors = [d for d in doors if d.level == level]
         walls = parse_walls_obj_from_rooms(floor_rooms, origin_lat, origin_lon)
         ground = parse_ground_floor_obj_from_rooms(floor_rooms, origin_lat, origin_lon)
+        doors_obj = parse_door_obj(floor_doors, origin_lat, origin_lon)
 
         walls_file = f"resources/{building_name}_floor{level}_walls.obj"
         ground_file = f"resources/{building_name}_floor{level}_ground.obj"
+        doors_file = f"resources/{building_name}_floor{level}_doors.obj"
+
 
         with open(walls_file, "w") as f:
             f.write(str(walls))
         with open(ground_file, "w") as f:
             f.write(str(ground))
+        with open(doors_file, "w") as f:
+            f.write(str(doors_obj))
 
         output_config["floors"].append({
             "level": level,
             "walls": os.path.basename(walls_file),
-            "ground": os.path.basename(ground_file)
+            "ground": os.path.basename(ground_file),
+            "doors": os.path.basename(doors_file)
         })
 
-    # Write the material once
-    with open("resources/WhiteMaterial.mtl", "w") as f:
-        f.write("""newmtl WhiteMaterial
-        Ka 1.000 1.000 1.000
-        Kd 1.000 1.000 1.000
-        Ks 0.500 0.500 0.500
-        d 1.0
-        """)
 
     config_file = f"resources/{building_name}_config.json"
     with open(config_file, "w") as f:
         json.dump(output_config, f, indent=4)
 
+    write_default_mtl(f"resources/buildings_material.mtl")
+
     print("Done writing config:", config_file)
 
+
+def write_default_mtl(filename: str):
+    """
+    Writes a basic MTL file with 'WhiteMaterial' and 'DarkMaterial'.
+    """
+    with open(filename, "w") as f:
+        f.write("""# Default materials
+
+            newmtl WhiteMaterial
+            Ka 1.000 1.000 1.000
+            Kd 1.000 1.000 1.000
+            Ks 0.000 0.000 0.000
+            d 1.0
+            illum 1
+            
+            newmtl DarkMaterial
+            Ka 0.1 0.1 0.1
+            Kd 0.1 0.1 0.1
+            Ks 0.000 0.000 0.000
+            d 1.0
+            illum 1
+            """)
 
 
 def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origin_lon: float) -> Wavefront:
@@ -119,6 +139,8 @@ def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origi
     for outside_room in outside:
         outside_room.get_wavefront_walls(origin_lat, origin_lon, wavefront, outside=True, inside=False, top=True)
 
+
+
     return wavefront
 
 
@@ -133,6 +155,16 @@ def parse_ground_floor_obj_from_rooms(rooms: List['Room'], origin_lat: float, or
         if not geometry.is_empty:
             polygon = Polygon2D.from_shapely(geometry)
             polygon.to_wavefront_triangulation(wavefront)
+
+    return wavefront
+
+
+
+def parse_door_obj(all_doors: List['Door'], origin_lat: float,origin_lon: float) -> Wavefront:
+
+    wavefront = Wavefront()
+    for door in all_doors:
+        door.get_wavefront_walls(origin_lat, origin_lon, wavefront)
 
     return wavefront
 
@@ -187,20 +219,5 @@ def plot_geometry_collection(geom_collection, ax=None):
     plt.show()
 
     return ax
-
-
-
-
-
-
-if __name__ == "__main__":
-    input_path = "resources/h4.geojson"
-    with open(input_path, encoding="utf-8") as f:
-        geojson_data = json.load(f)
-
-    parse_obj_files(geojson_data, "h4")
-
-
-
 
 

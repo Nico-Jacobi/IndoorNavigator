@@ -91,6 +91,7 @@ def visualize_level(rooms, stairs, level=3, max_features=10000):
 
 
 if __name__ == "__main__":
+
     geojson_string = open("resources/h4.geojson", encoding="utf-8").read()
     building_name = "h4"
     geojson_data = json.loads(geojson_string)

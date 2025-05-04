@@ -497,37 +497,77 @@ class Room:
 
         return min_distance
 
-
-
-    def is_door_on_outline(self, door: Door, tolerance: float = wall_thickness[0]) -> bool:
+    def is_door_on_outline(self,door: Door, tolerance: float = wall_thickness[0]) -> bool:
         """
-        Checks if a door is on the outline of the room.
-        (will not link those)
+        Checks if a door is on the outline of the room and returns a segment centered at the door,
+        aligned with the closest wall segment and of fixed length.
 
         :param door: The door to check.
-        :param tolerance: The distance tolerance for checking proximity to the outline in gps fractions.
+        :param tolerance: Distance tolerance for matching a wall segment.
+        :return: Tuple (is_on_outline, edge_segment_centered_at_door) — edge_segment is None if not on outline.
         """
+
+        def make_centered_rectangle(center: tuple[float, float], direction: tuple[float, float],
+                                    door_length_scale: float = 4, door_depth_scale: float = 1.5) -> list[tuple[float, float]]:
+            """
+            Returns 4 corner points of a rectangle centered at 'center', oriented along 'direction'.
+            Length and depth are scaled based on wall_thickness due to stretched coordinate system.
+            """
+            dx, dy = direction
+            norm = math.hypot(dx, dy)
+            if norm == 0:
+                return [center] * 4  # degenerate case
+
+            # Normalize direction
+            dx, dy = dx / norm, dy / norm
+            perp_dx, perp_dy = -dy, dx  # perpendicular
+
+            # Choose scale based on major direction (x or y dominates)
+            use_x = abs(dx) > abs(dy)
+            scale_length = Room.wall_thickness[0] if use_x else Room.wall_thickness[1]
+            scale_depth = Room.wall_thickness[1] if use_x else Room.wall_thickness[0]
+
+            # Set defaults if not provided
+            door_length = scale_length * door_length_scale
+            door_depth = scale_depth * door_depth_scale
+
+            # Half sizes
+            half_len = door_length / 2
+            half_dep = door_depth / 2
+
+            # Corners
+            p1 = (center[0] - dx * half_len - perp_dx * half_dep,
+                  center[1] - dy * half_len - perp_dy * half_dep)
+            p2 = (center[0] + dx * half_len - perp_dx * half_dep,
+                  center[1] + dy * half_len - perp_dy * half_dep)
+            p3 = (center[0] + dx * half_len + perp_dx * half_dep,
+                  center[1] + dy * half_len + perp_dy * half_dep)
+            p4 = (center[0] - dx * half_len + perp_dx * half_dep,
+                  center[1] - dy * half_len + perp_dy * half_dep)
+
+            return [p1, p2, p3, p4]
+
         if len(self.coordinates) < 2 or self.level != door.level:
             return False
 
+        segments = []
 
-        # looping over all segments of the room, and check the distance to the door
-        for i in range(len(self.coordinates) - 1):
-            if distance_to_segment(door.coordinates, self.coordinates[i], self.coordinates[i + 1]) <= tolerance:
-                return True
+        # main outline
+        coords = self.coordinates
+        segments += [(coords[i], coords[i + 1]) for i in range(len(coords) - 1)]
+        segments.append((coords[-1], coords[0]))  # wrap
 
-        # check the distance to the last segment, which is the one looping around
-        if distance_to_segment(door.coordinates, self.coordinates[-1], self.coordinates[0]) <= tolerance:
-            return True
-
-        # also check the holes
+        # holes
         for hole in self.holes:
-            for i in range(len(hole) - 1):
-                if distance_to_segment(door.coordinates, hole[i], hole[i + 1]) <= tolerance:
-                    return True
+            segments += [(hole[i], hole[i + 1]) for i in range(len(hole) - 1)]
+            segments.append((hole[-1], hole[0]))  # wrap
 
-            # last (looping) segment
-            if distance_to_segment(door.coordinates, hole[-1], hole[0]) <= tolerance:
+        # check all segments
+        for a, b in segments:
+            if distance_to_segment(door.coordinates, a, b) <= tolerance:
+                direction = (b[0] - a[0], b[1] - a[1])
+                centered = make_centered_rectangle(door.coordinates, direction)
+                door.geometry = centered
                 return True
 
         return False

@@ -2,46 +2,39 @@ import math
 from typing import Tuple, List
 from shapely.geometry.polygon import Polygon
 
-
 class Wavefront:
-
-    # the merge_threshold is 0.2 here, as meter-coordinates are used for the object (0.2 = 20cm) instead of gps.coordinates
-    def __init__(self, merge_threshold=0.02):
+    def __init__(self, merge_threshold=0.02, default_material=" "):
         self.vertex_normal_pairs: List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = []
         self.faces: List[List[int]] = []
+        self.materials: List[str] = []
         self.merge_threshold: float = merge_threshold
-
+        self.default_material: str = default_material
 
     def _is_close(self, v1: Tuple[float, float, float], v2: Tuple[float, float, float]) -> bool:
         return math.dist(v1, v2) < self.merge_threshold
 
-
-    def _find_or_add_vertex(self, vertex: Tuple[float, float, float],
-                            normal: Tuple[float, float, float]) -> int:
-        """Find the index of a vertex or add it if it doesn't exist."""
+    def _find_or_add_vertex(self, vertex: Tuple[float, float, float], normal: Tuple[float, float, float]) -> int:
         if normal is None:
             raise ValueError("Cannot add a vertex without a normal")
-
         for idx, (v, _) in enumerate(self.vertex_normal_pairs):
             if self._is_close(v, vertex):
                 return idx
         self.vertex_normal_pairs.append((vertex, normal))
         return len(self.vertex_normal_pairs) - 1
 
-
     def add_face(self, vertex_list: List[Tuple[float, float, float]],
-                 normal_list: List[Tuple[float, float, float]]):
-        """Adds a face to the model, reusing existing vertices when close enough."""
-        # Make sure we have the same number of vertices and normals
+                 normal_list: List[Tuple[float, float, float]],
+                 material_name: str = None):
         if normal_list is None or len(vertex_list) != len(normal_list):
             raise ValueError("The number of vertices and normals must match, and normals cannot be None")
 
         indices = [self._find_or_add_vertex(v, n) for v, n in zip(vertex_list, normal_list)]
         self.faces.append(indices)
+        self.materials.append(material_name or self.default_material)
 
-    def add_face_indices(self, vertex_indices: List[int]):
-        """Adds a face to the model, reusing existing vertices when close enough."""
+    def add_face_indices(self, vertex_indices: List[int], material_name: str = None):
         self.faces.append(vertex_indices)
+        self.materials.append(material_name or self.default_material)
 
 
     def remove_redundant_faces(self):
@@ -196,23 +189,20 @@ class Wavefront:
         else:
             return "none"
 
-    def __str__(self, material_name="WhiteMaterial", mtl_file="WhiteMaterial.mtl"):
-        #self.remove_redundant_faces()
-
-        # Initialize the list to store lines
+    def __str__(self, mtl_file="materials.mtl") -> str:
         lines = [f"mtllib {mtl_file}"]
 
-        # Reference the material in the OBJ file
-
-        # Write vertices and normals
-        for vertex, normal in self.vertex_normal_pairs:
+        for vertex, _ in self.vertex_normal_pairs:
             lines.append(f"v {vertex[0]} {vertex[1]} {vertex[2]}")
-            #lines.append(f"vn {normal[0]} {normal[1]} {normal[2]}")
+            # You could add normals here if needed:
+            # lines.append(f"vn {normal[0]} {normal[1]} {normal[2]}")
 
-        # Write faces and assign the material
-        for f in self.faces:
-            face_line = "f " + " ".join(f"{idx + 1}//{idx + 1}" for idx in f)
-            lines.append(f"usemtl {material_name}")  # Use the material before the face definition
+        last_material = None
+        for face, material in zip(self.faces, self.materials):
+            if material != last_material:
+                lines.append(f"usemtl {material}")
+                last_material = material
+            face_line = "f " + " ".join(f"{idx + 1}//{idx + 1}" for idx in face)
             lines.append(face_line)
 
         return "\n".join(lines)

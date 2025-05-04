@@ -1,4 +1,6 @@
 from typing import Tuple, List, Any, Dict, TYPE_CHECKING
+
+from coordinateUtilities import normalize_lat_lon_to_meter
 from graph import Vertex, Graph
 
 
@@ -25,6 +27,8 @@ class Door:
         self.vertex = Vertex("Door", self.coordinates[0], self.coordinates[1],self.level)
         self.graph.add_vertex(self.vertex)
 
+        self.geometry: List[Tuple[float, float]] = []
+
 
     # just to be able to sort the doors
     def __lt__(self, other: "Door") -> bool:
@@ -43,3 +47,23 @@ class Door:
             print(f"Warning: {self.vertex.name} has more than 2 rooms linked to it.")
             print([r.name for r in self.rooms])
 
+    def get_wavefront_walls(self, origin_lat, origin_lon, wavefront):
+
+        if not self.geometry:
+            return
+
+
+        top_face = []
+        for i, point in enumerate(self.geometry):
+            x, y = point
+            x1, y1 = self.geometry[(i+1) % len(self.geometry)]
+
+            x, y = normalize_lat_lon_to_meter(x, y, origin_lat, origin_lon)
+            x1, y1 = normalize_lat_lon_to_meter(x1, y1, origin_lat, origin_lon)
+
+            top_face.append((x,1.8,y))
+
+            face = [(x,1.8,y), (x1,1.8,y1), (x1,0,y1), (x,0,y)]
+            wavefront.add_face(face, [(0,0,0), (1,0,0), (0,1,0), (1,1,0)], "DarkMaterial")
+
+        wavefront.add_face(top_face[::-1], [(0,0,0), (1,0,0), (0,1,0), (1,1,0)], "DarkMaterial")
