@@ -508,7 +508,7 @@ class Room:
         """
 
         def make_centered_rectangle(center: tuple[float, float], direction: tuple[float, float],
-                                    door_length_scale: float = 4, door_depth_scale: float = 1.5) -> list[tuple[float, float]]:
+                                    door_length_scale: float = 3, door_depth_scale: float = 1.5) -> list[tuple[float, float]]:
             """
             Returns 4 corner points of a rectangle centered at 'center', oriented along 'direction'.
             Length and depth are scaled based on wall_thickness due to stretched coordinate system.

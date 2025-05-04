@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using model;
@@ -19,7 +20,7 @@ namespace controller
         private AndroidJavaObject context;
 
         public SQLiteDatabase database;
-        public string currentBuilding = null;
+        public string currentBuilding;
         
         public GameObject promptPanel;
         public Button settingsButton;
@@ -28,6 +29,14 @@ namespace controller
         
         private List<Position> positions;   //contains last x raw predictions, removes old ones, but may contain more than rollingAverageLength
         public int rollingAverageLength = 10;
+
+        
+        private bool isUpdating = false;    //set to true to stop the scanning, otherwise to coroutine will use this
+        private float updateInterval = 2f;  //seconds between scans (if wifi scans are throttled (android 12+ default) set to 30)
+        
+        // Added to track scan completion status
+        private bool scanInProgress = false;
+        private float scanTimeout = 5.0f; // Maximum time to wait for scan results in seconds
 
         void Start()
         {
@@ -42,17 +51,17 @@ namespace controller
                     context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
                     RequestLocationPermission();
                     wifiManager = context.Call<AndroidJavaObject>("getSystemService", "wifi");
-
+                    StartCoroutine(UpdateLocationContinuously());
                 }
             }
-            catch (AndroidJavaException)
+            catch //(AndroidJavaException)
             {
                 Debug.LogAssertion("Couldn't get android API, some functionality wont work");
             }
-
-            
-            ClosePrompt();
-
+            promptText.text = "Location services are disabled. Please enable GPS in your device settings.";
+            settingsButton.onClick.AddListener(OpenLocationSettings);
+            discardButton.onClick.AddListener(ClosePrompt);
+            promptPanel.SetActive(false);
         }
 
         public Position GetPosition()
@@ -61,19 +70,17 @@ namespace controller
             //also use compass to get direction and from the points and the last ones get the speed to make better predicton
             
             if (positions == null || positions.Count == 0)
-                return new Position(0, 0, 0);
+                return null;
 
             int count = Math.Min(rollingAverageLength, positions.Count);
             var lastPositions = positions.Skip(positions.Count - count).ToList();
 
-            double avgX = lastPositions.Average(p => p.X);
-            double avgY = lastPositions.Average(p => p.Y);
+            float avgX = lastPositions.Average(p => p.X);
+            float avgY = lastPositions.Average(p => p.Y);
             int avgFloor = (int)Math.Round(lastPositions.Average(p => p.Floor));
 
             return new Position(avgX, avgY, avgFloor);
         }
-
-
 
         // Check if location is activated
         private bool IsLocationEnabled()
@@ -86,21 +93,8 @@ namespace controller
         // Popup to turn on the location
         public void PromptUserToEnableLocation()
         {
-            if (promptPanel == null || promptText == null || discardButton == null)
-            {
-                Debug.LogError("UI components not assigned.");
-                return;
-            }
-
-            Debug.Log("Location not active, prompting user...");
             promptPanel.SetActive(true);
-            promptText.text = "Location services are disabled. Please enable GPS in your device settings.";
-
-            // Set up button listeners
-            settingsButton.onClick.AddListener(OpenLocationSettings);
-            discardButton.onClick.AddListener(ClosePrompt);
         }
-
 
         // Request coarse location privileges (just the app's privileges, not if it's actually on)
         private void RequestLocationPermission()
@@ -113,53 +107,86 @@ namespace controller
         }
 
         /// <summary>
-        /// Returns a dummy Coordinate with WiFiInfos from current scan.
+        /// Starts a WiFi scan and returns a coroutine that will yield a Coordinate with WiFiInfos from scan.
         /// </summary>
-        private Coordinate GetScannedCoordinate()
+        private IEnumerator GetScannedCoordinateAsync()
         {
+            // Create a new coordinate object with dummy values
             var coord = new Coordinate
             {
-                X = 0.0f,               // Dummy values
-                Y = 0.0f,               
-                Floor = -1,            
+                X = 0.0f,
+                Y = 0.0f,
+                Floor = -1,
                 BuildingName = "CurrentMeasurement" 
             };
-
-            if (wifiManager == null)
+            
+            // Check if a scan is already in progress
+            if (scanInProgress)
             {
-                Debug.LogWarning("WifiManager not initialized.");
-                return coord;
+                Debug.Log("A scan is already in progress, waiting for it to complete...");
+                yield return new WaitUntil(() => !scanInProgress);
             }
-
-            wifiManager.Call<bool>("startScan");
-
-            AndroidJavaObject scanResults = wifiManager.Call<AndroidJavaObject>("getScanResults");
-            int size = scanResults.Call<int>("size");
-
-            for (int i = 0; i < size; i++)
+            
+            scanInProgress = true;
+            
+            // Start the WiFi scan
+            bool scanStarted = wifiManager.Call<bool>("startScan");
+            Debug.Log($"WiFi scan started: {scanStarted}");
+            
+            if (!scanStarted)
             {
-                AndroidJavaObject scanResult = scanResults.Call<AndroidJavaObject>("get", i);
-                WifiInfo wifiInfo = new WifiInfo
-                {
-                    Bssid = scanResult.Get<string>("BSSID"),
-                    SignalStrength = scanResult.Get<int>("level")   //gets normalized
-                    // CoordinateId will be set later when inserted into the DB
-                };
-
-                coord.WifiInfos.Add(wifiInfo);
+                Debug.LogWarning("Failed to start WiFi scan. This could be due to throttling on Android 9+");
+                scanInProgress = false;
+                yield return coord; // Return empty coordinate
             }
-
-            if (size == 0)
+            
+            // Wait a short time for the scan to complete
+            float timeWaited = 0;
+            while (timeWaited < scanTimeout)
             {
-                if (!IsLocationEnabled())
+                yield return new WaitForSeconds(0.2f);
+                timeWaited += 0.2f;
+                
+                // Check if scan results are available
+                AndroidJavaObject scanResults = wifiManager.Call<AndroidJavaObject>("getScanResults");
+                int size = scanResults.Call<int>("size");
+                
+                if (size > 0)
                 {
-                    PromptUserToEnableLocation();
+                    Debug.Log($"Scan completed with {size} WiFi networks found");
+                    
+                    // Process scan results
+                    for (int i = 0; i < size; i++)
+                    {
+                        AndroidJavaObject scanResult = scanResults.Call<AndroidJavaObject>("get", i);
+                        WifiInfo wifiInfo = new WifiInfo
+                        {
+                            Bssid = scanResult.Get<string>("BSSID"),
+                            SignalStrength = scanResult.Get<int>("level")   // Gets normalized
+                            // CoordinateId will be set later when inserted into the DB
+                        };
+
+                        coord.WifiInfos.Add(wifiInfo);
+                    }
+                    
+                    scanInProgress = false;
+                    yield return coord;
+                    yield break;
                 }
             }
-
-            return coord;
+            
+            // If we reached here, the scan timed out
+            Debug.LogWarning("WiFi scan timed out");
+            scanInProgress = false;
+            
+            // Check if location is enabled, if no networks were found
+            if (!IsLocationEnabled())
+            {
+                PromptUserToEnableLocation();
+            }
+            
+            yield return coord;
         }
-
 
      /*
 SSID: I'm watching you, BSSID: 2c:91:ab:59:83:5f, Level: -66, Frequency: 5500, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169109
@@ -177,35 +204,77 @@ SSID: Gastzugang Jacobi, BSSID: 82:8a:20:08:f5:d2, Level: -83, Frequency: 5745, 
 SSID: Gastzugang Jacobi, BSSID: 2e:91:ab:59:83:5f, Level: -66, Frequency: 5500, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169105
 SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][WPA-PSK-CCMP][ESS], Timestamp: 1667079169093
 */
+     
+     // Coroutine that ensures UpdateLocation is called continuously but waits for the previous call to finish.
+     private IEnumerator UpdateLocationContinuously()
+     {
+         while (true)
+         {
+             // Check if UpdateLocation is already running
+             if (!isUpdating)
+             {
+                 isUpdating = true;
+     
+                 yield return StartCoroutine(UpdateLocationAsync());
 
-        //makes a single wifiscan and appends the position to the prediction
-        public void UpdateLocation()
+                 yield return new WaitForSeconds(updateInterval);
+                 isUpdating = false;
+             }
+             else
+             {
+                 yield return null;
+             }
+         }
+     }
+
+        // Modified to be a coroutine that waits for scan results
+        private IEnumerator UpdateLocationAsync()
         {
+            // Start the scan coroutine
+            Coordinate wifiNetworks = null;
             
-            Coordinate wifiNetworks = GetScannedCoordinate();
-            if (wifiNetworks.WifiInfoMap.Count == 0)
+            // Create a custom coroutine to handle getting the coordinate
+            IEnumerator scanCoroutine = GetScannedCoordinateAsync();
+            
+            // Execute the coroutine
+            while (scanCoroutine.MoveNext())
             {
+                // If the current result is a Coordinate, store it
+                if (scanCoroutine.Current is Coordinate)
+                {
+                    wifiNetworks = scanCoroutine.Current as Coordinate;
+                }
+                yield return scanCoroutine.Current;
+            }
+            
+            // Check if we got any results
+            if (wifiNetworks == null || wifiNetworks.WifiInfoMap.Count == 0)
+            {
+                if (wifiNetworks != null)
+                {
+                    UpdateCurrentBuilding(wifiNetworks);    //in case the user just entered a building, then the error is negligible
+                }
                 Debug.Log("Wifi data is empty -> no wifi signals around or some error (eg location not active / no privileges / no android)");
+                yield break;
             }
             
             //updating currentBuilding
             if (currentBuilding == null)    
             {
                 UpdateCurrentBuilding(wifiNetworks);
-                if (currentBuilding == null)
+                if (String.IsNullOrEmpty(currentBuilding))
                 {
                     Debug.LogWarning("Could not determine building. Aborting location update.");
-                    return;
+                    yield break;
                 }
             }
 
-   
-
+            
             List<Coordinate> dataPoints = database.GetCoordinatesForBuilding(currentBuilding);
             if (dataPoints.Count == 0)
             {
                 Debug.LogWarning("No recorded data found for this building.");
-                return;
+                yield break;
             }
 
             // Sort coordinates by similarity
@@ -215,21 +284,21 @@ SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Cap
                 .ToList();
 
             // Interpolate using exponential weighting
-            double weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
+            float weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
             int actualLength = sorted.Count;
 
             for (int i = 0; i < actualLength; i++)
             {
-                double weight = Math.Pow(1.2, actualLength - i); // Exponential weighting
+                float weight = (float) Math.Pow(1.2, actualLength - i); // Exponential weighting
                 weightedX += sorted[i].X * weight;
                 weightedY += sorted[i].Y * weight;
                 weightedFloor += sorted[i].Floor * weight;
                 totalWeight += weight;
             }
 
-            double finalX = weightedX / totalWeight;
-            double finalY = weightedY / totalWeight;
-            double finalFloor = weightedFloor / totalWeight;
+            float finalX = weightedX / totalWeight;
+            float finalY = weightedY / totalWeight;
+            float finalFloor = weightedFloor / totalWeight;
 
             Position prediction = new Position(finalX, finalY, (int)Math.Round(finalFloor));
             Debug.Log($"Predicted Position: X={finalX:F2}, Y={finalY:F2}, Floor={Math.Round(finalFloor)}");
@@ -241,6 +310,8 @@ SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Cap
             {
                 positions.RemoveAt(0);
             }
+            
+            Debug.Log($"{positions.Count} predictons saved");
         }
         
         private void UpdateCurrentBuilding(Coordinate wifiNetworks)
@@ -266,14 +337,13 @@ SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Cap
 
                 //wifiNetworks.BuildingName = mostLikelyBuilding; //this is never used but it`s nice to have
                 currentBuilding = mostLikelyBuilding;
+                Debug.Log($"set current building to {currentBuilding}");
             }
             else
             {
                 Debug.Log("Wifi data doesn't match any recorded building");
             }
         }
-
-     
 
         // Opens the location settings for the user to enable GPS
         private void OpenLocationSettings()

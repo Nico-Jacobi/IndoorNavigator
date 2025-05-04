@@ -5,11 +5,11 @@
     /// </summary>
     public class Position
     {
-        public double X { get; set; }
-        public double Y { get; set; }
+        public float X { get; set; }
+        public float Y { get; set; }
         public int Floor { get; set; }
 
-        public Position(double x, double y, int floor)
+        public Position(float x, float y, int floor)
         {
             X = x;
             Y = y;

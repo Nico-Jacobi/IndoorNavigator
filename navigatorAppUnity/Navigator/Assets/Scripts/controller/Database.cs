@@ -21,6 +21,9 @@ namespace controller
         // Cache all BSSID-to-building mapping
         private Dictionary<string, HashSet<string>> bssidToBuildings = new();
 
+
+
+        
         void Awake()
         {
             DontDestroyOnLoad(gameObject);
@@ -46,7 +49,7 @@ namespace controller
             foreach (var coord in db.Table<Coordinate>())
             {
                 var wifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coord.Id).ToList();
-
+                
                 foreach (var wifi in wifiInfos)
                 {
                     if (!bssidToBuildings.ContainsKey(wifi.Bssid))
@@ -55,6 +58,7 @@ namespace controller
                 }
             }
         }
+
 
         private void ImportFromJson(string jsonPath = "default_wifidata")
         {
@@ -107,6 +111,8 @@ namespace controller
 
         public List<Coordinate> GetCoordinatesForBuilding(string buildingName)
         {
+
+            
             if (cachedBuildingName == buildingName && cachedCoordinates != null)
                 return cachedCoordinates;
 
@@ -115,7 +121,7 @@ namespace controller
                            .ToList();
 
             if (!coords.Any())
-                throw new ArgumentException($"Building name '{buildingName}' not found.");
+                throw new ArgumentException($"no data found for Building '{buildingName}'.");
 
             foreach (var coord in coords)
                 coord.WifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coord.Id).ToList();

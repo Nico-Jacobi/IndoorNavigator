@@ -18,8 +18,7 @@ namespace controller
         void Start()
         {
             Debug.Log($"Graph Manager script initialized");
-
-
+            
             PopulateDropdownFromVertices(fromField, buildingManager.GetActiveBuilding().graph.GetVertices());
             PopulateDropdownFromStrings(toField, new List<string>(buildingManager.GetActiveGraph().allRoomsSet));
         }
