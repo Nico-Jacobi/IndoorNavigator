@@ -7,6 +7,7 @@ namespace view
     public class CameraController : MonoBehaviour
     {
         public bool freeMovement;
+        public bool inMenu = false; //to block unwanted movenments
         public float moveSpeed;
         public Camera cam = null;
 
@@ -80,7 +81,12 @@ namespace view
                 MoveMarkerToPosition(pos);
                 markerUpdateTimer = 0f;
             }
-            
+
+
+            if (inMenu) //no view updated when in menus
+            {
+                return;
+            }
             
             if (freeMovement)
             {

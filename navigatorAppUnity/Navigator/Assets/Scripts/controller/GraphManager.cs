@@ -7,6 +7,7 @@ using model;
 using model.graph;
 using UnityEngine;
 using TMPro;
+using view;
 
 namespace controller
 {
@@ -14,10 +15,13 @@ namespace controller
     {
         public TMP_Dropdown toField;
         public RectTransform navigationDialog;
-        
+        public TMP_InputField searchField;
+
+        public CameraController cameraController;
         public BuildingManager buildingManager;
         public WifiManager wifiManager;
 
+        private List<string> allOptions;
         private List<Edge> currentPath;
         public bool navigationActive = false;
 
@@ -25,48 +29,82 @@ namespace controller
         {
             Debug.Log("Graph Manager script initialized");
 
-            PopulateDropdownFromStrings(new List<string>(buildingManager.GetActiveGraph().allRoomsSet));
+            allOptions = new List<string>(buildingManager.GetActiveGraph().allRoomsSet);
+            PopulateDropdownFromStrings(allOptions);
 
             StartCoroutine(UpdatePath());
-            OnCancelNavigateButtonPressed();
+            CloseNavigationDialog();
+            
+            searchField.onValueChanged.AddListener(OnSearchChanged);
+
         }
 
 
-        public void PopulateDropdownFromStrings( List<string> options)
+        private void PopulateDropdownFromStrings( List<string> options)
         {
             toField.ClearOptions();
-            List<string> names = options.FindAll(v => v.Contains("Seminar"));
-            toField.AddOptions(names);
+            toField.AddOptions(options);
         }
 
+        void OnSearchChanged(string input)
+        {
+            string lowerInput = input.ToLower();
+            List<string> matches = allOptions
+                .Where(option => option.ToLower().Contains(lowerInput))
+                .ToList();
+
+            PopulateDropdownFromStrings(matches);
+        }
+
+        
         public void OnNavigateButtonPressed()
         {
             navigationDialog.gameObject.SetActive(true);
+            cameraController.inMenu = true;
         }
         
-        public void OnCancelNavigateButtonPressed()
+        public void CloseNavigationDialog()
         {
             navigationDialog.gameObject.SetActive(false);
+            cameraController.inMenu = false;
         }
         
-        public void OnStartNavigationButtonPressed()
+        private void OnStartNavigationButtonPressed()
         {
+            navigate();
+            CloseNavigationDialog();
+        }
+        
+        
+        public async void navigate(){
             Vertex fromVertex = GetStart();
-            string toRoom = toField.options[toField.value].text;
+           string toRoom = toField.options[toField.value].text;
 
-            Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
+           Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
 
-            currentPath = buildingManager.GetActiveGraph().FindShortestPathByName(fromVertex, toRoom);
+           if (currentPath?.Count > 6 && currentPath.Last().target.rooms.Contains(toField.options[toField.value].text))
+           {
+               //only partly calculate the current path (way faster if the user just moved a bit)
+               Debug.Log("partially recalculating path");
+               // removing the first few edges, and just recalculating them for faster calculations
+               currentPath = await buildingManager.GetActiveGraph().FindShortestPathToTargetEdgesAsync(fromVertex, currentPath.GetRange(5, currentPath.Count - 5));
+           }
+           else
+           {
+                  currentPath =  await buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
+                  Debug.Log("completely calculating path");
+           }
 
-            InterpolateStart();
-            navigationActive = true;
+           
 
-            PlotCurrentPath();
-            Debug.Log($"Path found with length {currentPath.Count}");
-            navigationDialog.gameObject.SetActive(false);
+           InterpolateStart();
+           navigationActive = true;
+
+           PlotCurrentPath();
+           Debug.Log($"Path found with length {currentPath.Count}");
         }
         
-
+        
         public Vertex GetStart()
         {
             List<Vertex> verts = buildingManager.GetActiveGraph().GetVertices();
@@ -107,10 +145,13 @@ namespace controller
                 else
                 {
                     Edge closestEdge = GetClosestEdgeToPosition(pos);
-                    List<Point> partialPath = GetPartialPathAfterPoint(closestEdge.path.points, closestPoint);
-                    Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].source,
-                        new PathData(1, partialPath));
-                    currentPath.Insert(0, p);
+                    if (pos != null)
+                    {
+                        List<Point> partialPath = GetPartialPathAfterPoint(closestEdge.path.points, closestPoint);
+                                            Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].source,
+                                                new PathData(1, partialPath));
+                                            currentPath.Insert(0, p);
+                    }
                 }
             }
         }
@@ -179,8 +220,7 @@ namespace controller
             {
                 if (navigationActive)
                 {
-                    OnStartNavigationButtonPressed(); //will overwrite currentPath
-                    PlotCurrentPath();
+                    navigate(); //will overwrite currentPath
                 }
 
                 yield return new WaitForSeconds(5f);
@@ -190,6 +230,11 @@ namespace controller
 
         public void PlotCurrentPath()
         {
+            foreach (GameObject obj in GameObject.FindGameObjectsWithTag("PlottedPath"))
+            {
+                Destroy(obj);
+            }
+            
             if (currentPath == null || currentPath.Count == 0)
             {
                 navigationActive = false;

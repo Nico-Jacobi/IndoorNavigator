@@ -62,6 +62,7 @@ namespace model.graph
             }
 
             GameObject pathObj = new GameObject(name);
+            pathObj.tag = "PlottedPath";
             LineRenderer line = pathObj.AddComponent<LineRenderer>();
 
             // Basic line settings
