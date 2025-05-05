@@ -22,6 +22,7 @@ namespace controller
         public SQLiteDatabase database;
         public TMP_Dropdown buildingField;
         public CameraController cameraController;
+        public GraphManager graphManager;
         
         // New UI elements for floor navigation
         public Button increaseFloorButton;
@@ -274,6 +275,14 @@ namespace controller
             }
 
             Building building = GetBuilding(buildingName);
+
+            // refresh the rooms if the building changes
+            if (building != activeBuilding)
+            {
+                graphManager.PopulateDropdownFromStrings(
+                    new List<string>(building.graph.allRoomsSet));
+            }
+            
 
             if (building != null)
             {

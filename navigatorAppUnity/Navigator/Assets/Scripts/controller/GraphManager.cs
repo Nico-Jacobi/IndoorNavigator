@@ -13,6 +13,8 @@ namespace controller
     public class GraphManager : MonoBehaviour
     {
         public TMP_Dropdown toField;
+        public RectTransform navigationDialog;
+        
         public BuildingManager buildingManager;
         public WifiManager wifiManager;
 
@@ -23,20 +25,31 @@ namespace controller
         {
             Debug.Log("Graph Manager script initialized");
 
-            PopulateDropdownFromStrings(toField, new List<string>(buildingManager.GetActiveGraph().allRoomsSet));
+            PopulateDropdownFromStrings(new List<string>(buildingManager.GetActiveGraph().allRoomsSet));
 
             StartCoroutine(UpdatePath());
+            OnCancelNavigateButtonPressed();
         }
 
 
-        void PopulateDropdownFromStrings(TMP_Dropdown dropdown, List<string> options)
+        public void PopulateDropdownFromStrings( List<string> options)
         {
-            dropdown.ClearOptions();
+            toField.ClearOptions();
             List<string> names = options.FindAll(v => v.Contains("Seminar"));
-            dropdown.AddOptions(names);
+            toField.AddOptions(names);
         }
 
         public void OnNavigateButtonPressed()
+        {
+            navigationDialog.gameObject.SetActive(true);
+        }
+        
+        public void OnCancelNavigateButtonPressed()
+        {
+            navigationDialog.gameObject.SetActive(false);
+        }
+        
+        public void OnStartNavigationButtonPressed()
         {
             Vertex fromVertex = GetStart();
             string toRoom = toField.options[toField.value].text;
@@ -50,7 +63,9 @@ namespace controller
 
             PlotCurrentPath();
             Debug.Log($"Path found with length {currentPath.Count}");
+            navigationDialog.gameObject.SetActive(false);
         }
+        
 
         public Vertex GetStart()
         {
@@ -164,7 +179,7 @@ namespace controller
             {
                 if (navigationActive)
                 {
-                    OnNavigateButtonPressed(); //will overwrite currentPath
+                    OnStartNavigationButtonPressed(); //will overwrite currentPath
                     PlotCurrentPath();
                 }
 
