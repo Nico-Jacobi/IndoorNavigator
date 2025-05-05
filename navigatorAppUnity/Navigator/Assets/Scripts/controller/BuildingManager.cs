@@ -1,10 +1,12 @@
 ﻿using model;
 using System.Collections.Generic;
 using System.Linq;
+using model.Database;
 using model.graph;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using view;
 
 namespace controller
 {
@@ -19,6 +21,7 @@ namespace controller
 
         public SQLiteDatabase database;
         public TMP_Dropdown buildingField;
+        public CameraController cameraController;
         
         // New UI elements for floor navigation
         public Button increaseFloorButton;
@@ -28,6 +31,11 @@ namespace controller
         public Building GetActiveBuilding()
         {
             return activeBuilding;
+        }
+        
+        public int GetShownFloor()
+        {
+            return activeFloorLevel;
         }
         
         public Graph GetActiveGraph()
@@ -50,6 +58,7 @@ namespace controller
             buildingField.ClearOptions();
             buildingField.AddOptions(buildings.Keys.ToList());
             buildingField.onValueChanged.AddListener(buildingFieldChanged);
+            
             
             // Default building setup
             SpawnBuildingFloor("h4", 3);
@@ -86,6 +95,7 @@ namespace controller
                 int nextFloorLevel = activeBuilding.floors[currentIndex + 1].level;
                 SpawnBuildingFloor(activeBuilding.buildingName, nextFloorLevel);
             }
+            
         }
         
         private void DecreaseFloor()
@@ -200,23 +210,62 @@ namespace controller
             }
         }
 
+
+        /// <summary>
+        /// Updates the active building based on the most common BSSID matches from Wi-Fi data.
+        /// If the first matched BSSID maps to the current building, we assume all others likely belong to the same and skip full evaluation.
+        /// </summary>
+        public void updateBuilding(Coordinate wifiNetworks)
+        {
+            Dictionary<string, int> buildingCount = new();
+
+            foreach (string bssid in wifiNetworks.WifiInfoMap.Keys)
+            {
+                string building = database.GetBuildingForBssid(bssid);
+
+                if (building == null)
+                    continue;
+
+                // Early return if the first match equals current building (for efficiency, as this will be the case most times anyway)
+                if (activeBuilding != null && building == activeBuilding.buildingName)
+                {
+                    return;
+                }
+
+                if (!buildingCount.TryAdd(building, 1))
+                    buildingCount[building]++;
+            }
+
+            if (buildingCount.Count > 0)
+            {
+                string mostLikelyBuilding = buildingCount
+                    .OrderByDescending(kv => kv.Value)
+                    .First().Key;
+
+                activeBuilding = GetBuilding(mostLikelyBuilding);
+            }
+            else
+            {
+                Debug.Log("Wifi data doesn't match any recorded building, staying at current");
+                return;
+            }
+        }
+
         public Building GetBuilding(string buildingName)
         {
             if (buildings.ContainsKey(buildingName))
             {
                 return buildings[buildingName];
             }
-            else
-            {
-                Debug.LogError($"Building {buildingName} not found!");
-                return null;
-            }
+            Debug.LogError($"Building {buildingName} not found!");
+            return null;
+            
         }
 
         public void SpawnBuildingFloor(string buildingName, int floorLevel)
         {
             // Check if the requested building and floor are already active
-            if (activeBuilding != null && 
+            if (activeBuilding != null &&
                 activeBuilding.buildingName == buildingName && 
                 activeFloorLevel == floorLevel)
             {
@@ -258,9 +307,11 @@ namespace controller
                 
                 // Update the UI to reflect the changes
                 UpdateBuildingUI();
-                
+                cameraController.MoveMarkerToPosition(null);
+
                 Debug.Log($"Spawned building {buildingName}, floor {floorLevel}");
             }
+            
         }
     }
 }

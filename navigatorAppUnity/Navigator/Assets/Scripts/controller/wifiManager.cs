@@ -20,7 +20,7 @@ namespace controller
         private AndroidJavaObject context;
 
         public SQLiteDatabase database;
-        public string currentBuilding;
+        public BuildingManager buildingManager;
         
         public GameObject promptPanel;
         public Button settingsButton;
@@ -227,13 +227,9 @@ SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Cap
          }
      }
 
-        // Modified to be a coroutine that waits for scan results
         private IEnumerator UpdateLocationAsync()
         {
-            // Start the scan coroutine
             Coordinate wifiNetworks = null;
-            
-            // Create a custom coroutine to handle getting the coordinate
             IEnumerator scanCoroutine = GetScannedCoordinateAsync();
             
             // Execute the coroutine
@@ -247,30 +243,16 @@ SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Cap
                 yield return scanCoroutine.Current;
             }
             
-            // Check if we got any results
             if (wifiNetworks == null || wifiNetworks.WifiInfoMap.Count == 0)
             {
-                if (wifiNetworks != null)
-                {
-                    UpdateCurrentBuilding(wifiNetworks);    //in case the user just entered a building, then the error is negligible
-                }
                 Debug.Log("Wifi data is empty -> no wifi signals around or some error (eg location not active / no privileges / no android)");
                 yield break;
             }
-            
-            //updating currentBuilding
-            if (currentBuilding == null)    
-            {
-                UpdateCurrentBuilding(wifiNetworks);
-                if (String.IsNullOrEmpty(currentBuilding))
-                {
-                    Debug.LogWarning("Could not determine building. Aborting location update.");
-                    yield break;
-                }
-            }
 
+
+            buildingManager.updateBuilding(wifiNetworks);
             
-            List<Coordinate> dataPoints = database.GetCoordinatesForBuilding(currentBuilding);
+            List<Coordinate> dataPoints = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName);
             if (dataPoints.Count == 0)
             {
                 Debug.LogWarning("No recorded data found for this building.");
@@ -314,36 +296,7 @@ SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Cap
             Debug.Log($"{positions.Count} predictons saved");
         }
         
-        private void UpdateCurrentBuilding(Coordinate wifiNetworks)
-        {
-            Dictionary<string, int> buildingCount = new();
-
-            foreach (string bssid in wifiNetworks.WifiInfoMap.Keys)
-            {
-                string building = database.GetBuildingForBssid(bssid);
-                if (building != null)
-                {
-                    if (!buildingCount.TryAdd(building, 1))
-                        buildingCount[building]++;
-                }
-            }
-
-            if (buildingCount.Count > 0)
-            {
-                // Pick the building with the most matches
-                string mostLikelyBuilding = buildingCount
-                    .OrderByDescending(kv => kv.Value)
-                    .First().Key;
-
-                //wifiNetworks.BuildingName = mostLikelyBuilding; //this is never used but it`s nice to have
-                currentBuilding = mostLikelyBuilding;
-                Debug.Log($"set current building to {currentBuilding}");
-            }
-            else
-            {
-                Debug.Log("Wifi data doesn't match any recorded building");
-            }
-        }
+       
 
         // Opens the location settings for the user to enable GPS
         private void OpenLocationSettings()
