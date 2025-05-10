@@ -39,6 +39,14 @@ namespace controller
 
         }
 
+        public float GetHeading()
+        {
+            float angle = currentPath?.FirstOrDefault()?.GetAngle() ?? 0f;
+            return angle;
+        }
+
+
+
 
         private void PopulateDropdownFromStrings( List<string> options)
         {

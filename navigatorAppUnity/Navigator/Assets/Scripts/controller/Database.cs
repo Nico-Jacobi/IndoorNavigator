@@ -26,6 +26,7 @@ namespace controller
         
         void Awake()
         {
+            DeleteDatabase();
             DontDestroyOnLoad(gameObject);
             InitializeDatabase();
         }
@@ -58,12 +59,58 @@ namespace controller
                 }
             }
         }
+        
+        /// <summary>
+        /// Closes and deletes the entire SQLite database file.
+        /// Use with caution. Cannot be undone.
+        /// </summary>
+        public void DeleteDatabase()
+        {
+            db?.Close(); // Make sure the connection is closed
+            db = null;
 
+            string dbPath = Path.Combine(Application.persistentDataPath, "WifiData.db");
+            if (File.Exists(dbPath))
+            {
+                File.Delete(dbPath);
+                cachedBuildingName = null;
+                cachedCoordinates = null;
+                bssidToBuildings.Clear();
+                Debug.Log("Database file deleted.");
+            }
+            else
+            {
+                Debug.LogWarning("Database file not found.");
+            }
+        }
 
         private void ImportFromJson(string jsonPath = "default_wifidata")
         {
-            var json = Resources.Load<TextAsset>(jsonPath);
-            var coords = JsonConvert.DeserializeObject<CoordinateListWrapper>(json.text);
+            string json;
+
+            if (jsonPath == "default_wifidata")
+            {
+                TextAsset jsonFile = Resources.Load<TextAsset>(jsonPath);
+                if (jsonFile == null)
+                {
+                    Debug.LogError("Could not load JSON from Resources: " + jsonPath);
+                    return;
+                }
+
+                json = jsonFile.text;
+            }
+            else
+            {
+                if (!File.Exists(jsonPath))
+                {
+                    Debug.LogError("File not found at path: " + jsonPath);
+                    return;
+                }
+
+                json = File.ReadAllText(jsonPath);
+            }
+
+            var coords = JsonConvert.DeserializeObject<CoordinateListWrapper>(json);
 
             foreach (var coord in coords.Coordinates)
             {
@@ -75,15 +122,69 @@ namespace controller
                 }
             }
 
-            Debug.Log($"Imported {coords.Coordinates.Count} coordinates from JSON.");
+            Debug.Log($"Imported {coords.Coordinates.Count} coordinates from: {jsonPath}");
         }
 
-        public void InsertCoordinateWithWifiInfos(Coordinate coord, List<WifiInfo> wifiInfos)
+        
+        public void PickFileAndImport()
+        {
+            // Allow only JSON files
+            string[] fileTypes = new[] { "application/json" };
+
+            NativeFilePicker.PickFile((path) =>
+            {
+                if (path == null)
+                {
+                    Debug.Log("User cancelled import");
+                    return;
+                }
+
+                Debug.Log("Importing from: " + path);
+                ImportFromJson(path);
+            }, fileTypes);
+        }
+
+
+        public void ExportWithSimpleFilename()
+        {
+            string timestamp = System.DateTime.Now.Ticks.ToString(); // Alternatively, use System.CurrentTimeMillis
+            string filename = "wifi_data_" + timestamp;
+            
+            string fullPath = Path.Combine(Application.persistentDataPath, filename + ".json");
+
+            ExportToJsonExternal(fullPath);
+
+            Debug.Log($"Exported to: {fullPath}");
+        }
+
+
+
+        /// <summary>
+        /// Exports the coordinates to the specified file.
+        /// </summary>
+        private void ExportToJsonExternal(string fullPath)
+        {
+            var coordinates = db.Table<Coordinate>().ToList();
+
+            foreach (var coord in coordinates)
+                coord.WifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coord.Id).ToList();
+
+            var wrapper = new CoordinateListWrapper { Coordinates = coordinates };
+            string json = JsonConvert.SerializeObject(wrapper, Formatting.Indented);
+
+            // Write to file
+            File.WriteAllText(fullPath, json);
+            Debug.Log($"Exported JSON to: {fullPath}");
+        }
+
+
+
+
+        public void InsertCoordinateWithWifiInfos(Coordinate coord)
         {
             db.Insert(coord);
-            coord.WifiInfos = wifiInfos;
 
-            foreach (var wifi in wifiInfos)
+            foreach (var wifi in coord.WifiInfos)
             {
                 wifi.CoordinateId = coord.Id;
                 db.Insert(wifi);
@@ -97,7 +198,7 @@ namespace controller
             if (coord.BuildingName == cachedBuildingName)
                 cachedCoordinates.Add(coord);
 
-            Debug.Log($"Inserted coordinate with {wifiInfos.Count} wifi entries.");
+            Debug.Log($"Inserted coordinate with {coord.WifiInfos.Count} wifi entries.");
         }
 
         public List<Coordinate> GetAllCoordinatesWithWifiInfos()
@@ -108,6 +209,53 @@ namespace controller
                 return coord;
             }).ToList();
         }
+        
+        public void DeleteCoordinate(int coordinateId)
+        {
+            var wifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coordinateId).ToList();
+            var coord = db.Table<Coordinate>().FirstOrDefault(c => c.Id == coordinateId);
+    
+            if (coord != null)
+            {
+                // Remove WiFi info from BSSID-to-building map
+                foreach (var wifi in wifiInfos)
+                {
+                    db.Delete(wifi);
+            
+                    // Remove building association for this BSSID if it exists
+                    if (bssidToBuildings.TryGetValue(wifi.Bssid, out var buildings))
+                    {
+                        buildings.Remove(coord.BuildingName);
+                        if (buildings.Count == 0)
+                        {
+                            bssidToBuildings.Remove(wifi.Bssid);
+                        }
+                    }
+                }
+
+                // Update cache if this coordinate belongs to the currently cached building
+                if (cachedBuildingName == coord.BuildingName && cachedCoordinates != null)
+                {
+                    cachedCoordinates.RemoveAll(c => c.Id == coordinateId);
+            
+                    // If we removed the last coordinate for this building, clear the cache
+                    if (cachedCoordinates.Count == 0)
+                    {
+                        cachedBuildingName = null;
+                        cachedCoordinates = null;
+                    }
+                }
+
+                // Delete the coordinate from the database
+                db.Delete(coord);
+                Debug.Log($"Deleted coordinate with ID: {coordinateId}");
+            }
+            else
+            {
+                Debug.LogWarning($"Coordinate with ID {coordinateId} not found.");
+            }
+        }
+
 
         public List<Coordinate> GetCoordinatesForBuilding(string buildingName)
         {

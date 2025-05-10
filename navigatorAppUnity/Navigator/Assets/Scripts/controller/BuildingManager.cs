@@ -22,6 +22,7 @@ namespace controller
         public SQLiteDatabase database;
         public TMP_Dropdown buildingField;
         public CameraController cameraController;
+        public DataCollectionMode dataCollectionMode;
         
         // New UI elements for floor navigation
         public Button increaseFloorButton;
@@ -87,27 +88,73 @@ namespace controller
         private void IncreaseFloor()
         {
             if (activeBuilding == null) return;
-            
-            // Find the next floor level
+            Debug.Log("IncreaseFloor called");
+
             int currentIndex = GetFloorIndex(activeFloorLevel);
             if (currentIndex < activeBuilding.floors.Count - 1)
             {
                 int nextFloorLevel = activeBuilding.floors[currentIndex + 1].level;
                 SpawnBuildingFloor(activeBuilding.buildingName, nextFloorLevel);
             }
-            
+
+            dataCollectionMode.Refresh();
+            UpdateFloorButtons();
         }
-        
+
         private void DecreaseFloor()
         {
             if (activeBuilding == null) return;
-            
-            // Find the previous floor level
+            dataCollectionMode.Refresh();
+            Debug.Log("DecreaseFloor called");
+
             int currentIndex = GetFloorIndex(activeFloorLevel);
             if (currentIndex > 0)
             {
                 int prevFloorLevel = activeBuilding.floors[currentIndex - 1].level;
                 SpawnBuildingFloor(activeBuilding.buildingName, prevFloorLevel);
+            }
+
+            dataCollectionMode.Refresh();
+            UpdateFloorButtons();
+        }
+
+        private void UpdateFloorButtons()
+        {
+            int currentFloor = GetFloorIndex(activeFloorLevel);
+            int minFloor = int.MaxValue;
+            int maxFloor = int.MinValue;
+            
+            foreach (Building.Floor floor in activeBuilding.floors)
+            {
+
+                if (floor.level < minFloor)
+                {
+                    minFloor = floor.level;
+                }
+                
+                
+                if (floor.level > maxFloor)
+                {
+                    maxFloor = floor.level;
+                }
+            }
+            
+            if (currentFloor+1 >= maxFloor)
+            {
+                increaseFloorButton.interactable = false;
+            }
+            else
+            {
+                increaseFloorButton.interactable = true;
+            }
+
+            if (currentFloor-1 <= minFloor)
+            {
+                decreaseFloorButton.interactable = false;
+            }
+            else
+            {
+                decreaseFloorButton.interactable = true;
             }
         }
         

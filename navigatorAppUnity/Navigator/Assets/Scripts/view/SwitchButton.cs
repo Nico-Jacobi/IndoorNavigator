@@ -8,7 +8,7 @@
     /// <summary>
     /// Toggle switch with animation.
     /// </summary>
-    public class ModernToggleSwitch : MonoBehaviour, IPointerClickHandler
+    public class SwitchButton : MonoBehaviour, IPointerClickHandler
     {
         [Header("UI Elements")]
         [SerializeField] private RectTransform handle; 

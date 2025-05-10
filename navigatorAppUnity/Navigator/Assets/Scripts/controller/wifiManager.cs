@@ -31,8 +31,9 @@ namespace controller
         public int rollingAverageLength = 10;
 
         
-        private bool isUpdating = false;    //set to true to stop the scanning, otherwise to coroutine will use this
-        private float updateInterval = 2f;  //seconds between scans (if wifi scans are throttled (android 12+ default) set to 30)
+        public bool isUpdating = false;    //set to true to stop the scanning, otherwise to coroutine will use this
+        public float updateInterval = 2f;  //seconds between scans (if wifi scans are throttled (android 12+ default) set to 30)
+
         
         // Added to track scan completion status
         private bool scanInProgress = false;
@@ -187,7 +188,183 @@ namespace controller
             
             yield return coord;
         }
-
+        
+        
+        /// <summary>
+        /// Collects multiple WiFi measurements and returns a dictionary with max signal strength for each BSSID.
+        /// </summary>
+        /// <param name="numberOfScans">Number of scans to perform (default: 10)</param>
+        /// <param name="filter">Whether to filter networks by SSID (optional)</param>
+        /// <param name="allowedSSIDs">List of allowed SSIDs when filtering (optional)</param>
+        /// <returns>Coroutine yielding a dictionary with BSSID as key and WifiInfo as value</returns>
+        public IEnumerator CollectWifiDataMultipleMeasurements(int numberOfScans = 20, bool filter = false, List<string> allowedSSIDs = null)
+        {
+                
+            if (allowedSSIDs == null)
+                allowedSSIDs = new List<string>();
+                
+            Debug.Log($"Starting multiple WiFi measurements: {numberOfScans} scans");
+            
+            // Dictionary to store all scan results: BSSID -> List of SignalStrengths
+            Dictionary<string, List<float>> bssidSignalStrengths = new Dictionary<string, List<float>>();
+            Dictionary<string, string> bssidToSsid = new Dictionary<string, string>();
+            
+            // Mark that we're performing multiple scans to prevent other scanning operations
+            isUpdating = true;
+            
+            for (int i = 0; i < numberOfScans; i++)
+            {
+                Debug.Log($"Performing scan {i+1} of {numberOfScans}");
+                
+                // Get a single scan result
+                IEnumerator scanCoroutine = GetScannedCoordinateAsync();
+                Coordinate scanResult = null;
+                
+                // Execute the scan coroutine
+                while (scanCoroutine.MoveNext())
+                {
+                    if (scanCoroutine.Current is Coordinate)
+                    {
+                        scanResult = scanCoroutine.Current as Coordinate;
+                    }
+                    yield return scanCoroutine.Current;
+                }
+                
+                // Process scan results if available
+                if (scanResult != null && scanResult.WifiInfos.Count > 0)
+                {
+                    foreach (var wifiInfo in scanResult.WifiInfos)
+                    {
+                        string bssid = wifiInfo.Bssid;
+                        
+                        if (!bssidSignalStrengths.ContainsKey(bssid))
+                        {
+                            bssidSignalStrengths[bssid] = new List<float>();
+                        }
+                        bssidSignalStrengths[bssid].Add(wifiInfo.SignalStrength);
+                    }
+                }
+                
+                // this has to be changed to 30 if collecting with a phone that only allows 4/2min
+                // (although that would make a scan take forever)
+                yield return new WaitForSeconds(0.1f); 
+            }
+            
+            // Create result dictionary using max signal strength for each BSSID
+            Dictionary<string, WifiInfo> aggregatedData = new Dictionary<string, WifiInfo>();
+            
+            foreach (var entry in bssidSignalStrengths)
+            {
+                string bssid = entry.Key;
+                List<float> strengths = entry.Value;
+                
+                // Skip this BSSID if filtering is enabled and SSID is not in allowed list
+                if (filter && 
+                    bssidToSsid.ContainsKey(bssid) &&
+                    allowedSSIDs.Count > 0 && 
+                    !allowedSSIDs.Contains(bssidToSsid[bssid]))
+                {
+                    continue;
+                }
+                
+                // Find max signal strength
+                float maxStrength = strengths.Max();
+                
+                // Create WiFi info object with max signal strength
+                WifiInfo wifiInfo = new WifiInfo
+                {
+                    Bssid = bssid,
+                    SignalStrength = maxStrength
+                    // Could add more properties like SSID if needed
+                };
+                
+                aggregatedData[bssid] = wifiInfo;
+            }
+            
+            Debug.Log($"Completed multiple WiFi measurements with {aggregatedData.Count} networks");
+            
+            // Create a new coordinate with the aggregated data
+            var aggregatedCoordinate = new Coordinate
+            {
+                X = 0.0f,
+                Y = 0.0f,
+                Floor = -1,
+                BuildingName = "MultiScanMeasurement"
+            };
+            
+            foreach (var wifiInfo in aggregatedData.Values)
+            {
+                aggregatedCoordinate.WifiInfos.Add(wifiInfo);
+            }
+            
+            isUpdating = false;
+            
+            yield return aggregatedCoordinate;
+        }
+        
+        
+         /// <summary>
+        /// Creates a DataPoint with multiple WiFi measurements.
+        /// This can be used to create reference points for the database.
+        /// </summary>
+        /// <param name="x">X-coordinate of the point</param>
+        /// <param name="y">Y-coordinate of the point</param>
+        /// <param name="floor">Floor number</param>
+        /// <param name="buildingName">Name of the building</param>
+        /// <param name="numberOfScans">Number of scans to perform</param>
+        /// <param name="saveToDatabase">Whether to save the data point to the database</param>
+        /// <param name="onComplete">Action to call when measurement is complete with the created coordinate</param>
+        /// <returns>Coroutine yielding a Coordinate object with aggregated WiFi data</returns>
+        public IEnumerator CreateDataPoint(float x, float y, int floor, string buildingName, bool saveToDatabase = false, Action<Coordinate> onComplete = null)
+        {
+            Debug.Log($"Creating data point at X={x}, Y={y}, Floor={floor} in {buildingName}");
+            
+            // Get WiFi data using multiple measurements
+            Coordinate wifiData = null;
+            IEnumerator multiScanCoroutine = CollectWifiDataMultipleMeasurements();
+            
+            // Execute the coroutine
+            while (multiScanCoroutine.MoveNext())
+            {
+                // If the current result is a Coordinate, store it
+                if (multiScanCoroutine.Current is Coordinate)
+                {
+                    wifiData = multiScanCoroutine.Current as Coordinate;
+                }
+                yield return multiScanCoroutine.Current;
+            }
+            
+            if (wifiData == null || wifiData.WifiInfoMap.Count == 0)
+            {
+                Debug.LogWarning("Failed to collect WiFi data for this data point");
+                yield break;
+            }
+            
+            // Create a new coordinate with the collected WiFi data and specified position
+            Coordinate dataPoint = new Coordinate
+            {
+                X = x,
+                Y = y,
+                Floor = floor,
+                BuildingName = buildingName,
+                WifiInfos = wifiData.WifiInfos // Copy WiFi infos from the scan result
+            };
+            
+            Debug.Log($"Created data point with {dataPoint.WifiInfoMap.Count} WiFi networks");
+            
+            // Add to database if requested
+            if (saveToDatabase && database != null)
+            {
+                database.InsertCoordinateWithWifiInfos(dataPoint);
+                Debug.Log($"Saved data point to database for building {buildingName}");
+            }
+            
+            // Call completion callback if provided
+            onComplete?.Invoke(dataPoint);
+            
+            yield return dataPoint;
+        }
+        
      /*
 SSID: I'm watching you, BSSID: 2c:91:ab:59:83:5f, Level: -66, Frequency: 5500, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169109
 SSID: I'm watching you, BSSID: 2c:91:ab:59:83:5e, Level: -60, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169100
