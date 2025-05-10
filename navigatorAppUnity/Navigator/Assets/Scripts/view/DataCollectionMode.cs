@@ -5,13 +5,14 @@ using System.Linq;
 using controller;
 using model.Database;
 using UnityEngine;
-using UnityEngine.UI; // Added for Button references
+using UnityEngine.UI;
 
 namespace view
 {
     public class DataCollectionMode : MonoBehaviour
     {
         private readonly List<GameObject> markers = new();
+        private GameObject crosshairMarker; 
 
         private bool active = false;
         public SQLiteDatabase database;
@@ -29,19 +30,42 @@ namespace view
 
         private void Start()
         {
-
             collectButton.onClick.AddListener(CollectAtCurrentPosition);
             deleteButton.onClick.AddListener(DeleteAtCurrentPosition);
+            
+            crosshairMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            crosshairMarker.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f); // Make it smaller than data points
+            Renderer crosshairRenderer = crosshairMarker.GetComponent<Renderer>();
+            crosshairRenderer.material.color = Color.red; // Make it red to distinguish from data points
+            crosshairMarker.SetActive(false); // Initially hidden
+            
             Deactivate();
         }
         
-
+        private void Update()
+        {
+            // Update crosshair when active
+            if (active && crosshairMarker != null)
+            {
+                Vector3 crosshairPos = cameraController.GetCrosshairPosition();
+                crosshairMarker.transform.position = crosshairPos;
+            }
+        }
         
         public void Activate()
         {
             Debug.Log("Activate called");
             dialogPanel.SetActive(true);
             active = true;
+            
+            // Show crosshair marker
+            if (crosshairMarker != null)
+            {
+                crosshairMarker.SetActive(true);
+                // Set initial position
+                crosshairMarker.transform.position = cameraController.GetCrosshairPosition();
+            }
+            
             Refresh();
         }
 
@@ -49,6 +73,13 @@ namespace view
         {
             active = false;
             dialogPanel.SetActive(false);
+            
+            // Hide crosshair marker
+            if (crosshairMarker != null)
+            {
+                crosshairMarker.SetActive(false);
+            }
+            
             foreach (var marker in markers)
             {
                 Destroy(marker);
@@ -66,22 +97,20 @@ namespace view
             }
             markers.Clear();
        
-
-        List<Coordinate> coords  = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName)
+            List<Coordinate> coords = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName)
                 .Where(coord => coord.Floor == buildingManager.GetShownFloor()).ToList();
 
-            
             foreach (var coord in coords)
             {
                 Vector3 position = new(coord.X, coord.Floor * 2.0f + 1f, coord.Y);
                 GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 marker.transform.position = position;
-                //marker.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // make it smaller
+                marker.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // make it smaller
                 marker.name = $"CoordMarker_{coord.X}_{coord.Y}";
 
                 // Now access the Renderer after the marker is instantiated
                 Renderer rend = marker.GetComponent<Renderer>();
-                rend.material.color = Color.blue;  // Set the color to blue
+                rend.material.color = new Color(0.278f, 0.647f, 0.99f);  // Set the color to blue
 
                 markers.Add(marker);
             }
@@ -94,7 +123,7 @@ namespace view
             Coordinate closest = null;
             float closestDistance = float.PositiveInfinity;
 
-            List<Coordinate> coords  = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName)
+            List<Coordinate> coords = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName)
                 .Where(coord => coord.Floor == buildingManager.GetShownFloor()).ToList();
             
             foreach (Coordinate coord in coords)
@@ -115,11 +144,10 @@ namespace view
             if (closest != null)
             {
                 database.DeleteCoordinate(closest.Id);
-                Refresh(); // Refresh the view to reflect the deletion
+                Refresh(); 
             }
         }
 
-        
         /// <summary>
         /// Collects a WiFi data point at the current position shown by the crosshair
         /// </summary>
@@ -140,14 +168,13 @@ namespace view
             collectButton.GetComponentInChildren<Text>().text = "";
         
             // Start the data collection coroutine
-            StartCoroutine(CollectDataPointCoroutine(crosshairPos.x, crosshairPos.z,  buildingManager.GetShownFloor(),  buildingManager.GetActiveBuilding().buildingName));
+            StartCoroutine(CollectDataPointCoroutine(crosshairPos.x, crosshairPos.z, buildingManager.GetShownFloor(), buildingManager.GetActiveBuilding().buildingName));
         }
     
         private IEnumerator CollectDataPointCoroutine(float x, float y, int floor, string building)
         {
             Debug.Log($"Starting data collection at ({x}, {y}, Floor: {floor})");
         
-            // Call the WiFi manager to create a data point with multiple measurements
             IEnumerator createPointCoroutine = wifiManager.CreateDataPoint(
                 x, y, floor, building, 
                 true,  // Save to database
@@ -161,10 +188,8 @@ namespace view
             }
         }
         
-        
         private void OnDataPointCollected(Coordinate dataPoint)
         {
-            // Handle the collected data point (e.g., update UI, etc.)
             Debug.Log($"Successfully collected data point with {dataPoint.WifiInfoMap.Count} WiFi networks");
         
             // Reset collection state
@@ -173,7 +198,14 @@ namespace view
             spinner.StopSpinning();
             collectButton.interactable = true; 
             collectButton.GetComponentInChildren<Text>().text = "Collect";
-
+        }
+        
+        private void OnDestroy()
+        {
+            if (crosshairMarker != null)
+            {
+                Destroy(crosshairMarker);
+            }
         }
     }
 }

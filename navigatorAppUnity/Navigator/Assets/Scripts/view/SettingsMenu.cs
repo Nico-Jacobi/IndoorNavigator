@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq;
 using controller;
 using TMPro;
 using UnityEngine;
@@ -52,7 +53,7 @@ namespace view
             
             closeButton.onClick.AddListener(CloseMenu);
             
-            measureInterval.SetTextWithoutNotify(wifiManager.updateInterval.ToString());
+            measureInterval.SetTextWithoutNotify(wifiManager.updateInterval.ToString() + "s");
             measureInterval.onValueChanged.AddListener(OnMeasureIntervalChanged);
             rollingAverageSize.SetTextWithoutNotify(wifiManager.rollingAverageLength.ToString());
             rollingAverageSize.onValueChanged.AddListener(OnRollingAverageSizeChanged);
@@ -117,8 +118,12 @@ namespace view
         
         private void OnMeasureIntervalChanged(string interval)
         {
-            wifiManager.updateInterval = float.Parse(interval);
+            string numericInterval = new string(interval.Where(char.IsDigit).ToArray());
+            wifiManager.updateInterval = float.Parse(numericInterval);
+            string intervalWithSeconds = numericInterval + "s";
+            measureInterval.SetTextWithoutNotify(intervalWithSeconds);
         }
+
         
         private void OnRollingAverageSizeChanged(string number)
         {
