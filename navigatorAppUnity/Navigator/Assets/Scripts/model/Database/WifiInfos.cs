@@ -20,7 +20,7 @@ namespace model.Database
             public float SignalStrength
             {
                 get => _signalStrength;
-                set => _signalStrength = (value - ExpectedMinSignal) / (ExpectedMaxSignal - ExpectedMinSignal); // Normalize between 0 and 1
+                set => _signalStrength = value; //(value - ExpectedMinSignal) / (ExpectedMaxSignal - ExpectedMinSignal); // Normalize between 0 and 1
             }
 
             public int CoordinateId { get; set; }

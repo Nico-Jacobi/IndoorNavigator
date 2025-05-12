@@ -23,10 +23,10 @@ namespace controller
 
 
 
-        
+
         void Awake()
         {
-            DeleteDatabase();
+            //DeleteDatabase(); //just for debugging
             DontDestroyOnLoad(gameObject);
             InitializeDatabase();
         }
@@ -50,7 +50,7 @@ namespace controller
             foreach (var coord in db.Table<Coordinate>())
             {
                 var wifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coord.Id).ToList();
-                
+
                 foreach (var wifi in wifiInfos)
                 {
                     if (!bssidToBuildings.ContainsKey(wifi.Bssid))
@@ -59,7 +59,7 @@ namespace controller
                 }
             }
         }
-        
+
         /// <summary>
         /// Closes and deletes the entire SQLite database file.
         /// Use with caution. Cannot be undone.
@@ -125,7 +125,7 @@ namespace controller
             Debug.Log($"Imported {coords.Coordinates.Count} coordinates from: {jsonPath}");
         }
 
-        
+
         public void PickFileAndImport()
         {
             // Allow only JSON files
@@ -149,7 +149,7 @@ namespace controller
         {
             string timestamp = System.DateTime.Now.Ticks.ToString(); // Alternatively, use System.CurrentTimeMillis
             string filename = "wifi_data_" + timestamp;
-            
+
             string fullPath = Path.Combine(Application.persistentDataPath, filename + ".json");
 
             ExportToJsonExternal(fullPath);
@@ -186,6 +186,8 @@ namespace controller
 
             foreach (var wifi in coord.WifiInfos)
             {
+                Debug.Log($"Inserting WiFi: BSSID={wifi.Bssid}, Signal={wifi.SignalStrength}");
+
                 wifi.CoordinateId = coord.Id;
                 db.Insert(wifi);
 
@@ -201,6 +203,7 @@ namespace controller
             Debug.Log($"Inserted coordinate with {coord.WifiInfos.Count} wifi entries.");
         }
 
+        
         public List<Coordinate> GetAllCoordinatesWithWifiInfos()
         {
             return db.Table<Coordinate>().ToList().Select(coord =>
@@ -209,19 +212,18 @@ namespace controller
                 return coord;
             }).ToList();
         }
-        
+
         public void DeleteCoordinate(int coordinateId)
         {
             var wifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coordinateId).ToList();
             var coord = db.Table<Coordinate>().FirstOrDefault(c => c.Id == coordinateId);
-    
+
             if (coord != null)
             {
-                // Remove WiFi info from BSSID-to-building map
                 foreach (var wifi in wifiInfos)
                 {
                     db.Delete(wifi);
-            
+
                     // Remove building association for this BSSID if it exists
                     if (bssidToBuildings.TryGetValue(wifi.Bssid, out var buildings))
                     {
@@ -237,8 +239,7 @@ namespace controller
                 if (cachedBuildingName == coord.BuildingName && cachedCoordinates != null)
                 {
                     cachedCoordinates.RemoveAll(c => c.Id == coordinateId);
-            
-                    // If we removed the last coordinate for this building, clear the cache
+
                     if (cachedCoordinates.Count == 0)
                     {
                         cachedBuildingName = null;
@@ -260,13 +261,13 @@ namespace controller
         public List<Coordinate> GetCoordinatesForBuilding(string buildingName)
         {
 
-            
+
             if (cachedBuildingName == buildingName && cachedCoordinates != null)
                 return cachedCoordinates;
 
             var coords = db.Table<Coordinate>()
-                           .Where(c => c.BuildingName == buildingName)
-                           .ToList();
+                .Where(c => c.BuildingName == buildingName)
+                .ToList();
 
             if (!coords.Any())
                 throw new ArgumentException($"no data found for Building '{buildingName}'.");
@@ -295,10 +296,82 @@ namespace controller
                 Debug.Log("bssid to buildings List is empty, unless the db is empty this shouldn´t happen");
                 return null;
             }
-            
+
             //Debug.Log("Wifi data doesn't match any recorded building"); its expected this happens with some bssids
             return null;
         }
 
+
+        /// <summary>
+        /// Prints the entire database contents to the Unity console.
+        /// Useful for debugging and reviewing data.
+        /// </summary>
+        public void PrintDatabase()
+        {
+            Debug.Log("==== DATABASE CONTENT START ====");
+
+            try
+            {
+                var allCoords = GetAllCoordinatesWithWifiInfos();
+                Debug.Log($"Total Coordinates: {allCoords.Count}");
+
+                var buildingGroups = allCoords.GroupBy(c => c.BuildingName);
+
+                foreach (var group in buildingGroups)
+                {
+                    string buildingName = group.Key;
+                    int coordCount = group.Count();
+
+                    Debug.Log($"\n=== BUILDING: {buildingName} ({coordCount} coordinates) ===");
+
+                    foreach (var coord in group)
+                    {
+                        Debug.Log($"  Coordinate ID: {coord.Id}");
+                        Debug.Log($"    Position: ({coord.X}, {coord.Y}, {coord.Floor})");
+                        Debug.Log($"    Floor: {coord.Floor}");
+                        Debug.Log($"    Wifi Count: {coord.WifiInfos.Count}");
+
+                        // Print first 3 WiFi entries (to avoid overwhelming the console)
+                        int wifiCount = 0;
+                        foreach (var wifi in coord.WifiInfos.OrderByDescending(w => w.SignalStrength))
+                        {
+                            wifiCount++;
+
+                            Debug.Log($"      WiFi {wifiCount}: BSSID={wifi.Bssid}, Level={wifi.SignalStrength}dBm");
+                            
+                        }
+
+                        Debug.Log("  ----------");
+                    }
+                }
+
+                // Print BSSID-to-Building mapping stats
+                Debug.Log($"\n=== BSSID MAPPING STATS ===");
+                Debug.Log($"Total unique BSSIDs tracked: {bssidToBuildings.Count}");
+
+                var bssidsInMultipleBuildings = bssidToBuildings
+                    .Where(kvp => kvp.Value.Count > 1)
+                    .ToList();
+
+                Debug.Log($"BSSIDs found in multiple buildings: {bssidsInMultipleBuildings.Count}");
+
+                if (bssidsInMultipleBuildings.Count > 0)
+                {
+                    Debug.Log("Sample multi-building BSSIDs:");
+                    foreach (var item in bssidsInMultipleBuildings.Take(5))
+                    {
+                        Debug.Log($"  BSSID: {item.Key} → Buildings: {string.Join(", ", item.Value)}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error printing database: {ex.Message}");
+            }
+
+            Debug.Log("==== DATABASE CONTENT END ====");
+
+
+        }
     }
 }

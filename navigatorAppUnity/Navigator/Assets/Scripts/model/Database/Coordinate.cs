@@ -44,8 +44,11 @@ namespace model.Database
 
             foreach (var bssid in allBssids)
             {
-                float thisSignalStrength = WifiInfoMap.ContainsKey(bssid) ? WifiInfoMap[bssid].SignalStrength : 0.0f;
-                float otherSignalStrength = other.WifiInfoMap.ContainsKey(bssid) ? other.WifiInfoMap[bssid].SignalStrength : 0.0f;
+                float defaultMissing = -100f;
+                float penaltyFactor = 0.3f;
+                float thisSignalStrength = WifiInfoMap.TryGetValue(bssid, out var val1) ? val1.SignalStrength : defaultMissing * penaltyFactor;
+                float otherSignalStrength = other.WifiInfoMap.TryGetValue(bssid, out var val2) ? val2.SignalStrength : defaultMissing * penaltyFactor;
+
 
                 thisFeatureVector.Add(thisSignalStrength);
                 otherFeatureVector.Add(otherSignalStrength);

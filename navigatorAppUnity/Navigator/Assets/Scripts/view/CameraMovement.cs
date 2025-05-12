@@ -1,4 +1,5 @@
 using controller;
+using Controller;
 using model;
 using UnityEngine;
 
@@ -6,8 +7,9 @@ namespace view
 {
     public class CameraController : MonoBehaviour
     {
-
         private float moveSpeed = 100f;
+        private float touchMoveSpeed = 3f;
+
         public bool freeMovement = true;
         public bool inMenu = false;
         
@@ -18,10 +20,12 @@ namespace view
         public bool compasActive = true;
 
         public GameObject markerPrefab;
-        private GameObject positionMarker;
+        public GameObject positionMarker;
         private float markerUpdateTimer = 0f;
         private float markerUpdateInterval = 1f;
+        private bool  markerActive = true;
 
+        
         private float positionUpdateTimer = 0f;
         private float positionUpdateInterval = 0.5f;
         
@@ -31,26 +35,30 @@ namespace view
         public CompassReader compass;
         public GraphManager graphManager;
 
-
+        // Touch input variables
+        private Vector2 touchLastPos;
+        private bool isTouching = false;
+        private float touchSensitivity = 1.0f; // Adjust to increase/decrease touch movement sensitivity
 
         void Start()
         {
             cam = Camera.main;
             SetCameraTilt(65f);
             orbitPoint = transform.position;  // Initialize orbit point to current position
-            
         }
 
         void Update()
         {
-            
             if (!inMenu)
             {
                 HandleCameraRotation();
                 HandleMovementOrTracking();
             }
 
-            HandleMarkerUpdate();
+            if (markerActive)
+            {
+                HandleMarkerUpdate();
+            }
         }
 
         private void SetCameraTilt(float angle)
@@ -75,7 +83,6 @@ namespace view
             float zPos = orbitPoint.z - Mathf.Cos(headingRad) * orbitDistance;
             float yPos = buildingManager.GetShownFloor() * 2.0f + cameraHeight;
 
-
             cam.transform.position = new Vector3(xPos, yPos, zPos);
         }
 
@@ -93,10 +100,18 @@ namespace view
 
         private void HandleFreeMovement()
         {
+            Vector3 movement = Vector3.zero;
+
+            // Handle keyboard input (WASD)
             float h = Input.GetAxis("Horizontal");
             float v = Input.GetAxis("Vertical");
+            
+            // Handle touch input
+            Vector2 touchMovement = GetTouchMovementInput();
+            h += touchMovement.x * touchMoveSpeed;
+            v += touchMovement.y * touchMoveSpeed;
 
-            Vector3 movement = new Vector3(h, 0, v) * moveSpeed * Time.deltaTime;
+            movement = new Vector3(h, 0, v) * moveSpeed * Time.deltaTime;
             
             // Move the orbit point instead of directly moving the camera
             orbitPoint += movement;
@@ -105,6 +120,41 @@ namespace view
             float y = buildingManager.GetShownFloor() * 2.0f + cameraHeight;
             orbitPoint = new Vector3(orbitPoint.x, y - cameraHeight, orbitPoint.z);
         }
+
+        private Vector2 GetTouchMovementInput()
+        {
+            Vector2 movement = Vector2.zero;
+
+            if (Input.touchCount > 0)
+            {
+                Touch touch = Input.GetTouch(0);
+
+                switch (touch.phase)
+                {
+                    case TouchPhase.Began:
+                        isTouching = true;
+                        break;
+
+                    case TouchPhase.Moved:
+                        if (isTouching)
+                        {
+                            Vector2 delta = touch.deltaPosition;
+                            movement.x = -delta.x * 0.01f;
+                            movement.y = -delta.y * 0.01f;
+
+                        }
+                        break;
+
+                    case TouchPhase.Ended:
+                    case TouchPhase.Canceled:
+                        isTouching = false;
+                        break;
+                }
+            }
+
+            return movement;
+        }
+
 
         private void HandlePositionTracking()
         {
@@ -136,7 +186,7 @@ namespace view
 
         public void MoveMarkerToPosition(Position pos)
         {
-            if (pos == null) return;
+            if (pos == null || !markerActive) return;
             
             if (positionMarker == null)
             {
@@ -170,6 +220,11 @@ namespace view
             // Handle camera positioning will be done in Update()
             buildingManager.SpawnBuildingFloor(buildingManager.GetActiveBuilding().buildingName, pos.Floor);
         }
+        
+        public void GotoPrediction()
+        {
+           GotoPosition(wifiManager.GetPosition());
+        }
 
         public void OnViewModeButtonPressed()
         {
@@ -183,6 +238,30 @@ namespace view
                     positionMarker.transform.position.y - 1f, // Adjust for marker height offset
                     positionMarker.transform.position.z
                 );
+            }
+        }
+        
+        /// <summary>
+        /// Activates the position marker if it's assigned.
+        /// </summary>
+        public void ActivateMarker()
+        {
+            markerActive = true;
+            if (positionMarker != null)
+            {
+                positionMarker.SetActive(true);
+            }
+        }
+
+        /// <summary>
+        /// Deactivates the position marker if it's assigned.
+        /// </summary>
+        public void DeactivateMarker()
+        {
+            markerActive = false;
+            if (positionMarker != null)
+            {
+                positionMarker.SetActive(false);
             }
         }
         

@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using controller;
 using model.Database;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace view
@@ -13,6 +16,7 @@ namespace view
     {
         private readonly List<GameObject> markers = new();
         private GameObject crosshairMarker; 
+        public GameObject WifiMarkerPrefab; 
 
         private bool active = false;
         public SQLiteDatabase database;
@@ -21,26 +25,31 @@ namespace view
         public WifiManager wifiManager;
         
         public Button collectButton;
+        public TMP_Text collectButtonText;
         public Button deleteButton;
-        public GameObject dialogPanel;
+        public GameObject managePointsDialogPanel;
+
 
         public LoadingSpinner spinner;
-        
+        public GameObject CrosshairMarkerPrefab; 
+
         public bool isCollecting = false;
+        
 
         private void Start()
         {
             collectButton.onClick.AddListener(CollectAtCurrentPosition);
             deleteButton.onClick.AddListener(DeleteAtCurrentPosition);
-            
-            crosshairMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            crosshairMarker.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f); // Make it smaller than data points
-            Renderer crosshairRenderer = crosshairMarker.GetComponent<Renderer>();
-            crosshairRenderer.material.color = Color.red; // Make it red to distinguish from data points
+
+            crosshairMarker = Instantiate(CrosshairMarkerPrefab);
+
+            //crosshairMarker.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f); // Adjust size
+            crosshairMarker.transform.rotation = Quaternion.Euler(90, 0, 0);
             crosshairMarker.SetActive(false); // Initially hidden
-            
+
             Deactivate();
         }
+
         
         private void Update()
         {
@@ -48,6 +57,7 @@ namespace view
             if (active && crosshairMarker != null)
             {
                 Vector3 crosshairPos = cameraController.GetCrosshairPosition();
+                crosshairPos.y += 0.2f;
                 crosshairMarker.transform.position = crosshairPos;
             }
         }
@@ -55,14 +65,14 @@ namespace view
         public void Activate()
         {
             Debug.Log("Activate called");
-            dialogPanel.SetActive(true);
+            managePointsDialogPanel.SetActive(true);
             active = true;
-            
+            cameraController.DeactivateMarker();
+
             // Show crosshair marker
             if (crosshairMarker != null)
             {
                 crosshairMarker.SetActive(true);
-                // Set initial position
                 crosshairMarker.transform.position = cameraController.GetCrosshairPosition();
             }
             
@@ -71,14 +81,17 @@ namespace view
 
         public void Deactivate()
         {
+            Debug.Log("Data collection mode de-activated");
             active = false;
-            dialogPanel.SetActive(false);
+            managePointsDialogPanel.SetActive(false);
             
-            // Hide crosshair marker
-            if (crosshairMarker != null)
+            if (cameraController != null && cameraController.positionMarker != null)
             {
-                crosshairMarker.SetActive(false);
+                cameraController.positionMarker.SetActive(true);
             }
+            
+            crosshairMarker.SetActive(false);
+            cameraController.ActivateMarker();
             
             foreach (var marker in markers)
             {
@@ -103,21 +116,21 @@ namespace view
             foreach (var coord in coords)
             {
                 Vector3 position = new(coord.X, coord.Floor * 2.0f + 1f, coord.Y);
-                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                marker.transform.position = position;
-                marker.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // make it smaller
-                marker.name = $"CoordMarker_{coord.X}_{coord.Y}";
 
-                // Now access the Renderer after the marker is instantiated
-                Renderer rend = marker.GetComponent<Renderer>();
-                rend.material.color = new Color(0.278f, 0.647f, 0.99f);  // Set the color to blue
+                GameObject marker = Instantiate(WifiMarkerPrefab, position, Quaternion.identity);
+
+                //marker.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+                marker.name = $"CoordMarker_{coord.X}_{coord.Y}";
 
                 markers.Add(marker);
             }
+
+
         }
 
         public void DeleteAtCurrentPosition()
         {
+            database.PrintDatabase();
             Vector3 crosshairPos = cameraController.GetCrosshairPosition();
     
             Coordinate closest = null;
@@ -147,7 +160,7 @@ namespace view
                 Refresh(); 
             }
         }
-
+        
         /// <summary>
         /// Collects a WiFi data point at the current position shown by the crosshair
         /// </summary>
@@ -158,18 +171,32 @@ namespace view
                 Debug.Log("Already collecting data point, please wait...");
                 return;
             }
-        
-            // Get the position where the crosshair is pointing
+
+            // Null checks
+            if (cameraController == null) Debug.LogError("cameraController is NULL");
+            if (collectButton == null) Debug.LogError("collectButton is NULL");
+            if (spinner == null) Debug.LogError("spinner is NULL");
+            if (buildingManager == null) Debug.LogError("buildingManager is NULL");
+
             Vector3 crosshairPos = cameraController.GetCrosshairPosition();
             
-            collectButton.interactable = false; 
+            collectButton.interactable = false;
             isCollecting = true;
+
+
             spinner.StartSpinning();
-            collectButton.GetComponentInChildren<Text>().text = "";
-        
-            // Start the data collection coroutine
-            StartCoroutine(CollectDataPointCoroutine(crosshairPos.x, crosshairPos.z, buildingManager.GetShownFloor(), buildingManager.GetActiveBuilding().buildingName));
+            collectButtonText.text = "";
+            
+            string buildingName = buildingManager.GetActiveBuilding().buildingName;
+            int floor = buildingManager.GetShownFloor();
+            
+            StartCoroutine(CollectDataPointCoroutine(
+                crosshairPos.x, crosshairPos.z,
+                floor,
+                buildingName
+            ));
         }
+
     
         private IEnumerator CollectDataPointCoroutine(float x, float y, int floor, string building)
         {
@@ -197,7 +224,7 @@ namespace view
             Refresh();
             spinner.StopSpinning();
             collectButton.interactable = true; 
-            collectButton.GetComponentInChildren<Text>().text = "Collect";
+            collectButtonText.text = "Collect";
         }
         
         private void OnDestroy()

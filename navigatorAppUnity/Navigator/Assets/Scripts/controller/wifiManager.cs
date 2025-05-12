@@ -166,6 +166,8 @@ namespace controller
                             SignalStrength = scanResult.Get<int>("level")   // Gets normalized
                             // CoordinateId will be set later when inserted into the DB
                         };
+                        Debug.Log($"fresh scanned signal {wifiInfo.SignalStrength}");
+
 
                         coord.WifiInfos.Add(wifiInfo);
                     }
@@ -269,6 +271,9 @@ namespace controller
                 
                 // Find max signal strength
                 float maxStrength = strengths.Max();
+                
+                Debug.Log($"max WiFi found: BSSID={bssid}, Signal={maxStrength}");
+
                 
                 // Create WiFi info object with max signal strength
                 WifiInfo wifiInfo = new WifiInfo

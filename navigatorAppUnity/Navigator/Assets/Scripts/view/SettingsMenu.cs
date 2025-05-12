@@ -27,7 +27,8 @@ namespace view
         public TMP_InputField rollingAverageSize;
 
         public Button navigateButton;
-        
+        public Button gotoPositionButton;
+
         public Button importJson;
         public Button exportJson;
 
@@ -38,7 +39,7 @@ namespace view
         private void Start()
         {
             visiblePos = menu.anchoredPosition;
-            hiddenPos = visiblePos + new Vector2(menu.rect.width, 0); // offscreen to the right
+            hiddenPos = visiblePos + new Vector2(menu.rect.width * 1.3f, 0); // offscreen to the right
             menu.anchoredPosition = hiddenPos;
 
             
@@ -105,6 +106,8 @@ namespace view
                 CloseMenu();
                 dataCollectionMode.Activate();
                 navigateButton.gameObject.SetActive(false);
+                gotoPositionButton.gameObject.SetActive(false);
+
             }
             else
             {
@@ -112,6 +115,7 @@ namespace view
                 CloseMenu();
                 dataCollectionMode.Deactivate();
                 navigateButton.gameObject.SetActive(true);
+                gotoPositionButton.gameObject.SetActive(true);
 
             }
         }

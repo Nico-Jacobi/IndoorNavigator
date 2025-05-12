@@ -71,7 +71,6 @@ namespace view
             while (isSpinning)
             {
                 rectTransform.Rotate(0, 0, -rotationSpeed * Time.deltaTime);
-                Debug.Log(-rotationSpeed * Time.deltaTime);
                 yield return null;
             }
         }
