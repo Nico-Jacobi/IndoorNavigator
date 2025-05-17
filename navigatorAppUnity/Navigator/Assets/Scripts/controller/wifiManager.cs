@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using model;
 using model.Database;
 using model.Database.Plugins;
@@ -30,6 +31,9 @@ namespace controller
         private List<Position> positions;   //contains last x raw predictions, removes old ones, but may contain more than rollingAverageLength
         public int rollingAverageLength = 10;
 
+        // Cache for data points to avoid frequent database calls
+        private Dictionary<string, List<Coordinate>> buildingDataPointsCache = new Dictionary<string, List<Coordinate>>();
+        private string lastBuilding = string.Empty;
         
         public bool isUpdating = false;    //set to true to stop the scanning, otherwise to coroutine will use this
         public float updateInterval = 2f;  //seconds between scans (if wifi scans are throttled (android 12+ default) set to 30)
@@ -67,20 +71,26 @@ namespace controller
 
         public Position GetPosition()
         {
-            //todo maybe exponential average here to? 
-            //also use compass to get direction and from the points and the last ones get the speed to make better predicton
-            
             if (positions == null || positions.Count == 0)
                 return null;
 
+            // Use a more efficient approach for calculating average
             int count = Math.Min(rollingAverageLength, positions.Count);
             var lastPositions = positions.Skip(positions.Count - count).ToList();
 
-            float avgX = lastPositions.Average(p => p.X);
-            float avgY = lastPositions.Average(p => p.Y);
-            int avgFloor = (int)Math.Round(lastPositions.Average(p => p.Floor));
-
-            return new Position(avgX, avgY, avgFloor);
+            float avgX = 0, avgY = 0, avgFloor = 0;
+            foreach (var pos in lastPositions)
+            {
+                avgX += pos.X;
+                avgY += pos.Y;
+                avgFloor += pos.Floor;
+            }
+            
+            return new Position(
+                avgX / count, 
+                avgY / count, 
+                (int)Math.Round(avgFloor / count)
+            );
         }
 
         // Check if location is activated
@@ -166,8 +176,6 @@ namespace controller
                             SignalStrength = scanResult.Get<int>("level")   // Gets normalized
                             // CoordinateId will be set later when inserted into the DB
                         };
-                        Debug.Log($"fresh scanned signal {wifiInfo.SignalStrength}");
-
 
                         coord.WifiInfos.Add(wifiInfo);
                     }
@@ -190,7 +198,6 @@ namespace controller
             
             yield return coord;
         }
-        
         
         /// <summary>
         /// Collects multiple WiFi measurements and returns a dictionary with max signal strength for each BSSID.
@@ -272,9 +279,6 @@ namespace controller
                 // Find max signal strength
                 float maxStrength = strengths.Max();
                 
-                Debug.Log($"max WiFi found: BSSID={bssid}, Signal={maxStrength}");
-
-                
                 // Create WiFi info object with max signal strength
                 WifiInfo wifiInfo = new WifiInfo
                 {
@@ -307,8 +311,7 @@ namespace controller
             yield return aggregatedCoordinate;
         }
         
-        
-         /// <summary>
+        /// <summary>
         /// Creates a DataPoint with multiple WiFi measurements.
         /// This can be used to create reference points for the database.
         /// </summary>
@@ -316,7 +319,6 @@ namespace controller
         /// <param name="y">Y-coordinate of the point</param>
         /// <param name="floor">Floor number</param>
         /// <param name="buildingName">Name of the building</param>
-        /// <param name="numberOfScans">Number of scans to perform</param>
         /// <param name="saveToDatabase">Whether to save the data point to the database</param>
         /// <param name="onComplete">Action to call when measurement is complete with the created coordinate</param>
         /// <returns>Coroutine yielding a Coordinate object with aggregated WiFi data</returns>
@@ -362,6 +364,12 @@ namespace controller
             {
                 database.InsertCoordinateWithWifiInfos(dataPoint);
                 Debug.Log($"Saved data point to database for building {buildingName}");
+                
+                // Update cache if we're adding to the current building
+                if (buildingName == lastBuilding && buildingDataPointsCache.ContainsKey(buildingName))
+                {
+                    buildingDataPointsCache[buildingName].Add(dataPoint);
+                }
             }
             
             // Call completion callback if provided
@@ -370,44 +378,41 @@ namespace controller
             yield return dataPoint;
         }
         
-     /*
-SSID: I'm watching you, BSSID: 2c:91:ab:59:83:5f, Level: -66, Frequency: 5500, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169109
-SSID: I'm watching you, BSSID: 2c:91:ab:59:83:5e, Level: -60, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169100
-SSID: MagentaWLAN-E52G, BSSID: ac:b6:87:5b:a5:fe, Level: -93, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169095
-SSID: , BSSID: fe:65:de:b4:99:92, Level: -49, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS], Timestamp: 1667079169103
-SSID: I'm watching you, BSSID: 7e:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169082
-SSID: Gastzugang Jacobi, BSSID: 7e:8a:20:08:f5:d3, Level: -81, Frequency: 2412, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169075
-SSID: , BSSID: 8a:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169090
-SSID: , BSSID: 86:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169088
-SSID: , BSSID: 86:8a:20:08:f5:d3, Level: -71, Frequency: 2412, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169080
-SSID: Gastzugang Jacobi, BSSID: 2e:91:ab:59:83:5e, Level: -60, Frequency: 2462, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169098
-SSID: , BSSID: 82:8a:20:08:f5:d3, Level: -79, Frequency: 2412, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169077
-SSID: Gastzugang Jacobi, BSSID: 82:8a:20:08:f5:d2, Level: -83, Frequency: 5745, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS], Timestamp: 1667079169085
-SSID: Gastzugang Jacobi, BSSID: 2e:91:ab:59:83:5f, Level: -66, Frequency: 5500, Capabilities: [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][WPS], Timestamp: 1667079169105
-SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Capabilities: [WPA2-PSK-CCMP][RSN-PSK-CCMP][WPA-PSK-CCMP][ESS], Timestamp: 1667079169093
-*/
-     
-     // Coroutine that ensures UpdateLocation is called continuously but waits for the previous call to finish.
-     private IEnumerator UpdateLocationContinuously()
-     {
-         while (true)
-         {
-             // Check if UpdateLocation is already running
-             if (!isUpdating)
-             {
-                 isUpdating = true;
-     
-                 yield return StartCoroutine(UpdateLocationAsync());
+        // Coroutine that ensures UpdateLocation is called continuously but waits for the previous call to finish.
+        private IEnumerator UpdateLocationContinuously()
+        {
+            while (true)
+            {
+                // Check if UpdateLocation is already running
+                if (!isUpdating)
+                {
+                    isUpdating = true;
+        
+                    yield return StartCoroutine(UpdateLocationAsync());
 
-                 yield return new WaitForSeconds(updateInterval);
-                 isUpdating = false;
-             }
-             else
-             {
-                 yield return null;
-             }
-         }
-     }
+                    yield return new WaitForSeconds(updateInterval);
+                    isUpdating = false;
+                }
+                else
+                {
+                    yield return null;
+                }
+            }
+        }
+
+        // Optimization: This method loads data points from database and caches them
+        private List<Coordinate> GetDataPointsForBuilding(string buildingName)
+        {
+            if (lastBuilding != buildingName || !buildingDataPointsCache.ContainsKey(buildingName))
+            {
+                // Load and cache data points for this building
+                lastBuilding = buildingName;
+                buildingDataPointsCache[buildingName] = database.GetCoordinatesForBuilding(buildingName);
+                Debug.Log($"Loaded {buildingDataPointsCache[buildingName].Count} data points for building {buildingName}");
+            }
+            
+            return buildingDataPointsCache[buildingName];
+        }
 
         private IEnumerator UpdateLocationAsync()
         {
@@ -431,54 +436,64 @@ SSID: DTUBI-93415950, BSSID: 54:f2:9f:81:fb:a7, Level: -88, Frequency: 2437, Cap
                 yield break;
             }
 
-
+            // Update building information
             buildingManager.updateBuilding(wifiNetworks);
+            string currentBuilding = buildingManager.GetActiveBuilding().buildingName;
             
-            List<Coordinate> dataPoints = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName);
+            // Get cached data points for current building
+            List<Coordinate> dataPoints = GetDataPointsForBuilding(currentBuilding);
             if (dataPoints.Count == 0)
             {
                 Debug.LogWarning("No recorded data found for this building.");
                 yield break;
             }
 
-            // Sort coordinates by similarity
-            var sorted = dataPoints
-                .OrderBy(coord => coord.CompareWifiSimilarity(wifiNetworks))
-                .Take(100)
-                .ToList();
+            // Run computationally expensive comparison on a worker thread
+            Task<Position> positionTask = Task.Run(() => {
+                // Sort coordinates by similarity - limited to 100 closest matches for performance
+                var sorted = dataPoints
+                    .OrderBy(coord => coord.CompareWifiSimilarity(wifiNetworks))
+                    .Take(100)
+                    .ToList();
 
-            // Interpolate using exponential weighting
-            float weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
-            int actualLength = sorted.Count;
+                // Interpolate using exponential weighting
+                float weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
+                int actualLength = sorted.Count;
 
-            for (int i = 0; i < actualLength; i++)
+                for (int i = 0; i < actualLength; i++)
+                {
+                    float weight = (float) Math.Pow(1.2, actualLength - i); // Exponential weighting
+                    weightedX += sorted[i].X * weight;
+                    weightedY += sorted[i].Y * weight;
+                    weightedFloor += sorted[i].Floor * weight;
+                    totalWeight += weight;
+                }
+
+                float finalX = weightedX / totalWeight;
+                float finalY = weightedY / totalWeight;
+                float finalFloor = weightedFloor / totalWeight;
+
+                return new Position(finalX, finalY, (int)Math.Round(finalFloor));
+            });
+
+            // Wait for task to complete without blocking the main thread
+            while (!positionTask.IsCompleted)
             {
-                float weight = (float) Math.Pow(1.2, actualLength - i); // Exponential weighting
-                weightedX += sorted[i].X * weight;
-                weightedY += sorted[i].Y * weight;
-                weightedFloor += sorted[i].Floor * weight;
-                totalWeight += weight;
+                yield return null;
             }
 
-            float finalX = weightedX / totalWeight;
-            float finalY = weightedY / totalWeight;
-            float finalFloor = weightedFloor / totalWeight;
+            Position prediction = positionTask.Result;
+            Debug.Log($"Predicted Position: X={prediction.X:F2}, Y={prediction.Y:F2}, Floor={prediction.Floor}");
 
-            Position prediction = new Position(finalX, finalY, (int)Math.Round(finalFloor));
-            Debug.Log($"Predicted Position: X={finalX:F2}, Y={finalY:F2}, Floor={Math.Round(finalFloor)}");
-
-
-            positions = positions.Append(prediction).ToList();
+            // Update positions list with the new prediction
+            positions.Add(prediction);
             
-            if (positions.Count > rollingAverageLength*5)   //cache some 
+            // Limit size of positions list
+            if (positions.Count > rollingAverageLength*5)
             {
                 positions.RemoveAt(0);
             }
-            
-            Debug.Log($"{positions.Count} predictons saved");
         }
-        
-       
 
         // Opens the location settings for the user to enable GPS
         private void OpenLocationSettings()
