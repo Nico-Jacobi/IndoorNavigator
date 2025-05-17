@@ -12,19 +12,28 @@ import numpy as np
 
 matplotlib.use('TkAgg')
 
+# used to normalize the coordinates for unity
+#origin_lat=50.80977
+#origin_lon=8.81048
+origin_lat = -1
+origin_lon = -1
 
 
-def parse_geojson_to_graph(geojson_string, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> tuple[Graph, list, list, list]:
+def parse_geojson_to_graph(geojson_string) -> tuple[Graph, list, list, list]:
     """
     Parses a GeoJSON file and extracts rooms, doors, and stairs.
     Sets them up, and returns a graph representation of the building,
     along with the lists of rooms, stairs, and doors.
     """
+    global origin_lat
+    global origin_lon
+
     graph = Graph()
     doors = []
     stairs = []
     rooms = []
     broken = []
+
 
     for feature in geojson_string.get("features", []):
         properties = feature.get("properties")
@@ -39,6 +48,11 @@ def parse_geojson_to_graph(geojson_string, origin_lat=coordinateUtilities.origin
         if level is not None:
             if is_door:
                 doors.append(Door(feature, graph))
+
+                if origin_lat == -1 and origin_lon == -1:
+                    origin_lat = doors[-1].coordinates[0]
+                    origin_lon = doors[-1].coordinates[1]
+
             elif is_stairs:
                 stairs.append(Stair(feature, graph))
             else:
@@ -101,4 +115,8 @@ if __name__ == "__main__":
     with open(f"resources/{building_name}_graph.json", "w") as f:
         f.write(graph.export_json())
 
-    parse_obj_files(rooms, stairs, doors, building_name)
+    parse_obj_files(rooms, stairs, doors, building_name, origin_lat, origin_lon)
+
+
+    print("origon lat: ", origin_lat)
+    print("origon lon: ", origin_lon)

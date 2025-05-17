@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using controller;
 using model;
@@ -34,7 +35,7 @@ namespace controller
 
             StartCoroutine(UpdatePath());
             CloseNavigationDialog();
-            
+
             searchField.onValueChanged.AddListener(OnSearchChanged);
 
         }
@@ -48,7 +49,7 @@ namespace controller
 
 
 
-        private void PopulateDropdownFromStrings( List<string> options)
+        private void PopulateDropdownFromStrings(List<string> options)
         {
             toField.ClearOptions();
             toField.AddOptions(options);
@@ -64,55 +65,58 @@ namespace controller
             PopulateDropdownFromStrings(matches);
         }
 
-        
+
         public void OnNavigateButtonPressed()
         {
             navigationDialog.gameObject.SetActive(true);
             cameraController.inMenu = true;
         }
-        
+
         public void CloseNavigationDialog()
         {
             navigationDialog.gameObject.SetActive(false);
             cameraController.inMenu = false;
         }
-        
+
         private void OnStartNavigationButtonPressed()
         {
             navigate();
             CloseNavigationDialog();
         }
-        
-        
-        public async void navigate(){
+
+
+        public async void navigate()
+        {
             Vertex fromVertex = GetStart();
-           string toRoom = toField.options[toField.value].text;
+            string toRoom = toField.options[toField.value].text;
 
-           Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
+            Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
 
-           if (currentPath?.Count > 6 && currentPath.Last().target.rooms.Contains(toField.options[toField.value].text))
-           {
-               //only partly calculate the current path (way faster if the user just moved a bit)
-               Debug.Log("partially recalculating path");
-               // removing the first few edges, and just recalculating them for faster calculations
-               currentPath = await buildingManager.GetActiveGraph().FindShortestPathToTargetEdgesAsync(fromVertex, currentPath.GetRange(5, currentPath.Count - 5));
-           }
-           else
-           {
-                  currentPath =  await buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
-                  Debug.Log("completely calculating path");
-           }
+            if (currentPath?.Count > 6 && currentPath.Last().target.rooms.Contains(toField.options[toField.value].text))
+            {
+                //only partly calculate the current path (way faster if the user just moved a bit)
+                Debug.Log("partially recalculating path");
+                // removing the first few edges, and just recalculating them for faster calculations
+                currentPath = await buildingManager.GetActiveGraph()
+                    .FindShortestPathToTargetEdgesAsync(fromVertex, currentPath.GetRange(5, currentPath.Count - 5));
+            }
+            else
+            {
+                currentPath = await buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
+                Debug.Log("completely calculating path");
+            }
 
-           
 
-           InterpolateStart();
-           navigationActive = true;
 
-           PlotCurrentPath();
-           Debug.Log($"Path found with length {currentPath.Count}");
+            InterpolateStart();
+            navigationActive = true;
+
+            PlotCurrentPath();
+            Debug.Log($"Path found with length {currentPath.Count}");
         }
-        
-        
+
+
+        //todo change
         public Vertex GetStart()
         {
             List<Vertex> verts = buildingManager.GetActiveGraph().GetVertices();
@@ -128,26 +132,55 @@ namespace controller
                 })
                 .ToList();
 
-            return verts[0];
+            
+            // finding the vertex where one of the paths gets very close to the actual position
+            Vertex closest = verts[0];
+            double closestDistance = float.PositiveInfinity;
+
+            for (int i = 0; i <= 5; i++)
+            {
+                foreach (Edge edge in verts[i].edges)
+                {
+                    foreach (Point p in edge.path.points)
+                    {
+                        double dx = p.lon - pos.X;
+                        double dy = p.lat - pos.Y;
+                        double distance = dx * dx + dy * dy;
+
+                        if (distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            closest = verts[i];
+                        }
+                    }
+                }
+            }
+            
+            
+            Vector3 worldPos = new Vector3((float) closest.lon, closest.floor * 2.0f + 2f,(float) closest.lat);
+            Instantiate(cameraController.markerPrefab, worldPos, Quaternion.identity);
+
+            return closest;
         }
 
+        
+        //todo change
         // make the currentPath better by making it start at the current position
         private void InterpolateStart()
         {
             Position pos = wifiManager.GetPosition();
 
             Point closestPoint = GetClosestPoint(currentPath[0].path.points, pos);
+            
             if (closestPoint != null)
             {
-                double distToStart =
-                    CalculateDistance(new Point(currentPath[0].source.lat, currentPath[0].source.lon), pos);
+                double distToStart = CalculateDistance(new Point(currentPath[0].source.lat, currentPath[0].source.lon), pos);
                 double distToClosest = CalculateDistance(closestPoint, pos);
 
                 if (distToClosest < distToStart)
                 {
                     List<Point> partialPath = GetPartialPathAfterPoint(currentPath[0].path.points, closestPoint);
-                    Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].target,
-                        new PathData(1, partialPath));
+                    Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].target, new PathData(1, partialPath));
                     currentPath[0] = p;
                 }
                 else
@@ -156,9 +189,8 @@ namespace controller
                     if (pos != null)
                     {
                         List<Point> partialPath = GetPartialPathAfterPoint(closestEdge.path.points, closestPoint);
-                                            Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].source,
-                                                new PathData(1, partialPath));
-                                            currentPath.Insert(0, p);
+                        Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].source, new PathData(1, partialPath));
+                        currentPath.Insert(0, p);
                     }
                 }
             }
@@ -242,25 +274,26 @@ namespace controller
             {
                 Destroy(obj);
             }
-            
+
             if (currentPath == null || currentPath.Count == 0)
             {
                 navigationActive = false;
                 return;
             }
 
-
-            Position pos = wifiManager.GetPosition();
             Color[] startColors = { Color.cyan, Color.magenta };
             Color[] endColors = { Color.magenta, Color.cyan };
 
             int i = 0;
             foreach (Edge e in currentPath)
             {
-                if (e.source.floor == pos.Floor)
+                if (e.source.floor == buildingManager.GetShownFloor())
                 {
+                    float height = buildingManager.GetShownFloor() * 2 + 0.5f;
+                    
+
                     e.path.Plot(
-                        height: pos.GetFloorHeight() + 0.5f,
+                        height: height,
                         startColor: startColors[i % 2],
                         endColor: endColors[i % 2],
                         smoothness: 100
@@ -270,4 +303,5 @@ namespace controller
             }
         }
     }
+
 }

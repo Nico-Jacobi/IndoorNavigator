@@ -31,7 +31,32 @@ namespace model.graph
     {
         public int v1;
         public int v2;
-        public PathData path;
+        public JsonPathData path;
+    }
+    
+    [Serializable]
+    class JsonPathData
+    {
+        public double weight;
+        public List<JsonPoint> points;
+
+        public PathData ToPathData()
+        {
+            // Convert JsonPoint list to Point list
+            List<Point> realPoints = new List<Point>(points.Count);
+            foreach (var jp in points)
+            {
+                realPoints.Add(new Point(jp.lat, -jp.lon));
+            }
+            return new PathData(weight, realPoints);
+        }
+    }
+
+    [Serializable]
+    class JsonPoint
+    {
+        public double lat;
+        public double lon;
     }
 
 
@@ -56,7 +81,7 @@ namespace model.graph
             {
                 foreach (JsonVertex vertex in graphData.vertices)
                 {
-                    vertices.Add(new Vertex(vertex.lat, vertex.lon, vertex.floor, vertex.name, vertex.rooms));
+                    vertices.Add(new Vertex(vertex.lat, -vertex.lon, vertex.floor, vertex.name, vertex.rooms));
                     foreach (string room in vertex.rooms)
                     {
                         allRoomsSet.Add(room);
@@ -65,13 +90,15 @@ namespace model.graph
 
                 foreach (var edge in graphData.edges)
                 {
-                    Edge e1 = new Edge(vertices[edge.v1], vertices[edge.v2], edge.path);
+                    PathData path = edge.path.ToPathData();
+                    
+                    Edge e1 = new Edge(vertices[edge.v1], vertices[edge.v2], path);
                     edges.Add(e1);
                     vertices[edge.v1].edges.Add(e1);
 
                     if (graphData.bidirectional)
                     {
-                        Edge e2 = new Edge(vertices[edge.v2], vertices[edge.v1], edge.path.GetReverseCopy());
+                        Edge e2 = new Edge(vertices[edge.v2], vertices[edge.v1], path.GetReverseCopy());
                         edges.Add(e2);
                         vertices[edge.v2].edges.Add(e2);
                     }

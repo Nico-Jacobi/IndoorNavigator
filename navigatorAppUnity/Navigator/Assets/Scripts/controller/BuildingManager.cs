@@ -14,17 +14,17 @@ namespace controller
     {
         private Dictionary<string, Building> buildings = new Dictionary<string, Building>();
 
-        // Store the current active building and floor
         private Building activeBuilding;
         private GameObject activeFloorObject;   //the model shown
         private int activeFloorLevel = -1;      // Track the active floor level
 
+        public GraphManager graphManager;
+        
         public SQLiteDatabase database;
         public TMP_Dropdown buildingField;
         public CameraController cameraController;
         public DataCollectionMode dataCollectionMode;
         
-        // New UI elements for floor navigation
         public Button increaseFloorButton;
         public Button decreaseFloorButton;
         public TMP_Text currentFloorText;
@@ -99,6 +99,7 @@ namespace controller
 
             dataCollectionMode.Refresh();
             UpdateFloorButtons();
+            graphManager.PlotCurrentPath();
         }
 
         private void DecreaseFloor()
@@ -116,6 +117,7 @@ namespace controller
 
             dataCollectionMode.Refresh();
             UpdateFloorButtons();
+            graphManager.PlotCurrentPath();
         }
 
         private void UpdateFloorButtons()
@@ -139,7 +141,7 @@ namespace controller
                 }
             }
             
-            if (currentFloor+1 >= maxFloor)
+            if (currentFloor+1 > maxFloor)
             {
                 increaseFloorButton.interactable = false;
             }
@@ -148,7 +150,7 @@ namespace controller
                 increaseFloorButton.interactable = true;
             }
 
-            if (currentFloor-1 <= minFloor)
+            if (currentFloor-1 < minFloor)
             {
                 decreaseFloorButton.interactable = false;
             }

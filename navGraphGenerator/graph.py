@@ -312,7 +312,6 @@ class Graph:
         for edge in self.edges:
             if hasattr(edge.navigation_path, "points") and edge.navigation_path.points:
                 for i, point in enumerate(edge.navigation_path.points):
-                    # Assuming points are stored as (lat, lon) or (x, y) tuples
                     if isinstance(point, tuple) and len(point) >= 2:
                         x, y = normalize_lat_lon_to_meter(point[0], point[1], origin_lat, origin_lon)
                         edge.navigation_path.points[i] = (x, y)

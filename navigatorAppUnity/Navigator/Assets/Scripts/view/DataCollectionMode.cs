@@ -28,7 +28,7 @@ namespace view
         public TMP_Text collectButtonText;
         public Button deleteButton;
         public GameObject managePointsDialogPanel;
-
+        public bool compasActive = false;
 
         public LoadingSpinner spinner;
         public GameObject CrosshairMarkerPrefab; 

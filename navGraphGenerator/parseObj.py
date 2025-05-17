@@ -15,7 +15,7 @@ matplotlib.use('TkAgg')
 
 import os
 
-def parse_obj_files(rooms: List[Door], stairs: List[Stair], doors: List[Door], source_filename, origin_lat=coordinateUtilities.origin_lat, origin_lon=coordinateUtilities.origin_lon) -> None:
+def parse_obj_files(rooms: List[Door], stairs: List[Stair], doors: List[Door], source_filename, origin_lat, origin_lon) -> None:
     """
     generates .obj files per floor, and a config .json with output paths.
     Expects the rooms to be already parsed and setup. (the graph doesn't need to be setup)

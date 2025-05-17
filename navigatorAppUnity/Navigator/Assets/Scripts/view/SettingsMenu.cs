@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Linq;
 using controller;
+using Controller;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,7 @@ namespace view
         public WifiManager wifiManager;
         public DataCollectionMode dataCollectionMode;
         public SQLiteDatabase database;
+        public CompassReader compass;
         
         public RectTransform menu;
         public Button closeButton;
@@ -95,7 +97,7 @@ namespace view
 
         public void HandleCompasActiveToggle(bool compasActiveMode)
         {
-            cameraController.compasActive = compasActiveMode;
+            compass.active = compasActiveMode;
         }
 
         public void HandleCollectDataModeToggle(bool collectDataModeStart)

@@ -4,79 +4,74 @@ namespace Controller
 {
     public class CompassReader : MonoBehaviour
     {
-        public float smoothingFactor = 0.05f;
-        
+        public bool active = true;
+
+        [Tooltip("Larger value = more responsive, smaller = smoother")]
+        [Range(0f, 1f)]
+        public float smoothingFactor = 0.02f;
+
         private bool _isCompassAvailable;
-        private float _rawHeading = 0f;       // Stores the current heading from the device
-        private float _displayedHeading = 0f; // Stores the smoothed heading for display
+        private float _rawHeading = 0f;
+        private float _displayedHeading = 0f;
         private bool _isInitialized = false;
-        
+
         private void Start()
         {
             Initialize();
         }
-        
+
         private void Initialize()
         {
             if (_isInitialized) return;
-            
-            // Start location services 
+
             Input.location.Start();
-            
             Input.compass.enabled = true;
+
             _isCompassAvailable = Input.compass.enabled;
-            
+
             if (_isCompassAvailable)
             {
                 _rawHeading = Input.compass.trueHeading;
                 _displayedHeading = _rawHeading;
             }
-            
+
             _isInitialized = true;
         }
-        
+
         private void Update()
         {
-            if (!_isCompassAvailable) return;
-            
+            if (!_isCompassAvailable || !active) return;
+
             _rawHeading = Input.compass.trueHeading;
-            
-            float angularDiff = Mathf.DeltaAngle(_displayedHeading, _rawHeading);
-            
-            _displayedHeading += angularDiff * smoothingFactor * Time.deltaTime * 60f;
-            
-            _displayedHeading = (_displayedHeading + 360f) % 360f;
+            float rawRadians = -2f * Mathf.PI * (_rawHeading / 360f);
+            float displayedRadians = -2f * Mathf.PI * (_displayedHeading / 360f);
+
+            float angularDiff = Mathf.Repeat(rawRadians - displayedRadians + Mathf.PI, 2 * Mathf.PI) - Mathf.PI;
+
+            displayedRadians += angularDiff * smoothingFactor;
+
+            _displayedHeading = (360f + (-displayedRadians * 360f / (2f * Mathf.PI))) % 360f;
         }
-        
-        /// <summary>
-        /// Returns the raw (unsmoothed) compass heading (0-360). Returns 0 if unavailable.
-        /// </summary>
+
+
         public float GetRawHeading()
         {
             if (!_isInitialized) Initialize();
             return _isCompassAvailable ? _rawHeading : 0f;
         }
-        
-        /// <summary>
-        /// Returns the smoothed compass heading (0-360). Returns 0 if unavailable.
-        /// </summary>
+
         public float GetHeading()
         {
+            if (!active) return 0f;
             if (!_isInitialized) Initialize();
             return _isCompassAvailable ? _displayedHeading : 0f;
         }
-        
-        /// <summary>
-        /// Returns the heading in radians for use in rotations (-2π to 0)
-        /// </summary>
+
         public float GetHeadingRadians()
         {
             return -2f * Mathf.PI * (GetHeading() / 360f);
         }
-        
-        /// <summary>
-        /// Cleanup when the component is destroyed
-        /// </summary>
+
         private void OnDestroy()
         {
             if (Input.location.status == LocationServiceStatus.Running)

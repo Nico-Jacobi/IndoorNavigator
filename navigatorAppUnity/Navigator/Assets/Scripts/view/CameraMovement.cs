@@ -8,7 +8,7 @@ namespace view
     public class CameraController : MonoBehaviour
     {
         private float moveSpeed = 100f;
-        private float touchMoveSpeed = 3f;
+        private float touchMoveSpeed = 1.0f;
 
         public bool freeMovement = true;
         public bool inMenu = false;
@@ -16,15 +16,13 @@ namespace view
         private readonly float orbitDistance = 10f;  // Distance from camera to orbit point
         private readonly float cameraHeight = 40f;   // Height offset above the floor
         private Vector3 orbitPoint;        // The point we're orbiting around
-
-        public bool compasActive = true;
-
+        
+        
         public GameObject markerPrefab;
         public GameObject positionMarker;
         private float markerUpdateTimer = 0f;
         private float markerUpdateInterval = 1f;
-        private bool  markerActive = true;
-
+        private bool markerActive = true;
         
         private float positionUpdateTimer = 0f;
         private float positionUpdateInterval = 0.5f;
@@ -39,6 +37,13 @@ namespace view
         private Vector2 touchLastPos;
         private bool isTouching = false;
         private float touchSensitivity = 1.0f; // Adjust to increase/decrease touch movement sensitivity
+
+        private float currentHeading = 0;
+        
+        // Filter variables for touch movement
+        private Vector2 filteredTouchMovement = Vector2.zero;
+        private float touchSmoothingFactor = 0.3f; // Lower value = more smoothing (between 0-1)
+        
 
         void Start()
         {
@@ -68,9 +73,22 @@ namespace view
 
         private void HandleCameraRotation()
         {
-            float heading = compasActive ? compass.GetHeading() : graphManager.GetHeading();
-            PositionCameraOrbit(heading);
-            cam.transform.rotation = Quaternion.Euler(65f, heading, 0f);
+            float newHeading = 0;
+            if (!freeMovement)
+            {
+                newHeading = graphManager.GetHeading();
+            }
+            
+            if (compass.active)
+            {
+                newHeading = compass.GetHeading();
+            }
+
+            currentHeading = newHeading;
+            
+            // Apply heading to camera positioning
+            PositionCameraOrbit(newHeading);
+            cam.transform.rotation = Quaternion.Euler(65f, newHeading, 0f);
         }
 
         private void PositionCameraOrbit(float heading)
@@ -108,51 +126,86 @@ namespace view
             
             // Handle touch input
             Vector2 touchMovement = GetTouchMovementInput();
-            h += touchMovement.x * touchMoveSpeed;
-            v += touchMovement.y * touchMoveSpeed;
+            
+            // Apply touch movement, with heading compensation
+            if (touchMovement.magnitude > 0)
+            {
+                // Rotate the touch movement vector to account for camera heading
+                Vector2 rotatedMovement = RotateTouchVectorByHeading(touchMovement);
+                h += rotatedMovement.x * touchMoveSpeed;
+                v += rotatedMovement.y * touchMoveSpeed;
+            }
+            else
+            {
+                // No touch movement, use regular keyboard input
+                h += touchMovement.x * touchMoveSpeed;
+                v += touchMovement.y * touchMoveSpeed;
+            }
 
             movement = new Vector3(h, 0, v) * moveSpeed * Time.deltaTime;
             
-            // Move the orbit point instead of directly moving the camera
             orbitPoint += movement;
             
-            // Camera position will be updated in HandleCameraRotation()
             float y = buildingManager.GetShownFloor() * 2.0f + cameraHeight;
             orbitPoint = new Vector3(orbitPoint.x, y - cameraHeight, orbitPoint.z);
         }
 
+        // Rotate a 2D vector by the current heading to make movement relative to camera direction
+        private Vector2 RotateTouchVectorByHeading(Vector2 input)
+        {
+            // Convert heading to radians, negate to rotate in correct direction
+            float headingRad = -currentHeading * Mathf.Deg2Rad;
+            
+            // Create rotation matrix
+            float cosHeading = Mathf.Cos(headingRad);
+            float sinHeading = Mathf.Sin(headingRad);
+            
+            // Apply rotation to input vector
+            return new Vector2(
+                input.x * cosHeading - input.y * sinHeading,
+                input.x * sinHeading + input.y * cosHeading
+            );
+        }
+
         private Vector2 GetTouchMovementInput()
         {
-            Vector2 movement = Vector2.zero;
+            Vector2 currentMovement = Vector2.zero;
 
-            if (Input.touchCount > 0)
+            if (Input.touchCount == 0)
             {
-                Touch touch = Input.GetTouch(0);
-
-                switch (touch.phase)
-                {
-                    case TouchPhase.Began:
-                        isTouching = true;
-                        break;
-
-                    case TouchPhase.Moved:
-                        if (isTouching)
-                        {
-                            Vector2 delta = touch.deltaPosition;
-                            movement.x = -delta.x * 0.01f;
-                            movement.y = -delta.y * 0.01f;
-
-                        }
-                        break;
-
-                    case TouchPhase.Ended:
-                    case TouchPhase.Canceled:
-                        isTouching = false;
-                        break;
-                }
+                isTouching = false;
+                return Vector2.zero;
             }
 
-            return movement;
+            Touch touch = Input.GetTouch(0);
+
+            switch (touch.phase)
+            {
+                case TouchPhase.Began:
+                    isTouching = true;
+                    touchLastPos = touch.position;
+                    return Vector2.zero;
+
+                case TouchPhase.Moved:
+                    if (isTouching)
+                    {
+                        Vector2 delta = touch.position - touchLastPos;
+                        touchLastPos = touch.position;
+
+                        currentMovement = new Vector2(
+                            -delta.x * 0.005f,
+                            -delta.y * 0.005f
+                        );
+                    }
+                    break;
+
+                case TouchPhase.Ended:
+                case TouchPhase.Canceled:
+                    isTouching = false;
+                    break;
+            }
+
+            return currentMovement;
         }
 
 
