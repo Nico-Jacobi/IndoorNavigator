@@ -30,7 +30,7 @@ namespace controller
         {
             Debug.Log("Graph Manager script initialized");
 
-            allOptions = new List<string>(buildingManager.GetActiveGraph().allRoomsSet);
+            allOptions = new List<string>(buildingManager.GetActiveGraph().allRoomsNames);
             PopulateDropdownFromStrings(allOptions);
 
             StartCoroutine(UpdatePath());
@@ -92,7 +92,7 @@ namespace controller
 
             Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
 
-            if (currentPath?.Count > 6 && currentPath.Last().target.rooms.Contains(toField.options[toField.value].text))
+            if (currentPath?.Count > 6 && currentPath.Last().target.HasRoomNamed(toField.options[toField.value].text))
             {
                 //only partly calculate the current path (way faster if the user just moved a bit)
                 Debug.Log("partially recalculating path");

@@ -6,7 +6,7 @@ from typing import Tuple, List
 
 @dataclass
 class PathVertex:
-    # used for pathfinding the visual path from door to door in each room
+    # used for the visual path from door to door in each room
     x: float
     y: float
     x_index: int

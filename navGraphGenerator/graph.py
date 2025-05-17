@@ -9,7 +9,7 @@ from dataClasses import NavigationPath
 class Vertex:
     def __init__(self, name: str, x: float, y: float, floor: int):
         self.name: str = name
-        self.rooms: List[str] = []  # List of room names associated with this vertex (for use in navigation)
+        self.rooms: List["Room"] = []  # List of room names associated with this vertex (for use in navigation)
         self.x: float = x
         self.y: float = y
         self.floor: int = floor     # = level
@@ -55,7 +55,7 @@ class Vertex:
                 "lon": self.x,
                 "floor": self.floor,
                 "name": self.name,
-                "rooms": self.rooms
+                "rooms": [r.id for r in self.rooms]
             }
         else:
             return {
@@ -63,13 +63,14 @@ class Vertex:
                 "lon": self.x,
                 "floor": self.floor,
                 "name": self.name,
-                "rooms": self.rooms
+                "rooms": [r.id for r in self.rooms]
             }
 
 
     def add_room(self, room: "Room") -> None:
         """Add a room to this vertex"""
-        self.rooms.append(room.name)
+        self.rooms.append(room)
+
 
 
 class Edge:
@@ -185,8 +186,12 @@ class Graph:
 
         # Use indices for vertices in the JSON output
         vertices_list = []
+        needed_rooms = {}
         for index, vertex in enumerate(self.vertices.values()):
             vertices_list.append(vertex.to_json(index))
+            for room in vertex.rooms:
+                needed_rooms[room.id] = room
+
 
         # Use indices for edges in the JSON output
         edges_list = []
@@ -201,7 +206,8 @@ class Graph:
         return json.dumps({
             "bidirectional": filter_bidirectional,
             "vertices": vertices_list,
-            "edges": edges_list
+            "edges": edges_list,
+            "rooms":  [room.to_minimal_json() for room in needed_rooms.values()]
         })
 
 

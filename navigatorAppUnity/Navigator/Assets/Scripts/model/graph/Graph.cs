@@ -10,9 +10,10 @@ namespace model.graph
     {
         public bool bidirectional;
 
-        //todo add metadata such as origin, level, .obj-name here
+        //maybe add metadata such as origin, level, .obj-name here
         public List<JsonVertex> vertices;
         public List<JsonEdge> edges;
+        public List<Room> rooms;
     }
 
     [System.Serializable]
@@ -23,7 +24,7 @@ namespace model.graph
         public double lon;
         public int floor;
         public string name;
-        public List<string> rooms;
+        public List<int> rooms;
     }
 
     [System.Serializable]
@@ -58,20 +59,36 @@ namespace model.graph
         public double lat;
         public double lon;
     }
+    
+    
+    public class JsonRoom
+    {
+        public string id { get; set; } = string.Empty;
+        public List<Point> outline { get; set; } = new();
+
+        public class Point
+        {
+            public double lat { get; set; }
+
+            public double lon { get; set; }
+        }
+    }
 
 
     public class Graph
     {
         private List<Vertex> vertices;
         private List<Edge> edges;
-        public HashSet<string> allRoomsSet;
+        public HashSet<Room> allRoomsSet;
+        
+        public HashSet<string> allRoomsNames = new HashSet<string>();
 
 
         public Graph(string jsonData)
         {
             vertices = new List<Vertex>();
             edges = new List<Edge>();
-            allRoomsSet = new HashSet<string>();
+            allRoomsSet = new HashSet<Room>();
 
 
             JsonGraphData graphData = JsonUtility.FromJson<JsonGraphData>(jsonData);
@@ -79,13 +96,26 @@ namespace model.graph
             // Process the parsed data, as the data is stored slightly different from the json
             if (graphData != null)
             {
+
+                Dictionary<int, Room> idToRoom = new Dictionary<int, Room>();
+                foreach (Room r in graphData.rooms)
+                {
+                    idToRoom[r.id] = r;
+                    allRoomsNames.Add(r.name);
+                }
+                allRoomsSet = new HashSet<Room>(idToRoom.Values);
+                
+                
                 foreach (JsonVertex vertex in graphData.vertices)
                 {
-                    vertices.Add(new Vertex(vertex.lat, -vertex.lon, vertex.floor, vertex.name, vertex.rooms));
-                    foreach (string room in vertex.rooms)
+                    List<Room> rooms = new List<Room>();
+                    foreach (int id in vertex.rooms)
                     {
-                        allRoomsSet.Add(room);
+                        rooms.Add(idToRoom[id]);
                     }
+                    
+                    vertices.Add(new Vertex(vertex.lat, -vertex.lon, vertex.floor, vertex.name, rooms));
+    
                 }
 
                 foreach (var edge in graphData.edges)
@@ -158,7 +188,7 @@ namespace model.graph
                     }
 
                     // Check if we found the target room
-                    if (current.rooms.Contains(targetName))
+                    if (current.HasRoomNamed(targetName))
                     {
                         List<Edge> pathEdges = new List<Edge>();
                         Vertex currentVertex = current;
@@ -354,9 +384,9 @@ namespace model.graph
 
                     // Check if there's a common room (meaning we might be able to directly connect)
                     bool shareRoom = false;
-                    foreach (string r in candidate.rooms)
+                    foreach (string r in candidate.GetRoomNames())
                     {
-                        if (current.rooms.Contains(r))
+                        if (current.HasRoomNamed(r))
                         {
                             shareRoom = true;
                             break;

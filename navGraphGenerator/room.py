@@ -20,6 +20,9 @@ class Room:
     grid_size_x: float = 0.00001
     grid_size_y: float = 0.00001
 
+    _id_counter: int = 0  # class-level counter
+    all_rooms = []
+
     # used to remove extremely thin parts of the geometry and for linking doors with walls (in gps)
     # has 2 values, as gps coordinates are not uniform (1 in lat != 1 in lon)
     wall_thickness: (float, float) = meters_to_latlon(0.3, 0.3, 50.8, 8.8)
@@ -29,6 +32,10 @@ class Room:
         :param json: JSON object containing the room data.
         :param graph: reference to the graph object to add this room to
         """
+
+        self.id: int = Room._id_counter
+        Room._id_counter += 1
+        Room.all_rooms.append(self)
 
         properties = json.get("properties", {})
         self.level: int = int(properties.get("level"))
@@ -73,6 +80,11 @@ class Room:
         obj.graph = graph
         obj.bounding_box = obj._compute_bounding_box()
         obj.grid = []
+
+        obj.id = cls._id_counter
+        cls._id_counter += 1
+        cls.all_rooms.append(obj)
+
         return obj
 
     def __repr__(self):
@@ -996,6 +1008,16 @@ class Room:
 
         return False
 
+
+    def to_minimal_json(self):
+        """
+        Serialize the room to JSON containing the ID and the outline as custom Point objects.
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "outline": [{"lat": lat, "lon": lon} for lat, lon in self.coordinates]
+        }
 
 def distance_to_segment(point, a, b):
     """ Helper to calculate distance from point to line segment (a, b) """

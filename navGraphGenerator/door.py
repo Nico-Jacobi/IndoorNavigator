@@ -20,7 +20,8 @@ class Door:
         self.coordinates = (float(coordinates[1]), float(coordinates[0]))
 
         # cant really import Room as this would result in a circular import
-        self.rooms: List["Room"] = []
+        self.room1 = None
+        self.room2 = None
 
         self.graph = graph
 
@@ -37,15 +38,18 @@ class Door:
 
 
     def add_room(self, room):
-        """adds a room to the door"""
-        self.rooms.append(room)
-        self.vertex.add_room(room)
+        """Adds a room to the door (supports max. 2 rooms)"""
 
-        # this happens if walls are overlapping (shouldn't happen)
-        # or if the tolerance for linking doors to walls is too big
-        if len(self.rooms) > 2:
-            print(f"Warning: {self.vertex.name} has more than 2 rooms linked to it.")
-            print([r.name for r in self.rooms])
+        if self.room1 is None:
+            self.room1 = room
+            self.vertex.add_room(room)
+        elif self.room2 is None:
+            if room != self.room1:
+                self.room2 = room
+                self.vertex.add_room(room)
+        else:
+            print("Door found with more than 2 rooms, ignoring room")
+
 
     def get_wavefront_walls(self, origin_lat, origin_lon, wavefront):
 
