@@ -26,6 +26,9 @@ namespace controller
         private List<Edge> currentPath;
         public bool navigationActive = false;
 
+        public GameObject stairsArrowPrefab; 
+
+        
         void Start()
         {
             Debug.Log("Graph Manager script initialized");
@@ -149,10 +152,7 @@ namespace controller
                     })
                     .First();
 
-                Debug.Log(
-                    $"found the user to be in Room(s): {string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name))}");
-                buildingManager.currentRoom = string.Join(", ",
-                    closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name));
+                buildingManager.setCurrentRoom(string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name)));
 
                 return closest;
             }
@@ -308,15 +308,36 @@ namespace controller
             int idx = 0;
             while (idx < currentPath.Count)
             {
-                // skip stair edges
-                if ((idx+1 < currentPath.Count) && IsStairsEdge(currentPath[idx+1]))
+                if ((idx + 1 < currentPath.Count) && IsStairsEdge(currentPath[idx + 1]))
                 {
-                    idx += 3; 
+                    
+                    Edge stairEdge = currentPath[idx + 1];
+
+                    if (stairEdge.source.floor == buildingManager.GetShownFloor())
+                    {
+                        
+                        float height = buildingManager.GetShownFloor() * 2 + 1f;
+
+                        // Place arrow at current position (end of idx edge)
+                        Vector3 arrowPos = new Vector3((float) stairEdge.source.lat, height, (float) stairEdge.source.lon);
+                        Quaternion rotation = Quaternion.identity;
+    
+                        if (stairEdge.target.floor > stairEdge.source.floor)
+                        {
+                            // it's going UP, so rotate 180° around X to point up
+                            rotation = Quaternion.Euler(180f, 0f, 0f);
+                        }
+                        
+                        GameObject arrow = GameObject.Instantiate(stairsArrowPrefab, arrowPos + Vector3.up * 0.5f, rotation);
+                        arrow.tag = "PlottedPath";
+                        
+                    }
+                    
+                  
+
+                    idx += 3;
                     continue;
-                    //todo plot arrow at idx+1
                 }
-
-
 
                 Edge e = currentPath[idx];
                 if (e.source.floor == buildingManager.GetShownFloor())

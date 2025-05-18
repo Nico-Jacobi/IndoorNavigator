@@ -15,56 +15,67 @@ namespace controller
         private Dictionary<string, Building> buildings = new Dictionary<string, Building>();
 
         private Building activeBuilding;
-        private GameObject activeFloorObject;   //the model shown
-        private int activeFloorLevel = -1;      // Track the active floor level
-        public string currentRoom = ""; //set by the graph manager, wherever it detects a room
-        
+        private GameObject activeFloorObject; //the model shown
+        private int activeFloorLevel = -1; // Track the active floor level
+        private string currentRoom = "";
+
+
         public GraphManager graphManager;
-        
+
         public SQLiteDatabase database;
         public TMP_Dropdown buildingField;
         public CameraController cameraController;
         public DataCollectionMode dataCollectionMode;
-        
+
         public Button increaseFloorButton;
         public Button decreaseFloorButton;
         public TMP_Text currentFloorText;
 
+        public TMP_Text currentRoomText;
+
+        
         public Building GetActiveBuilding()
         {
             return activeBuilding;
         }
-        
+
         public int GetShownFloor()
         {
             return activeFloorLevel;
         }
-        
+
         public Graph GetActiveGraph()
         {
             return activeBuilding.graph;
         }
 
+
+        public void setCurrentRoom(string value)
+        {
+            currentRoom = value;
+            currentRoomText.text = currentRoom;
+        }
+
         void Awake()
         {
             LoadBuildingConfigs();
-            
+
             // Initialize buttons
             if (increaseFloorButton != null)
                 increaseFloorButton.onClick.AddListener(IncreaseFloor);
-            
+
             if (decreaseFloorButton != null)
                 decreaseFloorButton.onClick.AddListener(DecreaseFloor);
-            
+
             // Setup building dropdown
             buildingField.ClearOptions();
             buildingField.AddOptions(buildings.Keys.ToList());
             buildingField.onValueChanged.AddListener(buildingFieldChanged);
-            
-            
+
+
             // Default building setup
             SpawnBuildingFloor("h4", 3);
-            
+
             // Set the dropdown to match the current building
             int index = buildingField.options.FindIndex(option => option.text == "h4");
             if (index >= 0)
@@ -72,10 +83,10 @@ namespace controller
                 buildingField.value = index;
                 buildingField.RefreshShownValue();
             }
-            
+
             Debug.Log($"Buildings Manager script initialized");
             Debug.Log($"activeBuilding is: {activeBuilding.buildingName}");
-            
+
             // Update floor text
             UpdateFloorText();
         }
@@ -85,7 +96,7 @@ namespace controller
             string buildingName = buildingField.options[index].text;
             SpawnBuildingFloor(buildingName, buildings[buildingName].floors[0].level);
         }
-        
+
         private void IncreaseFloor()
         {
             if (activeBuilding == null) return;
@@ -126,23 +137,22 @@ namespace controller
             int currentFloor = GetFloorIndex(activeFloorLevel);
             int minFloor = int.MaxValue;
             int maxFloor = int.MinValue;
-            
+
             foreach (Building.Floor floor in activeBuilding.floors)
             {
-
                 if (floor.level < minFloor)
                 {
                     minFloor = floor.level;
                 }
-                
-                
+
+
                 if (floor.level > maxFloor)
                 {
                     maxFloor = floor.level;
                 }
             }
-            
-            if (currentFloor+1 > maxFloor)
+
+            if (currentFloor + 1 > maxFloor)
             {
                 increaseFloorButton.interactable = false;
             }
@@ -151,7 +161,7 @@ namespace controller
                 increaseFloorButton.interactable = true;
             }
 
-            if (currentFloor-1 < minFloor)
+            if (currentFloor - 1 < minFloor)
             {
                 decreaseFloorButton.interactable = false;
             }
@@ -160,7 +170,7 @@ namespace controller
                 decreaseFloorButton.interactable = true;
             }
         }
-        
+
         private int GetFloorIndex(int floorLevel)
         {
             for (int i = 0; i < activeBuilding.floors.Count; i++)
@@ -170,9 +180,10 @@ namespace controller
                     return i;
                 }
             }
+
             return 0;
         }
-        
+
         private void UpdateFloorText()
         {
             if (currentFloorText != null && activeBuilding != null)
@@ -180,7 +191,7 @@ namespace controller
                 currentFloorText.text = $"Floor: {activeFloorLevel}";
             }
         }
-        
+
         private void UpdateBuildingUI()
         {
             // Update building dropdown to match current building
@@ -193,18 +204,18 @@ namespace controller
                     buildingField.RefreshShownValue();
                 }
             }
-            
+
             // Update floor text
             UpdateFloorText();
-            
+
             // Update button interactability based on available floors
             if (activeBuilding != null)
             {
                 int currentIndex = GetFloorIndex(activeFloorLevel);
-                
+
                 if (increaseFloorButton != null)
                     increaseFloorButton.interactable = (currentIndex < activeBuilding.floors.Count - 1);
-                
+
                 if (decreaseFloorButton != null)
                     decreaseFloorButton.interactable = (currentIndex > 0);
             }
@@ -226,14 +237,15 @@ namespace controller
                     Debug.LogError("Failed to deserialize the building config.");
                     return;
                 }
-                
+
                 string graphFileLocation = $"Buildings/{buildingConfig.graph}".Replace(".json", "");
-                TextAsset jsonFile = Resources.Load<TextAsset>(graphFileLocation); 
+                TextAsset jsonFile = Resources.Load<TextAsset>(graphFileLocation);
                 if (jsonFile == null)
                 {
-                    Debug.LogError($"graph.json not found in Resources/Buildings! Expected file path: {graphFileLocation}.json");
+                    Debug.LogError(
+                        $"graph.json not found in Resources/Buildings! Expected file path: {graphFileLocation}.json");
                 }
-                
+
                 Graph graph = new Graph(jsonFile.text);
 
                 // Convert to a Building object
@@ -252,7 +264,7 @@ namespace controller
                         doors = doorPrefab
                     });
                 }
-                
+
                 Building building = new Building(buildingConfig.building, graph, floors);
                 buildings[buildingConfig.building] = building;
 
@@ -307,16 +319,16 @@ namespace controller
             {
                 return buildings[buildingName];
             }
+
             Debug.LogError($"Building {buildingName} not found!");
             return null;
-            
         }
 
         public void SpawnBuildingFloor(string buildingName, int floorLevel)
         {
             // Check if the requested building and floor are already active
             if (activeBuilding != null &&
-                activeBuilding.buildingName == buildingName && 
+                activeBuilding.buildingName == buildingName &&
                 activeFloorLevel == floorLevel)
             {
                 //Debug.Log($"Building {buildingName}, floor {floorLevel} already active - skipping respawn");
@@ -332,15 +344,16 @@ namespace controller
                 {
                     floorLevel = building.floors[0].level;
                 }
-                
+
                 // Validate that the requested floor exists in this building
                 bool floorExists = building.floors.Any(f => f.level == floorLevel);
                 if (!floorExists)
                 {
-                    Debug.LogWarning($"Floor {floorLevel} not found in building {buildingName}. Using first available floor.");
+                    Debug.LogWarning(
+                        $"Floor {floorLevel} not found in building {buildingName}. Using first available floor.");
                     floorLevel = building.floors[0].level;
                 }
-                
+
                 // If there's already an active floor, destroy the old one
                 if (activeFloorObject != null)
                 {
@@ -349,19 +362,18 @@ namespace controller
 
                 // Create a new parent object for the building
                 GameObject buildingObject = new GameObject(buildingName);
-                activeBuilding = building; 
-                
-                activeFloorLevel = floorLevel; 
+                activeBuilding = building;
+
+                activeFloorLevel = floorLevel;
                 building.SpawnFloor(floorLevel, buildingObject.transform);
-                activeFloorObject = buildingObject; 
-                
+                activeFloorObject = buildingObject;
+
                 // Update the UI to reflect the changes
                 UpdateBuildingUI();
                 cameraController.MoveMarkerToPosition(null);
 
                 Debug.Log($"Spawned building {buildingName}, floor {floorLevel}");
             }
-            
         }
     }
 }
