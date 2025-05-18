@@ -12,6 +12,7 @@ namespace view
 
         public bool freeMovement = true;
         public bool inMenu = false;
+        public bool compassActive = false;
         
         private readonly float orbitDistance = 10f;  // Distance from camera to orbit point
         private readonly float cameraHeight = 40f;   // Height offset above the floor
@@ -79,13 +80,14 @@ namespace view
                 newHeading = graphManager.GetHeading();
             }
             
-            if (compass.active)
+            if (compassActive)
             {
                 newHeading = compass.GetHeading();
             }
 
             currentHeading = newHeading;
             
+            //todo also apply the rotation to the marker no matter of compas is active or not
             // Apply heading to camera positioning
             PositionCameraOrbit(newHeading);
             cam.transform.rotation = Quaternion.Euler(65f, newHeading, 0f);

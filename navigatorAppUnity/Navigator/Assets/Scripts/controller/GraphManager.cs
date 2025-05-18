@@ -116,12 +116,12 @@ namespace controller
         }
 
 
-        //todo change
         public Vertex GetStart()
         {
             List<Vertex> verts = buildingManager.GetActiveGraph().GetVertices();
             Position pos = wifiManager.GetPosition();
 
+            // Filter vertices on correct floor and sort
             verts = verts
                 .Where(v => v.floor == pos.Floor)
                 .OrderBy(v =>
@@ -132,68 +132,105 @@ namespace controller
                 })
                 .ToList();
 
-            
-            // finding the vertex where one of the paths gets very close to the actual position
-            Vertex closest = verts[0];
-            double closestDistance = float.PositiveInfinity;
+            // Find all vertecies with rooms that contain the user's position
+            List<Vertex> candidates = verts
+                .Where(v => v.rooms.Any(r => r.IsPointInside(pos.X, pos.Y)))
+                .ToList();
 
-            for (int i = 0; i <= 5; i++)
+            if (candidates.Count > 0)
             {
-                foreach (Edge edge in verts[i].edges)
-                {
-                    foreach (Point p in edge.path.points)
+                Vertex closest = candidates
+                    .OrderBy(v =>
                     {
-                        double dx = p.lon - pos.X;
-                        double dy = p.lat - pos.Y;
-                        double distance = dx * dx + dy * dy;
+                        double dx = v.lat - pos.X;
+                        double dy = v.lon - pos.Y;
+                        return dx * dx + dy * dy;
+                    })
+                    .First();
 
-                        if (distance < closestDistance)
-                        {
-                            closestDistance = distance;
-                            closest = verts[i];
-                        }
-                    }
-                }
+                Debug.Log($"found the user to be in Room(s): {string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name))}");
+                return closest;
             }
-            
-            
-            Vector3 worldPos = new Vector3((float) closest.lon, closest.floor * 2.0f + 2f,(float) closest.lat);
-            Instantiate(cameraController.markerPrefab, worldPos, Quaternion.identity);
 
-            return closest;
+            // fallback to closest vertex if no room matches
+            return verts[0];
         }
 
-        
-        //todo change
-        // make the currentPath better by making it start at the current position
+
+        /// <summary>
+        /// makes the start of the path better, by adding a temporary vertex at the users position, using parts of existing PathData objects if possible
+        /// </summary>
         private void InterpolateStart()
         {
             Position pos = wifiManager.GetPosition();
-
-            Point closestPoint = GetClosestPoint(currentPath[0].path.points, pos);
+            Edge firstEdge = currentPath[0];
             
-            if (closestPoint != null)
-            {
-                double distToStart = CalculateDistance(new Point(currentPath[0].source.lat, currentPath[0].source.lon), pos);
-                double distToClosest = CalculateDistance(closestPoint, pos);
+            // source and target vertices always share exactly one room
+            Room commonRoom = firstEdge.source.rooms.First(r1 => firstEdge.target.rooms.Any(r2 => r2.id == r1.id));
 
-                if (distToClosest < distToStart)
+            Room currentRoom = null; //the room the user is in 
+            if (commonRoom.IsPointInside(pos.X, pos.Y))
+            {
+                //in this case the user is in the same room as the first path
+                currentPath.RemoveAt(0);
+                currentRoom = commonRoom;
+            }
+            else
+            {
+                currentRoom = firstEdge.source.GetOtherRoom(commonRoom);
+            }
+            
+            //currentRoom.Plot();
+            
+            // now finding a optimal path within the room to "attach" to
+            
+            //this represents all edges wihtin the current room, which could be used for a nice path
+            List<Edge> possibleCloseEdges = currentPath[0].source.GetEdgesToRoom(currentRoom);
+
+            
+            Vertex tempVertex = new Vertex(pos.X, pos.Y, pos.Floor, "userPositionVertex", new List<Room>());
+            
+            
+            // finding a path that gets close to the user, cutting it there and adding it to the path:
+            if (possibleCloseEdges.Count > 0)
+            {
+                Edge closestEdge = possibleCloseEdges[0];
+                Point closestPoint = closestEdge.path.points[0];
+                double closestDistSq = double.PositiveInfinity;
+
+                foreach (Edge e in possibleCloseEdges)
                 {
-                    List<Point> partialPath = GetPartialPathAfterPoint(currentPath[0].path.points, closestPoint);
-                    Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].target, new PathData(1, partialPath));
-                    currentPath[0] = p;
-                }
-                else
-                {
-                    Edge closestEdge = GetClosestEdgeToPosition(pos);
-                    if (pos != null)
+
+                    Point localClosestPoint = GetClosestPoint(e.path.points, pos);
+                    double distSq = CalculateDistance(localClosestPoint, pos);
+
+                    if (distSq < closestDistSq)
                     {
-                        List<Point> partialPath = GetPartialPathAfterPoint(closestEdge.path.points, closestPoint);
-                        Edge p = new Edge(new Vertex(pos.X, pos.Y, pos.Floor, "CurrentPosTemp"), currentPath[0].source, new PathData(1, partialPath));
-                        currentPath.Insert(0, p);
+                        closestDistSq = distSq;
+                        closestPoint = localClosestPoint;
+                        closestEdge = e;
                     }
                 }
+                
+                List<Point> subPath = null;
+                int idx = closestEdge.path.points.IndexOf(closestPoint);
+                if (idx >= 0)
+                {
+                    // Get all points from start to idx inclusive
+                    subPath = closestEdge.path.points.GetRange(0, idx + 1);
+                }
+
+                subPath.Reverse();
+                currentPath.Insert(0, new Edge(new Vertex(subPath[0].lat, subPath[0].lon, pos.Floor, "partialPathVertex", new List<Room>()),
+                   currentPath[0].source, new PathData(0, subPath)));
+
             }
+
+            
+            // add a direct line from the pos to the start (to the door or the partialPathVertex created ealier)
+            List<Point> PathPoints = new List<Point>();
+            currentPath.Insert(0, new Edge(tempVertex, currentPath[0].source, new PathData(0, PathPoints)));
+
         }
 
         private double CalculateDistance(Point point1, Position pos)
@@ -229,29 +266,7 @@ namespace controller
 
             return closestPoint;
         }
-
-        private Edge GetClosestEdgeToPosition(Position pos)
-        {
-            double dist = Double.PositiveInfinity;
-            Point closestPoint = null;
-            Edge closestEdge = null;
-
-            foreach (Edge e in currentPath[0].source.edges)
-            {
-                foreach (Point point in e.path.points)
-                {
-                    double currentDistance = CalculateDistance(point, pos);
-                    if (currentDistance < dist)
-                    {
-                        dist = currentDistance;
-                        closestPoint = point;
-                        closestEdge = e;
-                    }
-                }
-            }
-
-            return closestEdge;
-        }
+        
 
 
         private IEnumerator UpdatePath()

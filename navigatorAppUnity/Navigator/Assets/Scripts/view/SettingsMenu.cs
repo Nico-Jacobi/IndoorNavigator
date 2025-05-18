@@ -97,7 +97,7 @@ namespace view
 
         public void HandleCompasActiveToggle(bool compasActiveMode)
         {
-            compass.active = compasActiveMode;
+            cameraController.compassActive = compasActiveMode;
         }
 
         public void HandleCollectDataModeToggle(bool collectDataModeStart)

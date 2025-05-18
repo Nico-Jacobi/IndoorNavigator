@@ -47,7 +47,7 @@ namespace model.graph
             List<Point> realPoints = new List<Point>(points.Count);
             foreach (var jp in points)
             {
-                realPoints.Add(new Point(jp.lat, -jp.lon));
+                realPoints.Add(new Point(-jp.lon, jp.lat));
             }
             return new PathData(weight, realPoints);
         }
@@ -61,19 +61,6 @@ namespace model.graph
     }
     
     
-    public class JsonRoom
-    {
-        public string id { get; set; } = string.Empty;
-        public List<Point> outline { get; set; } = new();
-
-        public class Point
-        {
-            public double lat { get; set; }
-
-            public double lon { get; set; }
-        }
-    }
-
 
     public class Graph
     {
@@ -102,6 +89,7 @@ namespace model.graph
                 {
                     idToRoom[r.id] = r;
                     allRoomsNames.Add(r.name);
+                    r.flipToRightHandedCoordinateSystem();
                 }
                 allRoomsSet = new HashSet<Room>(idToRoom.Values);
                 
@@ -114,7 +102,7 @@ namespace model.graph
                         rooms.Add(idToRoom[id]);
                     }
                     
-                    vertices.Add(new Vertex(vertex.lat, -vertex.lon, vertex.floor, vertex.name, rooms));
+                    vertices.Add(new Vertex(-vertex.lon, vertex.lat, vertex.floor, vertex.name, rooms));
     
                 }
 

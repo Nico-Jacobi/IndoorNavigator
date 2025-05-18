@@ -50,6 +50,40 @@ namespace model.graph
             }
             return names;
         }
+        
+        /// <summary>
+        /// Returns all Edges to given Room.
+        ///  Pass the same room as this to get room-internal edges
+        /// </summary>
+        public List<Edge> GetEdgesToRoom(Room givenRoom)
+        {
+            List<Edge> edgesToRoom = new();
+            foreach (Edge e in edges)
+            {
+
+                foreach (Room r in e.target.rooms)
+                {
+                    if (r.id == givenRoom.id)
+                    {
+                        edgesToRoom.Add(e);
+                    }
+                }
+            }
+            return edgesToRoom;
+        }
+
+        /// <summary>
+        /// Returns the room NOT given
+        /// </summary>
+        public Room GetOtherRoom(Room givenRoom)
+        {
+            foreach (var r in rooms)
+            {
+                if (r.id != givenRoom.id)
+                    return r;
+            }
+            return null;
+        }
 
 
     }

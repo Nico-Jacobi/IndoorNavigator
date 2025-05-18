@@ -33,8 +33,8 @@ namespace model.graph
                 var pi = outline[i];
                 var pj = outline[j];
 
-                bool intersect = ((pi.Lon > lon) != (pj.Lon > lon)) &&
-                                 (lat < (pj.Lat - pi.Lat) * (lon - pi.Lon) / (pj.Lon - pi.Lon) + pi.Lat);
+                bool intersect = ((pi.lon > lon) != (pj.lon > lon)) &&
+                                 (lat < (pj.lat - pi.lat) * (lon - pi.lon) / (pj.lon - pi.lon) + pi.lat);
 
                 if (intersect)
                     inside = !inside;
@@ -42,15 +42,55 @@ namespace model.graph
             return inside;
         }
 
+        /// <summary>
+        /// flips the points to the right-handed coordinate system, this is needed, as the jsonDeserialisation doesent use the constructor
+        /// </summary>
+        public void flipToRightHandedCoordinateSystem()
+        {
+            foreach (Point p in outline)
+            {
+                p.lat = -p.lat;
+            }
+        }
+        
+        
+        //debug function
+        public void Plot(string name = "DebugRoom", Color? color = null, float height = 9f)
+        {
+            if (outline == null || outline.Count < 3)
+            {
+                Debug.LogError($"Room {id} has invalid or missing outline.");
+                return;
+            }
+
+            GameObject obj = new GameObject($"{name}_{id}");
+            LineRenderer line = obj.AddComponent<LineRenderer>();
+
+            line.positionCount = outline.Count;
+            line.useWorldSpace = true;
+            line.loop = true;
+            line.material = new Material(Shader.Find("Sprites/Default"));
+            line.startColor = line.endColor = color ?? Color.yellow;
+            line.widthMultiplier = 0.2f;
+
+            for (int i = 0; i < outline.Count; i++)
+            {
+                var p = outline[i];
+                line.SetPosition(i, new Vector3((float)p.lat, height, (float)p.lon));
+            }
+        }
+
+
+        [Serializable]
         public class Point
         {
-            public double Lat { get; }
-            public double Lon { get; }
+            public double lat;
+            public double lon;
 
             public Point(double lat, double lon)
             {
-                Lat = lat;
-                Lon = lon;
+                this.lat = lat;
+                this.lon = lon;
             }
         }
     }
