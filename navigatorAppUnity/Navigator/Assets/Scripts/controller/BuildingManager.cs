@@ -17,7 +17,8 @@ namespace controller
         private Building activeBuilding;
         private GameObject activeFloorObject;   //the model shown
         private int activeFloorLevel = -1;      // Track the active floor level
-
+        public string currentRoom = ""; //set by the graph manager, wherever it detects a room
+        
         public GraphManager graphManager;
         
         public SQLiteDatabase database;

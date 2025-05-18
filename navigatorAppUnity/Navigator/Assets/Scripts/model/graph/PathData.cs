@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
+using NUnit.Framework.Constraints;
 
 namespace model.graph
 {
@@ -11,6 +12,7 @@ namespace model.graph
     [Serializable]
     public class PathData
     {
+        public bool smoothPath = false;
         public double weight;
         public List<Point> points;
 
@@ -47,7 +49,7 @@ namespace model.graph
         /// <summary>
         /// Plots this PathData as a smooth line in the scene using a LineRenderer.
         /// </summary>
-        public void Plot(string name = "PlottedPath", Color? startColor = null,  Color? endColor = null, int smoothness = 10, float height = 1)
+        public void Plot(string name = "PlottedPath", Color? startColor = null,  Color? endColor = null, int smoothness = 5, float height = 1)
         {
             if (points == null)
             {
@@ -66,11 +68,13 @@ namespace model.graph
             LineRenderer line = pathObj.AddComponent<LineRenderer>();
 
             // Basic line settings
-            line.widthMultiplier = 0.1f;
+            line.widthMultiplier = 0.2f;
             line.material = new Material(Shader.Find("Sprites/Default"));
             line.startColor = startColor ?? Color.cyan;
             line.endColor = endColor ?? Color.magenta;
             line.useWorldSpace = true;
+            line.alignment = LineAlignment.View; 
+            line.transform.up = Vector3.up;
 
             List<Vector3> positions = new List<Vector3>();
             foreach (var point in points)
@@ -79,7 +83,12 @@ namespace model.graph
                 positions.Add(new Vector3((float)point.lat, height, (float)point.lon));
             }
 
-            List<Vector3> smoothPositions = SmoothLine(positions, smoothness);
+            List<Vector3> smoothPositions = positions;
+            if (smoothPath)
+            {
+                smoothPositions = ChaikinSmooth(positions, smoothness);
+            }
+
 
             line.positionCount = smoothPositions.Count;
             line.SetPositions(smoothPositions.ToArray());
@@ -88,42 +97,65 @@ namespace model.graph
         /// <summary>
         /// Smooths a list of points using simple linear interpolation.
         /// </summary>
-        private List<Vector3> SmoothLine(List<Vector3> original, int smoothness)
+        public static List<Vector3> ChaikinSmooth(List<Vector3> points, int iterations = 2)
         {
-            if (original == null || original.Count < 2 || smoothness < 1)
-                return original;
+            if (points == null || points.Count < 2) return points;
 
-            List<Vector3> smoothedLine = new List<Vector3>();
-    
-            // Add the first point
-            smoothedLine.Add(original[0]);
-    
-            // Process each segment between adjacent points
-            for (int i = 0; i < original.Count - 1; i++)
+            List<Vector3> result = new List<Vector3>(points);
+        
+            for (int iter = 0; iter < iterations; iter++)
             {
-                Vector3 start = original[i];
-                Vector3 end = original[i + 1];
-        
-                // Add intermediate points for smoothing
-                for (int j = 1; j <= smoothness; j++)
+                List<Vector3> newPoints = new List<Vector3>();
+                newPoints.Add(result[0]);  // Keep first point
+            
+                for (int i = 0; i < result.Count - 1; i++)
                 {
-                    float t = j / (smoothness + 1.0f);
-                    Vector3 intermediatePoint = Vector3.Lerp(start, end, t);
-                    smoothedLine.Add(intermediatePoint);
+                    Vector3 p0 = result[i];
+                    Vector3 p1 = result[i + 1];
+
+                    // Generate two new points between p0 and p1
+                    Vector3 Q = Vector3.Lerp(p0, p1, 0.25f);
+                    Vector3 R = Vector3.Lerp(p0, p1, 0.75f);
+
+                    newPoints.Add(Q);
+                    newPoints.Add(R);
                 }
+
+                newPoints.Add(result[result.Count - 1]); // Keep last point
+                result = newPoints;
+            }
+            
+
+            return result;
+        }
+
         
-                // Add the end point of the current segment
-                // (except for the last segment to avoid duplicating the final point)
-                if (i < original.Count - 2)
+        /// <summary>
+        /// Smooths a list of points using simple linear interpolation.
+        /// </summary>
+        List<Vector3> CatmullRomSpline(List<Vector3> pts, int smoothness)
+        {
+            var smoothed = new List<Vector3>();
+            for (int i = 0; i < pts.Count - 1; i++)
+            {
+                Vector3 p0 = i == 0 ? pts[i] : pts[i - 1];
+                Vector3 p1 = pts[i];
+                Vector3 p2 = pts[i + 1];
+                Vector3 p3 = (i + 2 < pts.Count) ? pts[i + 2] : pts[i + 1];
+
+                for (int j = 0; j <= smoothness; j++)
                 {
-                    smoothedLine.Add(end);
+                    float t = j / (float)smoothness;
+                    Vector3 point = 0.5f * (
+                        (2f * p1) +
+                        (-p0 + p2) * t +
+                        (2f * p0 - 5f * p1 + 4f * p2 - p3) * (t * t) +
+                        (-p0 + 3f * p1 - 3f * p2 + p3) * (t * t * t));
+                    smoothed.Add(point);
                 }
             }
-    
-            // Add the very last point
-            smoothedLine.Add(original[original.Count - 1]);
-    
-            return smoothedLine;
+            return smoothed;
         }
+        
     }
 }

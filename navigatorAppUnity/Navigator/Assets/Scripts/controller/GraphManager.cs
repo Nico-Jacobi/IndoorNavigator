@@ -48,7 +48,6 @@ namespace controller
 
 
 
-
         private void PopulateDropdownFromStrings(List<string> options)
         {
             toField.ClearOptions();
@@ -80,14 +79,16 @@ namespace controller
 
         private void OnStartNavigationButtonPressed()
         {
-            navigate();
+            Vertex fromVertex = GetStart();
+
+            navigate(fromVertex);
             CloseNavigationDialog();
         }
 
 
-        public async void navigate()
+        public async void navigate(Vertex fromVertex)
         {
-            Vertex fromVertex = GetStart();
+
             string toRoom = toField.options[toField.value].text;
 
             Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
@@ -148,7 +149,11 @@ namespace controller
                     })
                     .First();
 
-                Debug.Log($"found the user to be in Room(s): {string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name))}");
+                Debug.Log(
+                    $"found the user to be in Room(s): {string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name))}");
+                buildingManager.currentRoom = string.Join(", ",
+                    closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name));
+
                 return closest;
             }
 
@@ -164,7 +169,7 @@ namespace controller
         {
             Position pos = wifiManager.GetPosition();
             Edge firstEdge = currentPath[0];
-            
+
             // source and target vertices always share exactly one room
             Room commonRoom = firstEdge.source.rooms.First(r1 => firstEdge.target.rooms.Any(r2 => r2.id == r1.id));
 
@@ -179,18 +184,18 @@ namespace controller
             {
                 currentRoom = firstEdge.source.GetOtherRoom(commonRoom);
             }
-            
+
             //currentRoom.Plot();
-            
+
             // now finding a optimal path within the room to "attach" to
-            
+
             //this represents all edges wihtin the current room, which could be used for a nice path
             List<Edge> possibleCloseEdges = currentPath[0].source.GetEdgesToRoom(currentRoom);
 
-            
+
             Vertex tempVertex = new Vertex(pos.X, pos.Y, pos.Floor, "userPositionVertex", new List<Room>());
-            
-            
+
+
             // finding a path that gets close to the user, cutting it there and adding it to the path:
             if (possibleCloseEdges.Count > 0)
             {
@@ -211,7 +216,7 @@ namespace controller
                         closestEdge = e;
                     }
                 }
-                
+
                 List<Point> subPath = null;
                 int idx = closestEdge.path.points.IndexOf(closestPoint);
                 if (idx >= 0)
@@ -221,12 +226,14 @@ namespace controller
                 }
 
                 subPath.Reverse();
-                currentPath.Insert(0, new Edge(new Vertex(subPath[0].lat, subPath[0].lon, pos.Floor, "partialPathVertex", new List<Room>()),
-                   currentPath[0].source, new PathData(0, subPath)));
+                currentPath.Insert(0,
+                    new Edge(
+                        new Vertex(subPath[0].lat, subPath[0].lon, pos.Floor, "partialPathVertex", new List<Room>()),
+                        currentPath[0].source, new PathData(0, subPath)));
 
             }
 
-            
+
             // add a direct line from the pos to the start (to the door or the partialPathVertex created ealier)
             List<Point> PathPoints = new List<Point>();
             currentPath.Insert(0, new Edge(tempVertex, currentPath[0].source, new PathData(0, PathPoints)));
@@ -266,16 +273,17 @@ namespace controller
 
             return closestPoint;
         }
-        
+
 
 
         private IEnumerator UpdatePath()
         {
             while (true)
             {
+                Vertex fromVertex = GetStart();
                 if (navigationActive)
                 {
-                    navigate(); //will overwrite currentPath
+                    navigate(fromVertex); //will overwrite currentPath
                 }
 
                 yield return new WaitForSeconds(5f);
@@ -286,9 +294,7 @@ namespace controller
         public void PlotCurrentPath()
         {
             foreach (GameObject obj in GameObject.FindGameObjectsWithTag("PlottedPath"))
-            {
                 Destroy(obj);
-            }
 
             if (currentPath == null || currentPath.Count == 0)
             {
@@ -299,24 +305,42 @@ namespace controller
             Color[] startColors = { Color.cyan, Color.magenta };
             Color[] endColors = { Color.magenta, Color.cyan };
 
-            int i = 0;
-            foreach (Edge e in currentPath)
+            int idx = 0;
+            while (idx < currentPath.Count)
             {
+                // skip stair edges
+                if ((idx+1 < currentPath.Count) && IsStairsEdge(currentPath[idx+1]))
+                {
+                    idx += 3; 
+                    continue;
+                    //todo plot arrow at idx+1
+                }
+
+
+
+                Edge e = currentPath[idx];
                 if (e.source.floor == buildingManager.GetShownFloor())
                 {
                     float height = buildingManager.GetShownFloor() * 2 + 0.5f;
-                    
 
                     e.path.Plot(
                         height: height,
-                        startColor: startColors[i % 2],
-                        endColor: endColors[i % 2],
-                        smoothness: 100
+                        startColor: startColors[idx % 2],
+                        endColor: endColors[idx % 2]
                     );
-                    i++;
                 }
+
+                idx++;
             }
         }
-    }
 
+        private bool IsStairsEdge(Edge e)
+        {
+            return e.source.floor != e.target.floor;
+        }
+
+
+    
+
+    }
 }

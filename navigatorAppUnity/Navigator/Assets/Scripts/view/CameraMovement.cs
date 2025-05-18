@@ -8,16 +8,20 @@ namespace view
     public class CameraController : MonoBehaviour
     {
         private float moveSpeed = 100f;
-        private float touchMoveSpeed = 1.0f;
+        private float touchMoveSpeed = 1.36f;  // 1/cos(cameraAngle) -1 to to have it feel natural
 
         public bool freeMovement = true;
         public bool inMenu = false;
         public bool compassActive = false;
         
-        private readonly float orbitDistance = 10f;  // Distance from camera to orbit point
-        private readonly float cameraHeight = 40f;   // Height offset above the floor
+        private float orbitDistance = 10f;  // Distance from camera to orbit point
+        private float cameraHeight = 40f;   // Height offset above the floor
         private Vector3 orbitPoint;        // The point we're orbiting around
         
+        private float minCameraHeight = 10f;
+        private float maxCameraHeight = 100f;
+        private float zoomSpeed = 0.1f;
+
         
         public GameObject markerPrefab;
         public GameObject positionMarker;
@@ -37,13 +41,9 @@ namespace view
         // Touch input variables
         private Vector2 touchLastPos;
         private bool isTouching = false;
-        private float touchSensitivity = 1.0f; // Adjust to increase/decrease touch movement sensitivity
-
+        
         private float currentHeading = 0;
         
-        // Filter variables for touch movement
-        private Vector2 filteredTouchMovement = Vector2.zero;
-        private float touchSmoothingFactor = 0.3f; // Lower value = more smoothing (between 0-1)
         
 
         void Start()
@@ -51,6 +51,7 @@ namespace view
             cam = Camera.main;
             SetCameraTilt(65f);
             orbitPoint = transform.position;  // Initialize orbit point to current position
+            
         }
 
         void Update()
@@ -59,6 +60,7 @@ namespace view
             {
                 HandleCameraRotation();
                 HandleMovementOrTracking();
+                HandleTouchZoom();
             }
 
             if (markerActive)
@@ -74,21 +76,31 @@ namespace view
 
         private void HandleCameraRotation()
         {
+            float compass_heading = compass.GetHeading();
+            
             float newHeading = 0;
-            if (!freeMovement)
+            if (!freeMovement && !compassActive)
             {
                 newHeading = graphManager.GetHeading();
             }
             
             if (compassActive)
             {
-                newHeading = compass.GetHeading();
+                newHeading = compass_heading;
             }
 
             currentHeading = newHeading;
             
-            //todo also apply the rotation to the marker no matter of compas is active or not
-            // Apply heading to camera positioning
+            
+
+            if (positionMarker != null)
+            {
+                positionMarker.transform.rotation = Quaternion.Euler(90f, compass_heading, 0f);
+            }
+
+            
+            
+            
             PositionCameraOrbit(newHeading);
             cam.transform.rotation = Quaternion.Euler(65f, newHeading, 0f);
         }
@@ -209,6 +221,29 @@ namespace view
 
             return currentMovement;
         }
+        
+        private void HandleTouchZoom()
+        {
+            if (Input.touchCount == 2)
+            {
+                Touch touch0 = Input.GetTouch(0);
+                Touch touch1 = Input.GetTouch(1);
+
+                Vector2 touch0PrevPos = touch0.position - touch0.deltaPosition;
+                Vector2 touch1PrevPos = touch1.position - touch1.deltaPosition;
+
+                float prevMagnitude = (touch0PrevPos - touch1PrevPos).magnitude;
+                float currentMagnitude = (touch0.position - touch1.position).magnitude;
+
+                float difference = currentMagnitude - prevMagnitude;
+
+                cameraHeight -= difference * zoomSpeed;
+                cameraHeight = Mathf.Clamp(cameraHeight, minCameraHeight, maxCameraHeight);
+                
+                touchMoveSpeed = 1.36f * (cameraHeight / 40f); //todo find right value
+            }
+        }
+
 
 
         private void HandlePositionTracking()

@@ -2124,8 +2124,8 @@ Camera:
   m_GameObject: {fileID: 365250943}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.8962264, g: 0.8962264, b: 0.8962264, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -2198,6 +2198,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   freeMovement: 1
   inMenu: 0
+  compassActive: 0
   markerPrefab: {fileID: 919132149155446097, guid: 29b9e199fdcb3434ca39431cc038b74e, type: 3}
   positionMarker: {fileID: 0}
   cam: {fileID: 365250946}
@@ -5891,6 +5892,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828309ecc5cc4f12b712e741abae1892, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentRoom: 
   graphManager: {fileID: 1952910964}
   database: {fileID: 364252161}
   buildingField: {fileID: 1965060381}
@@ -6080,7 +6082,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   active: 1
-  smoothingFactor: 1
+  smoothingFactor: 0.1
 --- !u!4 &1056833982
 Transform:
   m_ObjectHideFlags: 0

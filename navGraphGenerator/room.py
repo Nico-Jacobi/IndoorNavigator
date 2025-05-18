@@ -1008,7 +1008,6 @@ class Room:
 
         return False
 
-
     def to_minimal_json(self):
         """
         Serialize the room to JSON containing the ID and the outline as custom Point objects.
@@ -1016,8 +1015,12 @@ class Room:
         return {
             "id": self.id,
             "name": self.name,
-            "outline": [{"lat": lat, "lon": lon} for lat, lon in self.coordinates]
+            "outline": [
+                {"lat": lat, "lon": lon}
+                for lat, lon in (normalize_lat_lon_to_meter(x, y,0,0) for x, y in self.coordinates)
+            ]
         }
+
 
 def distance_to_segment(point, a, b):
     """ Helper to calculate distance from point to line segment (a, b) """
