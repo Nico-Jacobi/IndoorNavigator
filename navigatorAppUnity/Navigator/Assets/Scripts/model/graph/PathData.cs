@@ -68,7 +68,7 @@ namespace model.graph
             LineRenderer line = pathObj.AddComponent<LineRenderer>();
 
             // Basic line settings
-            line.widthMultiplier = 0.2f;
+            line.widthMultiplier = 0.3f;
             line.material = new Material(Shader.Find("Sprites/Default"));
             line.startColor = startColor ?? Color.cyan;
             line.endColor = endColor ?? Color.magenta;

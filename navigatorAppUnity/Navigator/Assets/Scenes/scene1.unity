@@ -2332,16 +2332,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9fe637cb1d7b8b94ab569c0d636f97aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  registry: {fileID: 2037691650}
   freeMovement: 1
-  inMenu: 0
+  inMenu: 1
   compassActive: 0
   markerPrefab: {fileID: 919132149155446097, guid: 29b9e199fdcb3434ca39431cc038b74e, type: 3}
   positionMarker: {fileID: 0}
-  cam: {fileID: 365250946}
-  wifiManager: {fileID: 901931017}
-  buildingManager: {fileID: 1002911265}
-  compass: {fileID: 1056833981}
-  graphManager: {fileID: 1952910964}
 --- !u!1 &373991954
 GameObject:
   m_ObjectHideFlags: 0
@@ -3471,6 +3467,52 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 506585093}
   m_CullTransparentMesh: 1
+--- !u!1 &512473752
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 512473754}
+  - component: {fileID: 512473753}
+  m_Layer: 0
+  m_Name: PositionTracker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &512473753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 512473752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 399e34d32efd405c88e9ab9cd509930a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  registry: {fileID: 2037691650}
+  rollingAverageLength: 10
+--- !u!4 &512473754
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 512473752}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 257.20004, y: 362.50412, z: 46.2109}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &558626729
 GameObject:
   m_ObjectHideFlags: 0
@@ -5656,13 +5698,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30211edf811f4ba9be8c7c55f0672c06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  database: {fileID: 364252161}
-  buildingManager: {fileID: 1002911265}
+  registry: {fileID: 2037691650}
   promptPanel: {fileID: 1704775000}
   settingsButton: {fileID: 1610257690}
   discardButton: {fileID: 287571091}
   promptText: {fileID: 1809146825}
-  rollingAverageLength: 10
   isUpdating: 0
   updateInterval: 2
 --- !u!4 &901931018
@@ -6028,11 +6068,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 828309ecc5cc4f12b712e741abae1892, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  graphManager: {fileID: 1952910964}
-  database: {fileID: 364252161}
+  registry: {fileID: 2037691650}
   buildingField: {fileID: 1965060381}
-  cameraController: {fileID: 365250949}
-  dataCollectionMode: {fileID: 1830119850}
   increaseFloorButton: {fileID: 1730678507}
   decreaseFloorButton: {fileID: 718071342}
   currentFloorText: {fileID: 794215312}
@@ -10012,10 +10049,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   WifiMarkerPrefab: {fileID: 919132149155446097, guid: ee5d3ebc37a1aed4cbbefb74d1b374e4, type: 3}
-  database: {fileID: 364252161}
-  buildingManager: {fileID: 1002911265}
-  cameraController: {fileID: 365250949}
-  wifiManager: {fileID: 901931017}
+  registry: {fileID: 2037691650}
   collectButton: {fileID: 759050956}
   collectButtonText: {fileID: 34462841}
   deleteButton: {fileID: 1653278545}
@@ -10301,13 +10335,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a8d9026fb0c54672a9cb0f2edca1428d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cameraController: {fileID: 365250949}
-  buildingManager: {fileID: 1002911265}
-  graphManager: {fileID: 1952910964}
-  wifiManager: {fileID: 901931017}
-  dataCollectionMode: {fileID: 1830119850}
-  database: {fileID: 364252161}
-  compass: {fileID: 1056833981}
+  registry: {fileID: 2037691650}
   menu: {fileID: 1868249205}
   closeButton: {fileID: 245728849}
   freeMovement: {fileID: 1592700303}
@@ -10636,9 +10664,7 @@ MonoBehaviour:
   toField: {fileID: 672309276}
   navigationDialog: {fileID: 32061016}
   searchField: {fileID: 1854058684}
-  cameraController: {fileID: 365250949}
-  buildingManager: {fileID: 1002911265}
-  wifiManager: {fileID: 901931017}
+  registry: {fileID: 2037691650}
   navigationActive: 0
   stairsArrowPrefab: {fileID: 919132149155446097, guid: 1bf292ea4833b8f43812322eef6eb932, type: 3}
 --- !u!1 &1959566794
@@ -11070,6 +11096,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2026517365}
   m_CullTransparentMesh: 1
+--- !u!1 &2037691649
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2037691651}
+  - component: {fileID: 2037691650}
+  m_Layer: 0
+  m_Name: Registry
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2037691650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2037691649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac456c75f6ab4e25be1bbcef27b9665c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  database: {fileID: 364252161}
+  cam: {fileID: 365250946}
+  wifiManager: {fileID: 901931017}
+  buildingManager: {fileID: 1002911265}
+  compassReader: {fileID: 1056833981}
+  graphManager: {fileID: 1952910964}
+  positionTracker: {fileID: 512473753}
+  cameraController: {fileID: 365250949}
+  dataCollectionMode: {fileID: 1830119850}
+--- !u!4 &2037691651
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2037691649}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 257.20004, y: 362.50412, z: 46.2109}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2049007280
 GameObject:
   m_ObjectHideFlags: 0
@@ -11649,6 +11728,8 @@ MonoBehaviour:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 2037691651}
+  - {fileID: 512473754}
   - {fileID: 1830119849}
   - {fileID: 364252162}
   - {fileID: 1002911266}

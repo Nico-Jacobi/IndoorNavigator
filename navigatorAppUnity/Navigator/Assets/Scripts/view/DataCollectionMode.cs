@@ -19,10 +19,8 @@ namespace view
         public GameObject WifiMarkerPrefab; 
 
         private bool active = false;
-        public SQLiteDatabase database;
-        public BuildingManager buildingManager;
-        public CameraController cameraController;
-        public WifiManager wifiManager;
+
+        public Registry registry;
         
         public Button collectButton;
         public TMP_Text collectButtonText;
@@ -56,7 +54,7 @@ namespace view
             // Update crosshair when active
             if (active && crosshairMarker != null)
             {
-                Vector3 crosshairPos = cameraController.GetCrosshairPosition();
+                Vector3 crosshairPos = registry.cameraController.GetCrosshairPosition();
                 crosshairPos.y += 0.2f;
                 crosshairMarker.transform.position = crosshairPos;
             }
@@ -67,13 +65,13 @@ namespace view
             Debug.Log("Activate called");
             managePointsDialogPanel.SetActive(true);
             active = true;
-            cameraController.DeactivateMarker();
+            registry.cameraController.DeactivateMarker();
 
             // Show crosshair marker
             if (crosshairMarker != null)
             {
                 crosshairMarker.SetActive(true);
-                crosshairMarker.transform.position = cameraController.GetCrosshairPosition();
+                crosshairMarker.transform.position = registry.cameraController.GetCrosshairPosition();
             }
             
             Refresh();
@@ -85,13 +83,13 @@ namespace view
             active = false;
             managePointsDialogPanel.SetActive(false);
             
-            if (cameraController != null && cameraController.positionMarker != null)
+            if (registry.cameraController != null && registry.cameraController.positionMarker != null)
             {
-                cameraController.positionMarker.SetActive(true);
+                registry.cameraController.positionMarker.SetActive(true);
             }
             
             crosshairMarker.SetActive(false);
-            cameraController.ActivateMarker();
+            registry.cameraController.ActivateMarker();
             
             foreach (var marker in markers)
             {
@@ -110,8 +108,8 @@ namespace view
             }
             markers.Clear();
        
-            List<Coordinate> coords = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName)
-                .Where(coord => coord.Floor == buildingManager.GetShownFloor()).ToList();
+            List<Coordinate> coords = registry.database.GetCoordinatesForBuilding(registry.buildingManager.GetActiveBuilding().buildingName)
+                .Where(coord => coord.Floor == registry.buildingManager.GetShownFloor()).ToList();
 
             foreach (var coord in coords)
             {
@@ -130,14 +128,14 @@ namespace view
 
         public void DeleteAtCurrentPosition()
         {
-            database.PrintDatabase();
-            Vector3 crosshairPos = cameraController.GetCrosshairPosition();
+            registry.database.PrintDatabase();
+            Vector3 crosshairPos = registry.cameraController.GetCrosshairPosition();
     
             Coordinate closest = null;
             float closestDistance = float.PositiveInfinity;
 
-            List<Coordinate> coords = database.GetCoordinatesForBuilding(buildingManager.GetActiveBuilding().buildingName)
-                .Where(coord => coord.Floor == buildingManager.GetShownFloor()).ToList();
+            List<Coordinate> coords = registry.database.GetCoordinatesForBuilding(registry.buildingManager.GetActiveBuilding().buildingName)
+                .Where(coord => coord.Floor == registry.buildingManager.GetShownFloor()).ToList();
             
             foreach (Coordinate coord in coords)
             {
@@ -156,7 +154,7 @@ namespace view
 
             if (closest != null)
             {
-                database.DeleteCoordinate(closest.Id);
+                registry.database.DeleteCoordinate(closest.Id);
                 Refresh(); 
             }
         }
@@ -173,12 +171,12 @@ namespace view
             }
 
             // Null checks
-            if (cameraController == null) Debug.LogError("cameraController is NULL");
+            if (registry.cameraController == null) Debug.LogError("cameraController is NULL");
             if (collectButton == null) Debug.LogError("collectButton is NULL");
             if (spinner == null) Debug.LogError("spinner is NULL");
-            if (buildingManager == null) Debug.LogError("buildingManager is NULL");
+            if (registry.buildingManager == null) Debug.LogError("buildingManager is NULL");
 
-            Vector3 crosshairPos = cameraController.GetCrosshairPosition();
+            Vector3 crosshairPos = registry.cameraController.GetCrosshairPosition();
             
             collectButton.interactable = false;
             isCollecting = true;
@@ -187,8 +185,8 @@ namespace view
             spinner.StartSpinning();
             collectButtonText.text = "";
             
-            string buildingName = buildingManager.GetActiveBuilding().buildingName;
-            int floor = buildingManager.GetShownFloor();
+            string buildingName = registry.buildingManager.GetActiveBuilding().buildingName;
+            int floor = registry.buildingManager.GetShownFloor();
             
             StartCoroutine(CollectDataPointCoroutine(
                 crosshairPos.x, crosshairPos.z,
@@ -202,7 +200,7 @@ namespace view
         {
             Debug.Log($"Starting data collection at ({x}, {y}, Floor: {floor})");
         
-            IEnumerator createPointCoroutine = wifiManager.CreateDataPoint(
+            IEnumerator createPointCoroutine = registry.wifiManager.CreateDataPoint(
                 x, y, floor, building, 
                 true,  // Save to database
                 OnDataPointCollected  // Callback when done

@@ -7,6 +7,8 @@ namespace view
 {
     public class CameraController : MonoBehaviour
     {
+        public Registry registry;
+        
         private float moveSpeed = 100f;
         private float touchMoveSpeed = 1.36f;  // 1/cos(cameraAngle) -1 to to have it feel natural
 
@@ -32,12 +34,6 @@ namespace view
         private float positionUpdateTimer = 0f;
         private float positionUpdateInterval = 0.5f;
         
-        public Camera cam;
-        public WifiManager wifiManager;
-        public BuildingManager buildingManager;
-        public CompassReader compass;
-        public GraphManager graphManager;
-
         // Touch input variables
         private Vector2 touchLastPos;
         private bool isTouching = false;
@@ -48,7 +44,7 @@ namespace view
 
         void Start()
         {
-            cam = Camera.main;
+            registry.cam = Camera.main;
             SetCameraTilt(65f);
             orbitPoint = transform.position;  // Initialize orbit point to current position
             
@@ -71,17 +67,17 @@ namespace view
 
         private void SetCameraTilt(float angle)
         {
-            cam.transform.rotation = Quaternion.Euler(angle, 0f, 0f);
+            registry.cam.transform.rotation = Quaternion.Euler(angle, 0f, 0f);
         }
 
         private void HandleCameraRotation()
         {
-            float compass_heading = compass.GetHeading();
+            float compass_heading = registry.compassReader.GetHeading();
             
             float newHeading = 0;
             if (!freeMovement && !compassActive)
             {
-                newHeading = graphManager.GetHeading();
+                newHeading = registry.graphManager.GetHeading();
             }
             
             if (compassActive)
@@ -102,7 +98,7 @@ namespace view
             
             
             PositionCameraOrbit(newHeading);
-            cam.transform.rotation = Quaternion.Euler(65f, newHeading, 0f);
+            registry.cam.transform.rotation = Quaternion.Euler(65f, newHeading, 0f);
         }
 
         private void PositionCameraOrbit(float heading)
@@ -113,9 +109,9 @@ namespace view
             // Calculate the camera position around the orbit point
             float xPos = orbitPoint.x - Mathf.Sin(headingRad) * orbitDistance;
             float zPos = orbitPoint.z - Mathf.Cos(headingRad) * orbitDistance;
-            float yPos = buildingManager.GetShownFloor() * 2.0f + cameraHeight;
+            float yPos = registry.buildingManager.GetShownFloor() * 2.0f + cameraHeight;
 
-            cam.transform.position = new Vector3(xPos, yPos, zPos);
+            registry.cam.transform.position = new Vector3(xPos, yPos, zPos);
         }
 
         private void HandleMovementOrTracking()
@@ -160,7 +156,7 @@ namespace view
             
             orbitPoint += movement;
             
-            float y = buildingManager.GetShownFloor() * 2.0f + cameraHeight;
+            float y = registry.buildingManager.GetShownFloor() * 2.0f + cameraHeight;
             orbitPoint = new Vector3(orbitPoint.x, y - cameraHeight, orbitPoint.z);
         }
 
@@ -252,12 +248,12 @@ namespace view
 
             if (positionUpdateTimer >= positionUpdateInterval)
             {
-                Position pos = wifiManager.GetPosition();
+                Position pos = registry.positionTracker.GetPosition();
                 if (pos != null)
                 {
                     // Update the orbit point to the marker position
                     orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
-                    buildingManager.SpawnBuildingFloor(buildingManager.GetActiveBuilding().buildingName, pos.Floor);
+                    registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
                 }
                 positionUpdateTimer = 0f;
             }
@@ -269,7 +265,7 @@ namespace view
 
             if (markerUpdateTimer >= markerUpdateInterval)
             {
-                MoveMarkerToPosition(wifiManager.GetPosition());
+                MoveMarkerToPosition(registry.positionTracker.GetPosition());
                 markerUpdateTimer = 0f;
             }
         }
@@ -284,7 +280,7 @@ namespace view
                 positionMarker.name = "PositionMarker";
             }
             
-            bool correctFloor = buildingManager.GetShownFloor() == pos.Floor;
+            bool correctFloor = registry.buildingManager.GetShownFloor() == pos.Floor;
             positionMarker.SetActive(correctFloor);
 
             if (!correctFloor) return;
@@ -308,12 +304,12 @@ namespace view
             orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
             
             // Handle camera positioning will be done in Update()
-            buildingManager.SpawnBuildingFloor(buildingManager.GetActiveBuilding().buildingName, pos.Floor);
+            registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
         }
         
         public void GotoPrediction()
         {
-           GotoPosition(wifiManager.GetPosition());
+           GotoPosition(registry.positionTracker.GetPosition());
         }
 
         public void OnViewModeButtonPressed()

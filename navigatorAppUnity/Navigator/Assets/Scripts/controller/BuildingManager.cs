@@ -20,12 +20,9 @@ namespace controller
         private string currentRoom = "";
 
 
-        public GraphManager graphManager;
-
-        public SQLiteDatabase database;
+        public Registry registry;
+        
         public TMP_Dropdown buildingField;
-        public CameraController cameraController;
-        public DataCollectionMode dataCollectionMode;
 
         public Button increaseFloorButton;
         public Button decreaseFloorButton;
@@ -109,15 +106,15 @@ namespace controller
                 SpawnBuildingFloor(activeBuilding.buildingName, nextFloorLevel);
             }
 
-            dataCollectionMode.Refresh();
+            registry.dataCollectionMode.Refresh();
             UpdateFloorButtons();
-            graphManager.PlotCurrentPath();
+            registry.graphManager.PlotCurrentPath();
         }
 
         private void DecreaseFloor()
         {
             if (activeBuilding == null) return;
-            dataCollectionMode.Refresh();
+            registry.dataCollectionMode.Refresh();
             Debug.Log("DecreaseFloor called");
 
             int currentIndex = GetFloorIndex(activeFloorLevel);
@@ -127,9 +124,9 @@ namespace controller
                 SpawnBuildingFloor(activeBuilding.buildingName, prevFloorLevel);
             }
 
-            dataCollectionMode.Refresh();
+            registry.dataCollectionMode.Refresh();
             UpdateFloorButtons();
-            graphManager.PlotCurrentPath();
+            registry.graphManager.PlotCurrentPath();
         }
 
         private void UpdateFloorButtons()
@@ -283,7 +280,7 @@ namespace controller
 
             foreach (string bssid in wifiNetworks.WifiInfoMap.Keys)
             {
-                string building = database.GetBuildingForBssid(bssid);
+                string building = registry.database.GetBuildingForBssid(bssid);
 
                 if (building == null)
                     continue;
@@ -370,7 +367,7 @@ namespace controller
 
                 // Update the UI to reflect the changes
                 UpdateBuildingUI();
-                cameraController.MoveMarkerToPosition(null);
+                registry.cameraController.MoveMarkerToPosition(null);
 
                 Debug.Log($"Spawned building {buildingName}, floor {floorLevel}");
             }

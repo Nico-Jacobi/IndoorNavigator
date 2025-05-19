@@ -11,13 +11,7 @@ namespace view
 {
     public class SettingsMenu : MonoBehaviour
     {
-        public CameraController cameraController;
-        public BuildingManager buildingManager;
-        public GraphManager graphManager;
-        public WifiManager wifiManager;
-        public DataCollectionMode dataCollectionMode;
-        public SQLiteDatabase database;
-        public CompassReader compass;
+        public Registry registry;
         
         public RectTransform menu;
         public Button closeButton;
@@ -56,24 +50,26 @@ namespace view
             
             closeButton.onClick.AddListener(CloseMenu);
             
-            measureInterval.SetTextWithoutNotify(wifiManager.updateInterval.ToString() + "s");
+            measureInterval.SetTextWithoutNotify(registry.wifiManager.updateInterval.ToString() + "s");
             measureInterval.onValueChanged.AddListener(OnMeasureIntervalChanged);
-            rollingAverageSize.SetTextWithoutNotify(wifiManager.rollingAverageLength.ToString());
+            rollingAverageSize.SetTextWithoutNotify(registry.positionTracker.rollingAverageLength.ToString());
             rollingAverageSize.onValueChanged.AddListener(OnRollingAverageSizeChanged);
             
-            importJson.onClick.AddListener(database.PickFileAndImport);
-            exportJson.onClick.AddListener(database.ExportWithSimpleFilename);
+            importJson.onClick.AddListener(registry.database.PickFileAndImport);
+            exportJson.onClick.AddListener(registry.database.ExportWithSimpleFilename);
         }
 
         public void OpenMenu()
         {
-            cameraController.inMenu = true;
+            registry.cameraController.inMenu = true;
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, visiblePos, slideDuration));
         }
 
         public void CloseMenu()
         {
-            cameraController.inMenu = false;
+            print(registry);
+            print(registry.cameraController);
+            registry.cameraController.inMenu = false;
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, hiddenPos, slideDuration));
         }
 
@@ -92,30 +88,30 @@ namespace view
 
         public void HandleFreeMovementToggle(bool freeMovementMode)
         {
-            cameraController.freeMovement = !freeMovementMode;
+            registry.cameraController.freeMovement = !freeMovementMode;
         }
 
         public void HandleCompasActiveToggle(bool compasActiveMode)
         {
-            cameraController.compassActive = compasActiveMode;
+            registry.cameraController.compassActive = compasActiveMode;
         }
 
         public void HandleCollectDataModeToggle(bool collectDataModeStart)
         {
             if (collectDataModeStart)
             {
-                wifiManager.isUpdating = false; //cant measure while collecting data
+                registry.wifiManager.isUpdating = false; //cant measure while collecting data
                 CloseMenu();
-                dataCollectionMode.Activate();
+                registry.dataCollectionMode.Activate();
                 navigateButton.gameObject.SetActive(false);
                 gotoPositionButton.gameObject.SetActive(false);
 
             }
             else
             {
-                wifiManager.isUpdating = true;
+                registry.wifiManager.isUpdating = true;
                 CloseMenu();
-                dataCollectionMode.Deactivate();
+                registry.dataCollectionMode.Deactivate();
                 navigateButton.gameObject.SetActive(true);
                 gotoPositionButton.gameObject.SetActive(true);
 
@@ -125,7 +121,7 @@ namespace view
         private void OnMeasureIntervalChanged(string interval)
         {
             string numericInterval = new string(interval.Where(char.IsDigit).ToArray());
-            wifiManager.updateInterval = float.Parse(numericInterval);
+            registry.wifiManager.updateInterval = float.Parse(numericInterval);
             string intervalWithSeconds = numericInterval + "s";
             measureInterval.SetTextWithoutNotify(intervalWithSeconds);
         }
@@ -133,7 +129,7 @@ namespace view
         
         private void OnRollingAverageSizeChanged(string number)
         {
-            wifiManager.rollingAverageLength = int.Parse(number);
+            registry.positionTracker.rollingAverageLength = int.Parse(number);
 
         }
         

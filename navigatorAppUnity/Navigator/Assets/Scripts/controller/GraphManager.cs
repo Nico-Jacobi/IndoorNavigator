@@ -18,9 +18,7 @@ namespace controller
         public RectTransform navigationDialog;
         public TMP_InputField searchField;
 
-        public CameraController cameraController;
-        public BuildingManager buildingManager;
-        public WifiManager wifiManager;
+        public Registry registry;
 
         private List<string> allOptions;
         private List<Edge> currentPath;
@@ -33,7 +31,7 @@ namespace controller
         {
             Debug.Log("Graph Manager script initialized");
 
-            allOptions = new List<string>(buildingManager.GetActiveGraph().allRoomsNames);
+            allOptions = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
             PopulateDropdownFromStrings(allOptions);
 
             StartCoroutine(UpdatePath());
@@ -46,6 +44,7 @@ namespace controller
         public float GetHeading()
         {
             float angle = currentPath?.FirstOrDefault()?.GetAngle() ?? 0f;
+            angle += 90;
             return angle;
         }
 
@@ -71,17 +70,18 @@ namespace controller
         public void OnNavigateButtonPressed()
         {
             navigationDialog.gameObject.SetActive(true);
-            cameraController.inMenu = true;
+            registry.cameraController.inMenu = true;
         }
 
         public void CloseNavigationDialog()
         {
             navigationDialog.gameObject.SetActive(false);
-            cameraController.inMenu = false;
+            registry.cameraController.inMenu = false;
         }
 
         private void OnStartNavigationButtonPressed()
         {
+            registry.cameraController.GotoPrediction();
             Vertex fromVertex = GetStart();
 
             navigate(fromVertex);
@@ -101,12 +101,12 @@ namespace controller
                 //only partly calculate the current path (way faster if the user just moved a bit)
                 Debug.Log("partially recalculating path");
                 // removing the first few edges, and just recalculating them for faster calculations
-                currentPath = await buildingManager.GetActiveGraph()
+                currentPath = await registry.buildingManager.GetActiveGraph()
                     .FindShortestPathToTargetEdgesAsync(fromVertex, currentPath.GetRange(5, currentPath.Count - 5));
             }
             else
             {
-                currentPath = await buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
+                currentPath = await registry.buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
                 Debug.Log("completely calculating path");
             }
 
@@ -122,8 +122,8 @@ namespace controller
 
         public Vertex GetStart()
         {
-            List<Vertex> verts = buildingManager.GetActiveGraph().GetVertices();
-            Position pos = wifiManager.GetPosition();
+            List<Vertex> verts = registry.buildingManager.GetActiveGraph().GetVertices();
+            Position pos = registry.positionTracker.GetPosition();
 
             // Filter vertices on correct floor and sort
             verts = verts
@@ -152,7 +152,7 @@ namespace controller
                     })
                     .First();
 
-                buildingManager.setCurrentRoom(string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name)));
+                registry.buildingManager.setCurrentRoom(string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name)));
 
                 return closest;
             }
@@ -167,7 +167,7 @@ namespace controller
         /// </summary>
         private void InterpolateStart()
         {
-            Position pos = wifiManager.GetPosition();
+            Position pos = registry.positionTracker.GetPosition();
             Edge firstEdge = currentPath[0];
 
             // source and target vertices always share exactly one room
@@ -310,39 +310,36 @@ namespace controller
             {
                 if ((idx + 1 < currentPath.Count) && IsStairsEdge(currentPath[idx + 1]))
                 {
-                    
-                    Edge stairEdge = currentPath[idx + 1];
+                    int stairsStart = idx + 1;
 
-                    if (stairEdge.source.floor == buildingManager.GetShownFloor())
+                    while (stairsStart < currentPath.Count && IsStairsEdge(currentPath[stairsStart]))
                     {
-                        
-                        float height = buildingManager.GetShownFloor() * 2 + 1f;
+                        Edge stairEdge = currentPath[stairsStart];
 
-                        // Place arrow at current position (end of idx edge)
-                        Vector3 arrowPos = new Vector3((float) stairEdge.source.lat, height, (float) stairEdge.source.lon);
-                        Quaternion rotation = Quaternion.identity;
-    
-                        if (stairEdge.target.floor > stairEdge.source.floor)
+                        if (stairEdge.source.floor == registry.buildingManager.GetShownFloor())
                         {
-                            // it's going UP, so rotate 180° around X to point up
-                            rotation = Quaternion.Euler(180f, 0f, 0f);
-                        }
-                        
-                        GameObject arrow = GameObject.Instantiate(stairsArrowPrefab, arrowPos + Vector3.up * 0.5f, rotation);
-                        arrow.tag = "PlottedPath";
-                        
-                    }
-                    
-                  
+                            float height = stairEdge.source.floor * 2 + 2f;
+                            Vector3 arrowPos = new Vector3((float)stairEdge.source.lat, height, (float)stairEdge.source.lon);
+                            Quaternion rotation = stairEdge.target.floor > stairEdge.source.floor
+                                ? Quaternion.Euler(90f, 0f, 0f) // up
+                                : Quaternion.Euler(-90f, 0f, 0f); // down
 
-                    idx += 3;
+                            GameObject arrow = GameObject.Instantiate(stairsArrowPrefab, arrowPos + Vector3.up * 0.5f, rotation);
+                            arrow.tag = "PlottedPath";
+                        }
+
+                        stairsStart++;
+                    }
+
+                    idx = stairsStart + 1;
                     continue;
+                    
                 }
 
                 Edge e = currentPath[idx];
-                if (e.source.floor == buildingManager.GetShownFloor())
+                if (e.source.floor == registry.buildingManager.GetShownFloor())
                 {
-                    float height = buildingManager.GetShownFloor() * 2 + 0.5f;
+                    float height = registry.buildingManager.GetShownFloor() * 2 + 0.5f;
 
                     e.path.Plot(
                         height: height,
