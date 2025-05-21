@@ -15,8 +15,16 @@ namespace Controller
         private float _displayedHeading = 0f;
         private bool _isInitialized = false;
 
+        // to smooth distplay of the heading
         private readonly Queue<float> _headingHistory = new Queue<float>();
         private const int MaxHistory = 20;
+
+        // for position estimation via dead reconing
+        // For 10 seconds @ 100ms intervals = 100 entries max
+        private const float RecordInterval = 0.1f;
+        private const float HistoryDuration = 10f;
+        private readonly List<(float time, float heading)> _recentHeadings = new List<(float, float)>();
+        private float _timeSinceLastRecord = 0f;
 
         private void Start()
         {
@@ -42,8 +50,22 @@ namespace Controller
             _isInitialized = true;
         }
 
+        private void Update()
+        {
+            if (!active || !_isInitialized || !_isCompassAvailable) return;
+
+            _timeSinceLastRecord += Time.deltaTime;
+            if (_timeSinceLastRecord >= RecordInterval)
+            {
+                _timeSinceLastRecord = 0f;
+                float currentHeading = GetHeading();
+                float currentTime = Time.time;
+                RecordHeading(currentTime, currentHeading);
+            }
+        }
+
         /// <summary>
-        /// Adds a heading to the history buffer, keeping it at a max size.
+        /// Adds a heading to the smoothing history buffer.
         /// </summary>
         private void AddHeadingToHistory(float heading)
         {
@@ -52,10 +74,53 @@ namespace Controller
 
             _headingHistory.Enqueue(heading);
         }
+        
+        
+        /// <summary>
+        /// Returns the list of recorded headings in the last 10 seconds with timestamps.
+        /// </summary>
+        public IReadOnlyList<float> RecentHeadings()
+        {
+            const int targetCount = 100;
+            float currentTime = Time.time;
+            var result = new float[targetCount];
+
+            // Fill with 0 initially
+            for (int i = 0; i < targetCount; i++) result[i] = 0f;
+
+            int index = targetCount - 1;
+            // Traverse recent headings from the end (latest first)
+            for (int i = _recentHeadings.Count - 1; i >= 0 && index >= 0; i--)
+            {
+                if (currentTime - _recentHeadings[i].time <= HistoryDuration)
+                {
+                    result[index] = _recentHeadings[i].heading;
+                    index--;
+                }
+            }
+
+            // If less than 100, remaining are 0 as already initialized
+            return result;
+        }
+
 
         /// <summary>
-        /// Computes the average heading from the history buffer.
-        /// Takes into account circular nature of angles.
+        /// Keeps a rolling record of headings for the last 10 seconds.
+        /// </summary>
+        private void RecordHeading(float time, float heading)
+        {
+            _recentHeadings.Add((time, heading));
+
+            // Remove any entries older than 10 seconds
+            while (_recentHeadings.Count > 0 && (time - _recentHeadings[0].time) > HistoryDuration)
+            {
+                _recentHeadings.RemoveAt(0);
+            }
+        }
+
+
+        /// <summary>
+        /// Computes the average heading from the smoothing buffer (circular angle aware).
         /// </summary>
         private float GetAverageHeading()
         {
@@ -94,7 +159,7 @@ namespace Controller
             float rawRadians = -2f * Mathf.PI * (_rawHeading / 360f);
             float displayedRadians = -2f * Mathf.PI * (_displayedHeading / 360f);
 
-            float angularDiff = ((rawRadians - displayedRadians + Mathf.PI) % (2f * Mathf.PI)) - Mathf.PI;
+            float angularDiff = Mathf.DeltaAngle(displayedRadians * Mathf.Rad2Deg, rawRadians * Mathf.Rad2Deg) * Mathf.Deg2Rad;
 
             displayedRadians += angularDiff * smoothingFactor;
 

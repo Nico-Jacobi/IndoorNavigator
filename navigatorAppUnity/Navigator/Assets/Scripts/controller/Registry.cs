@@ -15,6 +15,8 @@ namespace controller
         public PositionTracker positionTracker;
         public CameraController cameraController;
         public DataCollectionMode dataCollectionMode;
-        
+        public Acceleration accelerationController;
+        public KalmanFilter kalmanFilter;
+
     }
 }

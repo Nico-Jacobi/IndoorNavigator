@@ -17,47 +17,12 @@ namespace controller
 
         public Registry registry;
         
-        public int rollingAverageLength = 10;
-        
-        private List<Position> positions;
-        
         // Cache for data points to avoid frequent database calls
         private Dictionary<string, List<Coordinate>> buildingDataPointsCache = new Dictionary<string, List<Coordinate>>();
         private string lastBuilding = string.Empty;
 
-        void Start()
-        {
-            positions = new List<Position>();
-            positions.Add(new Position(0, 0, 3)); // Default starting position
-        }
 
-        /// <summary>
-        /// Gets the current position based on rolling average of recent predictions.
-        /// </summary>
-        /// <returns>The averaged position.</returns>
-        public Position GetPosition()
-        {
-            if (positions == null || positions.Count == 0)
-                return null;
 
-            // Use a more efficient approach for calculating average
-            int count = Math.Min(rollingAverageLength, positions.Count);
-            var lastPositions = positions.Skip(positions.Count - count).ToList();
-
-            float avgX = 0, avgY = 0, avgFloor = 0;
-            foreach (var pos in lastPositions)
-            {
-                avgX += pos.X;
-                avgY += pos.Y;
-                avgFloor += pos.Floor;
-            }
-            
-            return new Position(
-                avgX / count, 
-                avgY / count, 
-                (int)Math.Round(avgFloor / count)
-            );
-        }
 
         /// <summary>
         /// Update the position based on WiFi measurements.
@@ -120,15 +85,9 @@ namespace controller
 
             Position prediction = positionTask.Result;
             Debug.Log($"Predicted Position: X={prediction.X:F2}, Y={prediction.Y:F2}, Floor={prediction.Floor}");
-
-            // Update positions list with the new prediction
-            positions.Add(prediction);
             
-            // Limit size of positions list
-            if (positions.Count > rollingAverageLength * 5)
-            {
-                positions.RemoveAt(0);
-            }
+            
+            registry.kalmanFilter.UpdateWithWifi(prediction);
         }
 
         /// <summary>

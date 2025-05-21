@@ -8,7 +8,9 @@ using model;
 using model.graph;
 using UnityEngine;
 using TMPro;
+using Unity.VisualScripting;
 using view;
+using Edge = model.graph.Edge;
 
 namespace controller
 {
@@ -123,7 +125,7 @@ namespace controller
         public Vertex GetStart()
         {
             List<Vertex> verts = registry.buildingManager.GetActiveGraph().GetVertices();
-            Position pos = registry.positionTracker.GetPosition();
+            Position pos = registry.kalmanFilter.GetEstimate();
 
             // Filter vertices on correct floor and sort
             verts = verts
@@ -158,7 +160,12 @@ namespace controller
             }
 
             // fallback to closest vertex if no room matches
-            return verts[0];
+            if (verts.Count > 0)
+            {
+                return verts[0];
+
+            }
+            return null;
         }
 
 
@@ -167,7 +174,7 @@ namespace controller
         /// </summary>
         private void InterpolateStart()
         {
-            Position pos = registry.positionTracker.GetPosition();
+            Position pos = registry.kalmanFilter.GetEstimate();
             Edge firstEdge = currentPath[0];
 
             // source and target vertices always share exactly one room
