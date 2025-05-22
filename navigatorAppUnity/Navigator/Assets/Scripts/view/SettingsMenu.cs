@@ -52,7 +52,7 @@ namespace view
             
             measureInterval.SetTextWithoutNotify(registry.wifiManager.updateInterval.ToString() + "s");
             measureInterval.onValueChanged.AddListener(OnMeasureIntervalChanged);
-            rollingAverageSize.SetTextWithoutNotify(registry.kalmanFilter.WeightedAverageLength.ToString());
+            //rollingAverageSize.SetTextWithoutNotify(registry.kalmanFilter.WeightedAverageLength.ToString()); //todo
             rollingAverageSize.onValueChanged.AddListener(OnRollingAverageSizeChanged);
             
             importJson.onClick.AddListener(registry.database.PickFileAndImport);
@@ -129,8 +129,8 @@ namespace view
         
         private void OnRollingAverageSizeChanged(string number)
         {
-            registry.kalmanFilter.WeightedAverageLength = int.Parse(number);
-
+            //registry.kalmanFilter.WeightedAverageLength = int.Parse(number);
+            //todo
         }
         
     }
