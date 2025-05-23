@@ -179,7 +179,7 @@ namespace controller
         /// </summary>
         public void ResetVelocity(Vector3 newVelocity)
         {
-            return; //todo
+            //return; 
             _velocity = newVelocity;
             _velocityLog.Clear();
             _velocityLog.Enqueue(newVelocity);

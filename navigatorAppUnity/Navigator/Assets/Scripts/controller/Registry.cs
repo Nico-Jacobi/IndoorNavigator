@@ -17,6 +17,6 @@ namespace controller
         public DataCollectionMode dataCollectionMode;
         public Acceleration accelerationController;
         public KalmanFilter kalmanFilter;
-
+        public NoKnowSignalFound noKnowSignalFoundDialog;
     }
 }

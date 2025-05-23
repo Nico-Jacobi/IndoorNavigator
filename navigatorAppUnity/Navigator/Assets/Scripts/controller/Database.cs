@@ -26,7 +26,7 @@ namespace controller
 
         void Awake()
         {
-            //DeleteDatabase(); //just for debugging todo remove
+            //DeleteDatabase(); //just for debugging
             DontDestroyOnLoad(gameObject);
             InitializeDatabase();
         }

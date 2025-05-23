@@ -19,6 +19,8 @@ namespace view
         public SwitchButton freeMovement;
         public SwitchButton compasActive;
         public SwitchButton collectDataMode;
+        public SwitchButton upDateDbSwitch;
+
         public TMP_InputField measureInterval;
         public TMP_InputField rollingAverageSize;
 
@@ -43,16 +45,18 @@ namespace view
             freeMovement.OnValueChanged += HandleFreeMovementToggle;
             compasActive.OnValueChanged += HandleCompasActiveToggle;
             collectDataMode.OnValueChanged += HandleCollectDataModeToggle;
+            upDateDbSwitch.OnValueChanged += HandleDbPassiveCollectionToggle;
             
             freeMovement.SetValue(false);
             compasActive.SetValue(false);
             collectDataMode.SetValue(false);
+            upDateDbSwitch.SetValue(false);
             
             closeButton.onClick.AddListener(CloseMenu);
             
             measureInterval.SetTextWithoutNotify(registry.wifiManager.updateInterval.ToString() + "s");
             measureInterval.onValueChanged.AddListener(OnMeasureIntervalChanged);
-            //rollingAverageSize.SetTextWithoutNotify(registry.kalmanFilter.WeightedAverageLength.ToString()); //todo
+            rollingAverageSize.SetTextWithoutNotify(registry.positionTracker.numberOfNeighboursToConsider.ToString()); 
             rollingAverageSize.onValueChanged.AddListener(OnRollingAverageSizeChanged);
             
             importJson.onClick.AddListener(registry.database.PickFileAndImport);
@@ -117,6 +121,11 @@ namespace view
 
             }
         }
+
+        public void HandleDbPassiveCollectionToggle(bool HandleDbPassiveCollection)
+        {
+            registry.positionTracker.passiveDataCollectionActive = HandleDbPassiveCollection;
+        }
         
         private void OnMeasureIntervalChanged(string interval)
         {
@@ -129,8 +138,7 @@ namespace view
         
         private void OnRollingAverageSizeChanged(string number)
         {
-            //registry.kalmanFilter.WeightedAverageLength = int.Parse(number);
-            //todo
+            registry.positionTracker.numberOfNeighboursToConsider = int.Parse(number);
         }
         
     }

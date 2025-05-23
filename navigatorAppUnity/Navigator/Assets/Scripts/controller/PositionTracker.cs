@@ -20,8 +20,9 @@ namespace controller
         // Cache for data points to avoid frequent database calls
         private Dictionary<string, List<Coordinate>> buildingDataPointsCache = new Dictionary<string, List<Coordinate>>();
         private string lastBuilding = string.Empty;
-
-
+        public bool passiveDataCollectionActive = false;
+        
+        public int numberOfNeighboursToConsider = 10;   //for the wknn
 
 
         /// <summary>
@@ -51,31 +52,41 @@ namespace controller
 
             // Run computationally expensive comparison on a worker thread
             Task<Position> positionTask = Task.Run(() => {
-                // Sort coordinates by similarity - limited to 100 closest matches for performance
-                var sorted = dataPoints
-                    .OrderBy(coord => coord.CompareWifiSimilarity(wifiNetworks))
-                    .Take(100)
-                    .ToList();
+                    // Sort coordinates by similarity - limited to 100 closest matches for performance
+                    var sorted = dataPoints
+                        .Where(coord => coord.HasCommonBssid(wifiNetworks)) // filter first
+                        .OrderBy(coord => coord.CompareWifiSimilarity(wifiNetworks))
+                        .Take(numberOfNeighboursToConsider)
+                        .ToList();
 
-                // Interpolate using exponential weighting
-                float weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
-                int actualLength = sorted.Count;
+                    // Check if any usable data remains
+                    if (sorted.Count == 0)
+                    {
+                        Debug.Log("no known signal found...");
+                        registry.noKnowSignalFoundDialog.Show(); 
+                        return new Position(0, 0, 3);    
+                    }
 
-                for (int i = 0; i < actualLength; i++)
-                {
-                    float weight = (float) Math.Pow(1.2, actualLength - i); // Exponential weighting
-                    weightedX += sorted[i].X * weight;
-                    weightedY += sorted[i].Y * weight;
-                    weightedFloor += sorted[i].Floor * weight;
-                    totalWeight += weight;
-                }
+                    // Interpolate using exponential weighting
+                    float weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
+                    int actualLength = sorted.Count;
 
-                float finalX = weightedX / totalWeight;
-                float finalY = weightedY / totalWeight;
-                float finalFloor = weightedFloor / totalWeight;
+                    for (int i = 0; i < actualLength; i++)
+                    {
+                        float weight = (float)Math.Pow(1.2, actualLength - i); // Exponential weighting
+                        weightedX += sorted[i].X * weight;
+                        weightedY += sorted[i].Y * weight;
+                        weightedFloor += sorted[i].Floor * weight;
+                        totalWeight += weight;
+                    }
 
-                return new Position(finalX, finalY, (int)Math.Round(finalFloor));
-            });
+                    float finalX = weightedX / totalWeight;
+                    float finalY = weightedY / totalWeight;
+                    float finalFloor = weightedFloor / totalWeight;
+
+                    return new Position(finalX, finalY, (int)Math.Round(finalFloor));
+                });
+            
 
             // Wait for task to complete without blocking the main thread
             while (!positionTask.IsCompleted)
@@ -85,7 +96,16 @@ namespace controller
 
             Position prediction = positionTask.Result;
             Debug.Log($"Predicted Position: X={prediction.X:F2}, Y={prediction.Y:F2}, Floor={prediction.Floor}");
-            
+
+            if (passiveDataCollectionActive)
+            {
+                wifiNetworks.X = prediction.X;
+                wifiNetworks.Y = prediction.Y;
+                wifiNetworks.Floor = prediction.Floor;
+                wifiNetworks.BuildingName = registry.buildingManager.GetActiveBuilding().buildingName;
+
+                registry.database.InsertCoordinateWithWifiInfos(wifiNetworks);
+            }
             
             registry.kalmanFilter.UpdateWithWifi(prediction);
         }

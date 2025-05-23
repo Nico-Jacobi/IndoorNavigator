@@ -128,7 +128,6 @@ namespace view
 
         public void DeleteAtCurrentPosition()
         {
-            registry.database.PrintDatabase();
             Vector3 crosshairPos = registry.cameraController.GetCrosshairPosition();
     
             Coordinate closest = null;

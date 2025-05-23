@@ -9,7 +9,6 @@ namespace Controller
     {
         public Registry registry;
 
-        [Header("Kalman Filter Settings")]
         public float processNoisePosition = 0.1f;
         public float processNoiseVelocity = 0.5f;
         public float measurementNoiseWifi = 2.0f;
@@ -93,6 +92,7 @@ namespace Controller
                 lastRawWifiEstimate = measurement;
                 lastUpdateTimeWIFI = Time.time;
             
+                Debug.Log($"resetting imu velocity with an estimated Velocity of {estimatedVelocity}");
                 registry.accelerationController.ResetVelocity(estimatedVelocity);
             }
             

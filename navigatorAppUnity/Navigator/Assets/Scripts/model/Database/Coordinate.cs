@@ -3,6 +3,7 @@ using SQLite;
 using System.Collections.Generic;
 using System.Linq;
 using model.Database.Plugins;
+using UnityEngine;
 
 namespace model.Database
 {
@@ -63,9 +64,26 @@ namespace model.Database
 
             return differenceSum;
         }
-
         
+        
+        /// <summary>
+        /// Checks if this Coordinate shares at least one BSSID with another Coordinate.
+        /// </summary>
+        public bool HasCommonBssid(Coordinate other)
+        {
+            foreach (var bssid in WifiInfoMap.Keys)
+            {
+                if (other.WifiInfoMap.ContainsKey(bssid))
+                {
+                    Debug.Log($"Common bssid is: {bssid}");
+                    return true;
+                }
+            }
+            return false;
+        }
+
     }
+    
     
     [System.Serializable]
     public class CoordinateListWrapper
