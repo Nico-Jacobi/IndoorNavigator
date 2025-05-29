@@ -28,8 +28,15 @@ namespace view
         public GameObject markerPrefab;
         public GameObject positionMarker;
         private float markerUpdateTimer = 0f;
-        private float markerUpdateInterval = 1f;
+        private float markerUpdateInterval = 0.1f;
         private bool markerActive = true;
+        
+        // Smooth marker movement variables
+        private Vector3 markerStartPosition;
+        private Vector3 markerTargetPosition;
+        private float markerMoveTimer = 0f;
+        private float markerMoveDuration = 0.5f; // 1 second smooth transition
+        private bool markerIsMoving = false;
         
         private float positionUpdateTimer = 0f;
         private float positionUpdateInterval = 0.5f;
@@ -62,6 +69,7 @@ namespace view
             if (markerActive)
             {
                 HandleMarkerUpdate();
+                HandleMarkerSmoothing();
             }
         }
 
@@ -72,7 +80,7 @@ namespace view
 
         private void HandleCameraRotation()
         {
-            float compass_heading = registry.compassReader.GetHeading();
+            float compass_heading = registry.compassReader.GetHeading() + 180;
             
             float newHeading = 0;
             if (!freeMovement && !compassActive)
@@ -270,6 +278,36 @@ namespace view
             }
         }
 
+        private void HandleMarkerSmoothing()
+        {
+            if (markerIsMoving && positionMarker != null)
+            {
+                markerMoveTimer += Time.deltaTime;
+                float progress = markerMoveTimer / markerMoveDuration;
+                
+                if (progress >= 1f)
+                {
+                    // Movement complete
+                    progress = 1f;
+                    markerIsMoving = false;
+                }
+                
+                // Smooth interpolation using ease-in-out curve
+                float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
+                Vector3 currentPosition = Vector3.Lerp(markerStartPosition, markerTargetPosition, smoothProgress);
+                
+                positionMarker.transform.position = currentPosition;
+                
+                // If we're not in free movement mode, update the orbit point smoothly too
+                if (!freeMovement)
+                {
+                    Vector3 orbitTarget = new Vector3(markerTargetPosition.x, markerTargetPosition.y - 1f, markerTargetPosition.z);
+                    Vector3 orbitStart = new Vector3(markerStartPosition.x, markerStartPosition.y - 1f, markerStartPosition.z);
+                    orbitPoint = Vector3.Lerp(orbitStart, orbitTarget, smoothProgress);
+                }
+            }
+        }
+
         public void MoveMarkerToPosition(Position pos)
         {
             if (pos == null || !markerActive) return;
@@ -285,10 +323,26 @@ namespace view
 
             if (!correctFloor) return;
 
-            positionMarker.transform.position = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
+            Vector3 newTargetPosition = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
             
-            // If we're not in free movement mode, update the orbit point to the marker position
-            if (!freeMovement)
+            // Check if this is a significant position change (threshold to avoid micro-movements)
+            float positionChangeThreshold = 0.1f;
+            if (Vector3.Distance(positionMarker.transform.position, newTargetPosition) > positionChangeThreshold)
+            {
+                // Start smooth movement
+                markerStartPosition = positionMarker.transform.position;
+                markerTargetPosition = newTargetPosition;
+                markerMoveTimer = 0f;
+                markerIsMoving = true;
+            }
+            else if (!markerIsMoving)
+            {
+                // Small movement, just update directly
+                positionMarker.transform.position = newTargetPosition;
+            }
+            
+            // If we're not in free movement mode and not currently smoothing, update orbit point immediately for large jumps
+            if (!freeMovement && !markerIsMoving)
             {
                 orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
             }
