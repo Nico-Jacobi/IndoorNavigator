@@ -47,6 +47,7 @@ namespace controller
 
         public void Update()
         {
+            
             float currentTime = Time.time;
             float deltaTime = currentTime - _lastTime;
             float kalmanDeltaTime = currentTime - _lastKalmanUpdateTime;
@@ -57,6 +58,7 @@ namespace controller
             // Update internal velocity calculation every 100ms
             if (_accumulatedTime >= UpdateInterval)
             {
+
                 _lastTime = currentTime;
                 _accumulatedTime = 0f;
 
@@ -80,59 +82,29 @@ namespace controller
             {
                 _lastKalmanUpdateTime = currentTime;
                 _accumulatedKalmanTime = 0f;
-                
                 UpdateKalmanFilter();
             }
         }
 
         private void UpdateKalmanFilter()
         {
-            if (registry?.kalmanFilter == null) return;
-
+            
             // Get current accelerometer data
             Vector3 rawAccel = Input.acceleration;
             Vector3 linearAccel = rawAccel - _gravity;
             
-            // Convert to 2D (assuming movement is primarily in X-Y plane)
+            // Convert to 2D (assuming movement in X-Y plane)
             Vector2 acceleration2D = new Vector2(linearAccel.x, linearAccel.y);
-            
-            // Get compass heading (you'll need to implement this based on your compass system)
-            float headingDegrees = GetCompassHeading();
+
+            float headingDegrees = registry.compassReader.GetHeading();
             
             // Update Kalman filter with IMU data
             registry.kalmanFilter.UpdateWithIMU(acceleration2D, headingDegrees);
+            //registry.kalmanFilter.UpdateWithIMU(headingDegrees);
+
         }
 
-        private float GetCompassHeading()
-        {
-            // Option 1: If you have a compass reader in your registry
-            if (registry?.compassReader != null)
-            {
-                var recentHeadings = registry.compassReader.RecentHeadings();
-                if (recentHeadings != null && recentHeadings.Count > 0)
-                {
-                    return recentHeadings[recentHeadings.Count - 1]; // Get most recent heading
-                }
-            }
-            
-            // Option 2: Use Unity's built-in compass (if available)
-            if (Input.compass.enabled)
-            {
-                return Input.compass.trueHeading;
-            }
-            
-            // Option 3: Use gyroscope to estimate heading change
-            if (Input.gyro.enabled)
-            {
-                // This is a simplified approach - you might want to integrate gyro data over time
-                Vector3 rotationRate = Input.gyro.rotationRateUnbiased;
-                // Convert rotation rate to heading change (this is simplified)
-                return -rotationRate.z * Mathf.Rad2Deg; // Negative because of coordinate system
-            }
-            
-            // Fallback: return 0 (North) if no compass data available
-            return 0f;
-        }
+   
         
         
         private void UpdateSpeedText()

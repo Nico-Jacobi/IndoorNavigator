@@ -54,7 +54,7 @@ namespace controller
             Task<Position> positionTask = Task.Run(() => {
                     // Sort coordinates by similarity - limited to 100 closest matches for performance
                     var sorted = dataPoints
-                        .Where(coord => coord.HasCommonBssid(wifiNetworks)) // filter first
+                        .Where(coord => coord.HasCommonBssid(wifiNetworks))
                         .OrderBy(coord => coord.CompareWifiSimilarity(wifiNetworks))
                         .Take(numberOfNeighboursToConsider)
                         .ToList();

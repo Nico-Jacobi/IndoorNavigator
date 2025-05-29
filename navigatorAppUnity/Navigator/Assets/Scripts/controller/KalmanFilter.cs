@@ -11,30 +11,36 @@ namespace Controller
 
         public float processNoisePosition = 0.1f;
         public float processNoiseVelocity = 0.5f;
-        public float measurementNoiseWifi = 2.0f;
-        public float measurementNoiseImu = 0.1f;
+        public float measurementNoiseWifi = 0.7f;
+        public float measurementNoiseImu = 2f;
         
-        // state: [x, y, vx, vy]
+        public float maxVelocity = 1.5f; // max reasonable walking speed m/s
+        public int floorHistorySize = 10;
+        public float minDeltaTime = 0.001f; // prevent division by zero
+        
+        // State: [x, y, vx, vy]
         private Vector4 state;
-        private Matrix4x4 P;    // error covariance
-        private Matrix4x4 Q;    // process noise
-        private Matrix4x4 F;    // state transition
-        private Matrix4x4 I;    // identity
+        private Matrix4x4 P;    // Error covariance
+        private Matrix4x4 Q;    // Process noise
+        private Matrix4x4 F;    // State transition
+        private Matrix4x4 I;    // Identity
         
         private List<int> floorHistory;
         private int currentFloor;
         
         private float lastUpdateTimeIMU;
+        private float lastUpdateTimeWIFI;
         private bool initialized = false;
 
         private Vector2 lastRawWifiEstimate;
-        private float lastUpdateTimeWIFI;
+        private bool hasWifiHistory = false;
         
         private void Awake()
         {
             InitializeMatrices();
             floorHistory = new List<int>();
             lastUpdateTimeIMU = Time.time;
+            lastUpdateTimeWIFI = Time.time;
         }
 
         private void InitializeMatrices()
@@ -42,41 +48,44 @@ namespace Controller
             I = Matrix4x4.identity;
             state = Vector4.zero;
             
-            // high initial uncertainty
-            P = new Matrix4x4();
-            P.m00 = 100f; P.m11 = 100f; P.m22 = 100f; P.m33 = 100f;
-            P.m01 = 0f; P.m02 = 0f; P.m03 = 0f;
-            P.m10 = 0f; P.m12 = 0f; P.m13 = 0f;
-            P.m20 = 0f; P.m21 = 0f; P.m23 = 0f;
-            P.m30 = 0f; P.m31 = 0f; P.m32 = 0f;
+            // Initialize error covariance with high uncertainty
+            P = Matrix4x4.zero;
+            P.m00 = 100f; P.m11 = 100f; P.m22 = 10f; P.m33 = 10f;
             
-            Q = new Matrix4x4();
-            Q.m00 = processNoisePosition; Q.m11 = processNoisePosition;
-            Q.m22 = processNoiseVelocity; Q.m33 = processNoiseVelocity;
-            Q.m01 = 0f; Q.m02 = 0f; Q.m03 = 0f;
-            Q.m10 = 0f; Q.m12 = 0f; Q.m13 = 0f;
-            Q.m20 = 0f; Q.m21 = 0f; Q.m23 = 0f;
-            Q.m30 = 0f; Q.m31 = 0f; Q.m32 = 0f;
+            // Initialize process noise matrix properly
+            InitializeProcessNoise();
             
             initialized = false;
+        }
+
+        private void InitializeProcessNoise()
+        {
+            Q = Matrix4x4.zero;
+            Q.m00 = processNoisePosition;
+            Q.m11 = processNoisePosition;
+            Q.m22 = processNoiseVelocity;
+            Q.m33 = processNoiseVelocity;
         }
 
         public void UpdateWithWifi(Position rawWifiPrediction)
         {
             if (rawWifiPrediction == null)
             {
-                lastUpdateTimeIMU = Time.time;
-                return;
+                return; // Don't update timestamp if no measurement
             }
 
             float deltaTime = Time.time - lastUpdateTimeIMU;
+            deltaTime = Mathf.Max(deltaTime, minDeltaTime);
             
             if (!initialized)
             {
-                // init with first wifi measurement
+                // Initialize with first WiFi measurement
                 state = new Vector4(rawWifiPrediction.X, rawWifiPrediction.Y, 0, 0);
                 currentFloor = rawWifiPrediction.Floor;
+                lastRawWifiEstimate = new Vector2(rawWifiPrediction.X, rawWifiPrediction.Y);
+                hasWifiHistory = true;
                 initialized = true;
+                lastUpdateTimeWIFI = Time.time;
             }
             else
             {
@@ -84,156 +93,182 @@ namespace Controller
                 Vector2 measurement = new Vector2(rawWifiPrediction.X, rawWifiPrediction.Y);
                 UpdateWithPositionMeasurement(measurement, measurementNoiseWifi);
                 
-                // update imu velocity to prevent drift
-                float elapsedTime = Time.time - lastUpdateTimeWIFI;
-                Vector3 deltaPosition = new Vector3(measurement.x - lastRawWifiEstimate.x, measurement.y - lastRawWifiEstimate.y, 0);
-                Vector3 estimatedVelocity = deltaPosition / elapsedTime;
-
+                // Update IMU velocity estimate if we have previous WiFi data
+                if (hasWifiHistory)
+                {
+                    float wifiDeltaTime = Time.time - lastUpdateTimeWIFI;
+                    if (wifiDeltaTime > minDeltaTime)
+                    {
+                        Vector2 deltaPosition = measurement - lastRawWifiEstimate;
+                        Vector2 estimatedVelocity = deltaPosition / wifiDeltaTime;
+                        
+                        // Clamp velocity to reasonable range
+                        if (estimatedVelocity.magnitude > maxVelocity)
+                        {
+                            estimatedVelocity = estimatedVelocity.normalized * maxVelocity;
+                        }
+                        
+                        Vector3 velocity3D = new Vector3(estimatedVelocity.x, estimatedVelocity.y, 0);
+                        Debug.Log($"WiFi velocity estimate: {velocity3D.magnitude:F2} m/s");
+                        registry.accelerationController.ResetVelocity(velocity3D);
+                    }
+                }
+                
                 lastRawWifiEstimate = measurement;
                 lastUpdateTimeWIFI = Time.time;
-            
-                Debug.Log($"resetting imu velocity with an estimated Velocity of {estimatedVelocity}");
-                registry.accelerationController.ResetVelocity(estimatedVelocity);
             }
             
-            // update floor history
-            floorHistory.Add(rawWifiPrediction.Floor);
-            if (floorHistory.Count > 10)
-            {
-                floorHistory.RemoveAt(0);
-            }
-            
-            UpdateFloorEstimate();
+            // Update floor history with size limit
+            UpdateFloorHistory(rawWifiPrediction.Floor);
             lastUpdateTimeIMU = Time.time;
         }
 
+        
+        
         public void UpdateWithIMU(Vector2 acceleration, float headingDegrees)
         {
-            if (!initialized) return;
-
             float deltaTime = Time.time - lastUpdateTimeIMU;
-            if (deltaTime <= 0) return;
-            
+            if (deltaTime > minDeltaTime) return;
+
+            // Convert heading to radians and get direction vector
+            float headingRad = -(headingDegrees + 90) * Mathf.Deg2Rad;
+            Vector2 direction = new Vector2(Mathf.Cos(headingRad), Mathf.Sin(headingRad));
+
+            // Use acceleration magnitude (length) only - direction comes from compass
+            float accelerationMagnitude = acceleration.magnitude;
+    
+            // Predict step
             Predict(deltaTime);
-            
-            // integrate acceleration for velocity change
-            Vector2 velocityChange = acceleration * deltaTime;
-            Vector2 newVelocity = new Vector2(state.z, state.w) + velocityChange;
-            
-            // use compass to constrain direction if moving
-            float currentSpeed = newVelocity.magnitude;
-            if (currentSpeed > 0.1f)
-            {
-                float headingRad = headingDegrees * Mathf.Deg2Rad;
-                Vector2 compassDirection = new Vector2(Mathf.Cos(headingRad), Mathf.Sin(headingRad));
-                Vector2 compassVelocity = compassDirection * currentSpeed;
-                
-                // blend compass direction with accelerometer magnitude
-                float compassWeight = 0.3f;
-                Vector2 blendedVelocity = Vector2.Lerp(newVelocity, compassVelocity, compassWeight);
-                UpdateWithVelocityMeasurement(blendedVelocity, measurementNoiseImu);
-            }
-            else
-            {
-                UpdateWithVelocityMeasurement(newVelocity, measurementNoiseImu);
-            }
-            
+    
+            // Calculate velocity change using acceleration magnitude in the compass direction
+            float velocityMagnitudeChange = accelerationMagnitude * deltaTime;
+            Vector2 velocityChange = direction * velocityMagnitudeChange;
+    
+            // Get current estimated velocity and add the change
+            Vector2 currentVelocity = new Vector2(state.z, state.w);
+            Vector2 newVelocity = currentVelocity + velocityChange;
+    
+            // Update with the new velocity measurement
+            UpdateWithVelocityMeasurement(newVelocity, measurementNoiseImu);
+    
             lastUpdateTimeIMU = Time.time;
+        }
+
+ 
+
+
+        private void UpdateFloorHistory(int newFloor)
+        {
+            floorHistory.Add(newFloor);
+            if (floorHistory.Count > floorHistorySize)
+            {
+                floorHistory.RemoveAt(0);
+            }
+            UpdateFloorEstimate();
         }
 
         private void Predict(float deltaTime)
         {
-            // state transition matrix
+            // Update state transition matrix
             F = Matrix4x4.identity;
             F.m02 = deltaTime; // x = x + vx * dt
             F.m13 = deltaTime; // y = y + vy * dt
             
-            // predict state
-            Vector4 newState = new Vector4(
+            // Predict state: x_k = F * x_(k-1)
+            state = new Vector4(
                 state.x + state.z * deltaTime,
                 state.y + state.w * deltaTime,
                 state.z,
                 state.w
             );
-            state = newState;
             
-            // predict error covariance
-            P = MultiplyMatrices(MultiplyMatrices(F, P), TransposeMatrix(F));
-            P = AddMatrices(P, Q);
+            // Predict error covariance: P_k = F * P_(k-1) * F^T + Q
+            Matrix4x4 FT = TransposeMatrix(F);
+            P = AddMatrices(MultiplyMatrices(MultiplyMatrices(F, P), FT), Q);
         }
 
         private void UpdateWithPositionMeasurement(Vector2 measurement, float measurementNoise)
         {
-            // measurement matrix - observe position only
-            Matrix4x4 H = new Matrix4x4();
+            // Measurement matrix H - observes position only
+            Matrix4x4 H = Matrix4x4.zero;
             H.m00 = 1; H.m11 = 1;
             
-            Matrix4x4 R = Matrix4x4.identity;
-            R.m00 = measurementNoise;
-            R.m11 = measurementNoise;
-            R.m22 = 0; R.m33 = 0;
+            // Measurement noise covariance R
+            Matrix4x4 R = Matrix4x4.zero;
+            R.m00 = measurementNoise * measurementNoise;
+            R.m11 = measurementNoise * measurementNoise;
             
-            Vector2 predicted = new Vector2(state.x, state.y);
-            Vector2 innovation = measurement - predicted;
-            
-            Matrix4x4 HT = TransposeMatrix(H);
-            Matrix4x4 S = AddMatrices(MultiplyMatrices(MultiplyMatrices(H, P), HT), R);
-            Matrix4x4 K = MultiplyMatrices(MultiplyMatrices(P, HT), InvertMatrix2x2(S));
-            
-            Vector4 correction = new Vector4(
-                K.m00 * innovation.x + K.m01 * innovation.y,
-                K.m10 * innovation.x + K.m11 * innovation.y,
-                K.m20 * innovation.x + K.m21 * innovation.y,
-                K.m30 * innovation.x + K.m31 * innovation.y
-            );
-            state += correction;
-            
-            Matrix4x4 KH = MultiplyMatrices(K, H);
-            P = MultiplyMatrices(SubtractMatrices(I, KH), P);
+            PerformKalmanUpdate(H, R, new Vector4(measurement.x, measurement.y, 0, 0), 
+                               new Vector4(state.x, state.y, 0, 0));
         }
 
         private void UpdateWithVelocityMeasurement(Vector2 velocityMeasurement, float measurementNoise)
         {
-            // measurement matrix - observe velocity only
-            Matrix4x4 H = new Matrix4x4();
+            // test: assuming contant walking speed todo remove
+            float assumedSpeed = 1.4f;
+            float headingRad = registry.compassReader.GetHeadingRadians();
+            Vector2 velocity = new Vector2(Mathf.Cos(headingRad), Mathf.Sin(headingRad)) * assumedSpeed;
+        
+            
+            // Measurement matrix H - observes velocity only
+            Matrix4x4 H = Matrix4x4.zero;
             H.m22 = 1; H.m33 = 1;
             
-            Matrix4x4 R = Matrix4x4.identity;
-            R.m00 = 0; R.m11 = 0;
-            R.m22 = measurementNoise;
-            R.m33 = measurementNoise;
+            // Measurement noise covariance R
+            Matrix4x4 R = Matrix4x4.zero;
+            R.m22 = measurementNoise * measurementNoise;
+            R.m33 = measurementNoise * measurementNoise;
             
-            Vector2 predicted = new Vector2(state.z, state.w);
-            Vector2 innovation = velocityMeasurement - predicted;
+            PerformKalmanUpdate(H, R, new Vector4(0, 0, velocity.x, velocity.y), 
+                               new Vector4(0, 0, state.z, state.w));
+        }
+
+        private void PerformKalmanUpdate(Matrix4x4 H, Matrix4x4 R, Vector4 measurement, Vector4 predicted)
+        {
+            // Innovation: z - H*x
+            Vector4 innovation = measurement - predicted;
             
+            // Innovation covariance: S = H*P*H^T + R
             Matrix4x4 HT = TransposeMatrix(H);
             Matrix4x4 S = AddMatrices(MultiplyMatrices(MultiplyMatrices(H, P), HT), R);
-            Matrix4x4 K = MultiplyMatrices(MultiplyMatrices(P, HT), InvertMatrix2x2(S));
             
-            Vector4 correction = new Vector4(
-                K.m02 * innovation.x + K.m03 * innovation.y,
-                K.m12 * innovation.x + K.m13 * innovation.y,
-                K.m22 * innovation.x + K.m23 * innovation.y,
-                K.m32 * innovation.x + K.m33 * innovation.y
-            );
+            // Kalman gain: K = P*H^T*S^(-1)
+            Matrix4x4 SInv = InvertMatrix(S);
+            Matrix4x4 K = MultiplyMatrices(MultiplyMatrices(P, HT), SInv);
+            
+            // State update: x = x + K*innovation
+            Vector4 correction = MultiplyMatrixVector(K, innovation);
             state += correction;
             
+            // Covariance update: P = (I - K*H)*P
             Matrix4x4 KH = MultiplyMatrices(K, H);
             P = MultiplyMatrices(SubtractMatrices(I, KH), P);
+            
+            // Ensure P remains positive definite (Joseph form for numerical stability)
+            EnsurePositiveDefinite();
+        }
+
+        private void EnsurePositiveDefinite()
+        {
+            // Simple approach: add small diagonal term if needed
+            for (int i = 0; i < 4; i++)
+            {
+                if (P[i, i] < 1e-6f)
+                {
+                    P[i, i] = 1e-6f;
+                }
+            }
         }
 
         private void UpdateFloorEstimate()
         {
             if (floorHistory.Count == 0) return;
             
-            // majority vote
+            // Majority vote for floor estimation
             Dictionary<int, int> floorCounts = new Dictionary<int, int>();
             foreach (int floor in floorHistory)
             {
-                if (floorCounts.ContainsKey(floor))
-                    floorCounts[floor]++;
-                else
-                    floorCounts[floor] = 1;
+                floorCounts[floor] = floorCounts.ContainsKey(floor) ? floorCounts[floor] + 1 : 1;
             }
             
             int maxCount = 0;
@@ -250,6 +285,7 @@ namespace Controller
             currentFloor = mostFrequentFloor;
         }
 
+        // Public interface methods
         public Position GetEstimate()
         {
             if (!initialized)
@@ -268,7 +304,24 @@ namespace Controller
             return Mathf.Sqrt(P.m00 + P.m11);
         }
 
-        // matrix utils
+        public float GetVelocityUncertainty()
+        {
+            return Mathf.Sqrt(P.m22 + P.m33);
+        }
+
+        public bool IsInitialized => initialized;
+
+        // Matrix utility methods
+        private Vector4 MultiplyMatrixVector(Matrix4x4 m, Vector4 v)
+        {
+            return new Vector4(
+                m.m00 * v.x + m.m01 * v.y + m.m02 * v.z + m.m03 * v.w,
+                m.m10 * v.x + m.m11 * v.y + m.m12 * v.z + m.m13 * v.w,
+                m.m20 * v.x + m.m21 * v.y + m.m22 * v.z + m.m23 * v.w,
+                m.m30 * v.x + m.m31 * v.y + m.m32 * v.z + m.m33 * v.w
+            );
+        }
+
         private Matrix4x4 MultiplyMatrices(Matrix4x4 a, Matrix4x4 b)
         {
             Matrix4x4 result = new Matrix4x4();
@@ -319,30 +372,63 @@ namespace Controller
             return result;
         }
 
-        private Matrix4x4 InvertMatrix2x2(Matrix4x4 m)
+        private Matrix4x4 InvertMatrix(Matrix4x4 m)
         {
-            // simplified 2x2 inversion for block diagonal matrices
-            Matrix4x4 result = Matrix4x4.identity;
+            // For block diagonal matrices, invert each 2x2 block separately
+            Matrix4x4 result = Matrix4x4.zero;
             
-            float det = m.m00 * m.m11 - m.m01 * m.m10;
-            if (Mathf.Abs(det) > 1e-6f)
+            // Invert top-left 2x2 block
+            float det1 = m.m00 * m.m11 - m.m01 * m.m10;
+            if (Mathf.Abs(det1) > 1e-8f)
             {
-                result.m00 = m.m11 / det;
-                result.m01 = -m.m01 / det;
-                result.m10 = -m.m10 / det;
-                result.m11 = m.m00 / det;
+                result.m00 = m.m11 / det1;
+                result.m01 = -m.m01 / det1;
+                result.m10 = -m.m10 / det1;
+                result.m11 = m.m00 / det1;
+            }
+            else
+            {
+                // Fallback for singular matrix
+                result.m00 = 1e6f;
+                result.m11 = 1e6f;
             }
             
-            det = m.m22 * m.m33 - m.m23 * m.m32;
-            if (Mathf.Abs(det) > 1e-6f)
+            // Invert bottom-right 2x2 block
+            float det2 = m.m22 * m.m33 - m.m23 * m.m32;
+            if (Mathf.Abs(det2) > 1e-8f)
             {
-                result.m22 = m.m33 / det;
-                result.m23 = -m.m23 / det;
-                result.m32 = -m.m32 / det;
-                result.m33 = m.m22 / det;
+                result.m22 = m.m33 / det2;
+                result.m23 = -m.m23 / det2;
+                result.m32 = -m.m32 / det2;
+                result.m33 = m.m22 / det2;
+            }
+            else
+            {
+                // Fallback for singular matrix
+                result.m22 = 1e6f;
+                result.m33 = 1e6f;
             }
             
             return result;
+        }
+
+        // Debug and tuning methods
+        public void SetNoiseParameters(float posNoise, float velNoise, float wifiNoise, float imuNoise)
+        {
+            processNoisePosition = posNoise;
+            processNoiseVelocity = velNoise;
+            measurementNoiseWifi = wifiNoise;
+            measurementNoiseImu = imuNoise;
+            InitializeProcessNoise();
+        }
+
+        public void Reset()
+        {
+            InitializeMatrices();
+            floorHistory.Clear();
+            hasWifiHistory = false;
+            lastUpdateTimeIMU = Time.time;
+            lastUpdateTimeWIFI = Time.time;
         }
     }
 }

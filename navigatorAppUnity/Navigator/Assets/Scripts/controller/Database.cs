@@ -30,7 +30,8 @@ namespace controller
             DontDestroyOnLoad(gameObject);
             InitializeDatabase();
         }
-
+        
+        
         private void InitializeDatabase()
         {
             string dbPath = Path.Combine(Application.persistentDataPath, "WifiData.db");

@@ -841,6 +841,57 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 133752741}
   m_CullTransparentMesh: 1
+--- !u!1 &144430729
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 144430731}
+  - component: {fileID: 144430730}
+  m_Layer: 0
+  m_Name: SimplePositionFilter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &144430730
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 144430729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e11aa4f729064624841bfd336fdff2a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  registry: {fileID: 2037691650}
+  maxPositions: 10
+  walkingSpeed: 1.2
+  floorHistorySize: 10
+  minDeltaTime: 0.001
+  enableDebugVisualization: 1
+  debugSpherePrefab: {fileID: 919132149155446097, guid: 6201e20b443208b468aa962c97ff1ca3, type: 3}
+--- !u!4 &144430731
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 144430729}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 171.14296, y: 530.41547, z: 45.763233}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &148108936
 GameObject:
   m_ObjectHideFlags: 0
@@ -3978,6 +4029,10 @@ MonoBehaviour:
   processNoiseVelocity: 0.5
   measurementNoiseWifi: 2
   measurementNoiseImu: 0.1
+  maxVelocity: 5
+  compassWeight: 0.3
+  floorHistorySize: 10
+  minDeltaTime: 0.001
 --- !u!4 &604436165
 Transform:
   m_ObjectHideFlags: 0
@@ -10258,7 +10313,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4bf7ca895bb41b9ac0164195aae0a1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  registry: {fileID: 0}
+  registry: {fileID: 2037691650}
   speedText: {fileID: 1135212672}
 --- !u!4 &1666494003
 Transform:
@@ -13043,6 +13098,7 @@ SceneRoots:
   - {fileID: 364252162}
   - {fileID: 1002911266}
   - {fileID: 604436165}
+  - {fileID: 144430731}
   - {fileID: 1952910963}
   - {fileID: 901931018}
   - {fileID: 1056833982}

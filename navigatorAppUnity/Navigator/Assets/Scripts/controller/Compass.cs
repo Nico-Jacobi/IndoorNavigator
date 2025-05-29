@@ -166,7 +166,7 @@ namespace Controller
             _displayedHeading = (-displayedRadians / (2f * Mathf.PI)) * 360f;
             _displayedHeading = (_displayedHeading + 360f) % 360f;
 
-            return _displayedHeading;
+            return (_displayedHeading) % 360f;
         }
 
         public float GetHeadingRadians()
