@@ -125,7 +125,7 @@ namespace controller
         public Vertex GetStart()
         {
             List<Vertex> verts = registry.buildingManager.GetActiveGraph().GetVertices();
-            Position pos = registry.kalmanFilter.GetEstimate();
+            Position pos = registry.GetPositionFilter().GetEstimate();
 
             // Filter vertices on correct floor and sort
             verts = verts
@@ -174,7 +174,7 @@ namespace controller
         /// </summary>
         private void InterpolateStart()
         {
-            Position pos = registry.kalmanFilter.GetEstimate();
+            Position pos = registry.GetPositionFilter().GetEstimate();
             Edge firstEdge = currentPath[0];
 
             // source and target vertices always share exactly one room

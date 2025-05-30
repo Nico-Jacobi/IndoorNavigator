@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Controller
 {
-    public class KalmanFilter : MonoBehaviour
+    public class KalmanFilter :  MonoBehaviour, PositionFilter
     {
         public Registry registry;
 
@@ -298,16 +298,7 @@ namespace Controller
         {
             return new Vector2(state.z, state.w);
         }
-
-        public float GetPositionUncertainty()
-        {
-            return Mathf.Sqrt(P.m00 + P.m11);
-        }
-
-        public float GetVelocityUncertainty()
-        {
-            return Mathf.Sqrt(P.m22 + P.m33);
-        }
+        
 
         public bool IsInitialized => initialized;
 
@@ -412,15 +403,7 @@ namespace Controller
             return result;
         }
 
-        // Debug and tuning methods
-        public void SetNoiseParameters(float posNoise, float velNoise, float wifiNoise, float imuNoise)
-        {
-            processNoisePosition = posNoise;
-            processNoiseVelocity = velNoise;
-            measurementNoiseWifi = wifiNoise;
-            measurementNoiseImu = imuNoise;
-            InitializeProcessNoise();
-        }
+       
 
         public void Reset()
         {

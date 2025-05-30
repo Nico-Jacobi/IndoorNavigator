@@ -28,8 +28,6 @@ namespace controller
         private readonly Queue<Vector3> _velocityLog = new Queue<Vector3>(MaxLogSize);
 
         
-        public TMP_Text speedText; //todo remove
-
         
         public void Awake()
         {
@@ -74,7 +72,6 @@ namespace controller
 
                 _velocityLog.Enqueue(_velocity);
                 
-                UpdateSpeedText();
             }
 
             // Update Kalman filter more frequently (every 50ms or 20Hz)
@@ -99,53 +96,13 @@ namespace controller
             float headingDegrees = registry.compassReader.GetHeading();
             
             // Update Kalman filter with IMU data
-            registry.kalmanFilter.UpdateWithIMU(acceleration2D, headingDegrees);
+            registry.GetPositionFilter().UpdateWithIMU(acceleration2D, headingDegrees);
             //registry.kalmanFilter.UpdateWithIMU(headingDegrees);
 
         }
 
    
-        
-        
-        private void UpdateSpeedText()
-        {
-            if (speedText == null) return;
-
-            float sumSpeed = 0f;
-            foreach (var v in _velocityLog)
-            {
-                sumSpeed += v.magnitude;
-            }
-
-            float avgSpeed = sumSpeed / _velocityLog.Count;
-            
-            // Also show Kalman filter estimate if available
-            string kalmanInfo = "";
-            if (registry?.kalmanFilter != null)
-            {
-                Vector2 kalmanVelocity = registry.kalmanFilter.GetEstimatedVelocity();
-                kalmanInfo = $"\nKalman Speed: {kalmanVelocity.magnitude:F3} m/s";
-            }
-            
-            speedText.text = $"Avg Speed (last 10s): {avgSpeed:F3} m/s{kalmanInfo}";
-        }
-
-        /// <summary>
-        /// Returns the current estimated movement vector (velocity) in device coordinates.
-        /// </summary>
-        public Vector3 GetMovementVector()
-        {
-            return _velocity;
-        }
-
-        /// <summary>
-        /// Returns a copy of the velocity log (oldest first).
-        /// </summary>
-        public Vector3[] GetVelocityLog()
-        {
-            return _velocityLog.ToArray();
-        }
-
+       
         /// <summary>
         /// Call this to reset velocity estimate when you get external position/speed updates (e.g., Wi-Fi).
         /// </summary>

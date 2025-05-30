@@ -6,6 +6,8 @@ namespace controller
 {
     public class Registry : MonoBehaviour
     {
+        public bool kalmanFilterActive = true;
+        
         public SQLiteDatabase database;
         public Camera cam;
         public WifiManager wifiManager;
@@ -17,6 +19,17 @@ namespace controller
         public DataCollectionMode dataCollectionMode;
         public Acceleration accelerationController;
         public KalmanFilter kalmanFilter;
+        public SimplePositionFilter simplePositionFilter;
         public NoKnowSignalFound noKnowSignalFoundDialog;
+
+        public PositionFilter GetPositionFilter()
+        {
+            if (kalmanFilterActive)
+            {
+                return kalmanFilter;
+            }
+
+            return simplePositionFilter;
+        }
     }
 }

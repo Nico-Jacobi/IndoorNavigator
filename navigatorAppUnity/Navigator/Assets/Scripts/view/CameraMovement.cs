@@ -256,7 +256,7 @@ namespace view
 
             if (positionUpdateTimer >= positionUpdateInterval)
             {
-                Position pos = registry.kalmanFilter.GetEstimate();
+                Position pos = registry.GetPositionFilter().GetEstimate();
                 if (pos != null)
                 {
                     // Update the orbit point to the marker position
@@ -273,7 +273,7 @@ namespace view
 
             if (markerUpdateTimer >= markerUpdateInterval)
             {
-                MoveMarkerToPosition(registry.kalmanFilter.GetEstimate());
+                MoveMarkerToPosition(registry.GetPositionFilter().GetEstimate());
                 markerUpdateTimer = 0f;
             }
         }
@@ -363,7 +363,7 @@ namespace view
         
         public void GotoPrediction()
         {
-           GotoPosition(registry.kalmanFilter.GetEstimate());
+           GotoPosition(registry.GetPositionFilter().GetEstimate());
         }
 
         public void OnViewModeButtonPressed()

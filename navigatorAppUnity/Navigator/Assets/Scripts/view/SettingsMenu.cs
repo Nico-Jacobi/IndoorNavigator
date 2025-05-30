@@ -20,6 +20,7 @@ namespace view
         public SwitchButton compasActive;
         public SwitchButton collectDataMode;
         public SwitchButton upDateDbSwitch;
+        public SwitchButton kalmanSwitchButton;
 
         public TMP_InputField measureInterval;
         public TMP_InputField rollingAverageSize;
@@ -46,11 +47,13 @@ namespace view
             compasActive.OnValueChanged += HandleCompasActiveToggle;
             collectDataMode.OnValueChanged += HandleCollectDataModeToggle;
             upDateDbSwitch.OnValueChanged += HandleDbPassiveCollectionToggle;
+            kalmanSwitchButton.OnValueChanged += HandleKalmanFilterToggle;
             
             freeMovement.SetValue(false);
             compasActive.SetValue(false);
             collectDataMode.SetValue(false);
             upDateDbSwitch.SetValue(false);
+            kalmanSwitchButton.SetValue(true);
             
             closeButton.onClick.AddListener(CloseMenu);
             
@@ -127,6 +130,13 @@ namespace view
             registry.positionTracker.passiveDataCollectionActive = HandleDbPassiveCollection;
         }
         
+        
+        private void HandleKalmanFilterToggle(bool active)
+        {
+            registry.kalmanFilterActive = active;
+        }
+        
+        
         private void OnMeasureIntervalChanged(string interval)
         {
             string numericInterval = new string(interval.Where(char.IsDigit).ToArray());
@@ -134,7 +144,8 @@ namespace view
             string intervalWithSeconds = numericInterval + "s";
             measureInterval.SetTextWithoutNotify(intervalWithSeconds);
         }
-
+        
+        
         
         private void OnRollingAverageSizeChanged(string number)
         {

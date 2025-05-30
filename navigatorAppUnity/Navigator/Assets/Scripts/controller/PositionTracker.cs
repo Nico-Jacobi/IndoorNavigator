@@ -107,7 +107,7 @@ namespace controller
                 registry.database.InsertCoordinateWithWifiInfos(wifiNetworks);
             }
             
-            registry.kalmanFilter.UpdateWithWifi(prediction);
+            registry.GetPositionFilter().UpdateWithWifi(prediction);
         }
 
         /// <summary>
