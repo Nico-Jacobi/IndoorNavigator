@@ -54,7 +54,7 @@ namespace Controller
         {
             if (rawWifiPrediction == null) return;
 
-            Vector3 newPosition = new Vector3(0, 0, rawWifiPrediction.Floor); // or use actual x,y if you have them
+            Vector3 newPosition = new Vector3(rawWifiPrediction.X, rawWifiPrediction.Y, rawWifiPrediction.Floor); 
 
             float velocity = 0f;
             float currentTime = Time.time;

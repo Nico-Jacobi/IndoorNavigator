@@ -38,7 +38,9 @@ namespace view
         private void Start()
         {
             visiblePos = menu.anchoredPosition;
-            hiddenPos = visiblePos + new Vector2(menu.rect.width * 1.3f, 0); // offscreen to the right
+            
+            float screenWidth = Screen.width;
+            hiddenPos = visiblePos + new Vector2(screenWidth + 50f, 0); // offscreen to the right
             menu.anchoredPosition = hiddenPos;
 
             
@@ -65,7 +67,8 @@ namespace view
             importJson.onClick.AddListener(registry.database.PickFileAndImport);
             exportJson.onClick.AddListener(registry.database.ExportWithSimpleFilename);
         }
-
+        
+        
         public void OpenMenu()
         {
             registry.cameraController.inMenu = true;

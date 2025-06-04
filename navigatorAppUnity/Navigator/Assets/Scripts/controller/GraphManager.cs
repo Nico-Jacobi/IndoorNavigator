@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using controller;
 using model;
 using model.graph;
 using UnityEngine;
 using TMPro;
-using Unity.VisualScripting;
-using view;
+using UnityEngine.UI;
 using Edge = model.graph.Edge;
 
 namespace controller
@@ -20,6 +17,8 @@ namespace controller
         public RectTransform navigationDialog;
         public TMP_InputField searchField;
 
+        public Button startNavigationButton;
+        
         public Registry registry;
 
         private List<string> allOptions;
@@ -56,6 +55,8 @@ namespace controller
         {
             toField.ClearOptions();
             toField.AddOptions(options);
+            startNavigationButton.interactable = options.Count > 0;
+
         }
 
         void OnSearchChanged(string input)

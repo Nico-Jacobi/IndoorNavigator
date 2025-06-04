@@ -8,7 +8,6 @@ namespace view
     public class LoadingSpinner : MonoBehaviour
     {
         private float rotationSpeed = 270f;
-        private Color spinnerColor = Color.white;
         private float spinnerSize = 0.5f;
         
         private RectTransform rectTransform;

@@ -59,7 +59,8 @@
                 animationCoroutine = null;
             }
 
-            float targetX = isOn ? handle.parent.GetComponent<RectTransform>().rect.width - handle.rect.width * 0.6f : 0f;
+            // OFF = left (x = 0), ON = right (x = max position)
+            float targetX = isOn ? 0f : handle.parent.GetComponent<RectTransform>().rect.width - handle.rect.width * 0.6f;
             float targetOnAlpha = isOn ? 1f : 0f;
             float targetOffAlpha = isOn ? 0f : 1f;
             
