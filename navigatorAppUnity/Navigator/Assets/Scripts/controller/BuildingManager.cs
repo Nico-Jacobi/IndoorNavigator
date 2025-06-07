@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using model.Database;
 using model.graph;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-using view;
 
 namespace controller
 {
@@ -19,18 +16,8 @@ namespace controller
         private int activeFloorLevel = -1; // Track the active floor level
         private string currentRoom = "";
 
-
         public Registry registry;
-        
-        public TMP_Dropdown buildingField;
 
-        public Button increaseFloorButton;
-        public Button decreaseFloorButton;
-        public TMP_Text currentFloorText;
-
-        public TMP_Text currentRoomText;
-
-        
         public Building GetActiveBuilding()
         {
             return activeBuilding;
@@ -43,58 +30,41 @@ namespace controller
 
         public Graph GetActiveGraph()
         {
-            return activeBuilding.graph;
+            return activeBuilding?.graph;
         }
 
+        public string GetCurrentRoom()
+        {
+            return currentRoom;
+        }
 
-        public void setCurrentRoom(string value)
+        public void SetCurrentRoom(string value)
         {
             currentRoom = value;
-            currentRoomText.text = currentRoom;
+            // Notify UI to update
+            if (registry.topMenu != null)
+            {
+                registry.topMenu.UpdateCurrentRoomDisplay(currentRoom);
+            }
+        }
+
+        public List<string> GetAvailableBuildingNames()
+        {
+            return buildings.Keys.ToList();
         }
 
         void Awake()
         {
             LoadBuildingConfigs();
-
-            // Initialize buttons
-            if (increaseFloorButton != null)
-                increaseFloorButton.onClick.AddListener(IncreaseFloor);
-
-            if (decreaseFloorButton != null)
-                decreaseFloorButton.onClick.AddListener(DecreaseFloor);
-
-            // Setup building dropdown
-            buildingField.ClearOptions();
-            buildingField.AddOptions(buildings.Keys.ToList());
-            buildingField.onValueChanged.AddListener(buildingFieldChanged);
-
-
+            
             // Default building setup
             SpawnBuildingFloor("h4", 3);
 
-            // Set the dropdown to match the current building
-            int index = buildingField.options.FindIndex(option => option.text == "h4");
-            if (index >= 0)
-            {
-                buildingField.value = index;
-                buildingField.RefreshShownValue();
-            }
-
             Debug.Log($"Buildings Manager script initialized");
-            Debug.Log($"activeBuilding is: {activeBuilding.buildingName}");
-
-            // Update floor text
-            UpdateFloorText();
+            Debug.Log($"activeBuilding is: {activeBuilding?.buildingName}");
         }
 
-        private void buildingFieldChanged(int index)
-        {
-            string buildingName = buildingField.options[index].text;
-            SpawnBuildingFloor(buildingName, buildings[buildingName].floors[0].level);
-        }
-
-        private void IncreaseFloor()
+        public void IncreaseFloor()
         {
             if (activeBuilding == null) return;
             Debug.Log("IncreaseFloor called");
@@ -107,11 +77,13 @@ namespace controller
             }
 
             registry.dataCollectionMode.Refresh();
-            UpdateFloorButtons();
             registry.graphManager.PlotCurrentPath();
+            
+            // Notify UI to update
+            NotifyUIUpdate();
         }
 
-        private void DecreaseFloor()
+        public void DecreaseFloor()
         {
             if (activeBuilding == null) return;
             registry.dataCollectionMode.Refresh();
@@ -125,51 +97,50 @@ namespace controller
             }
 
             registry.dataCollectionMode.Refresh();
-            UpdateFloorButtons();
             registry.graphManager.PlotCurrentPath();
+            
+            // Notify UI to update
+            NotifyUIUpdate();
         }
 
-        private void UpdateFloorButtons()
+        public bool CanIncreaseFloor()
         {
-            int currentFloor = GetFloorIndex(activeFloorLevel);
-            int minFloor = int.MaxValue;
-            int maxFloor = int.MinValue;
+            if (activeBuilding == null) return false;
+            int currentIndex = GetFloorIndex(activeFloorLevel);
+            return currentIndex < activeBuilding.floors.Count - 1;
+        }
 
-            foreach (Building.Floor floor in activeBuilding.floors)
+        public bool CanDecreaseFloor()
+        {
+            if (activeBuilding == null) return false;
+            int currentIndex = GetFloorIndex(activeFloorLevel);
+            return currentIndex > 0;
+        }
+
+        public void ChangeBuilding(string buildingName)
+        {
+            if (buildings.ContainsKey(buildingName))
             {
-                if (floor.level < minFloor)
-                {
-                    minFloor = floor.level;
-                }
-
-
-                if (floor.level > maxFloor)
-                {
-                    maxFloor = floor.level;
-                }
-            }
-
-            if (currentFloor + 1 > maxFloor)
-            {
-                increaseFloorButton.interactable = false;
+                SpawnBuildingFloor(buildingName, buildings[buildingName].floors[0].level);
             }
             else
             {
-                increaseFloorButton.interactable = true;
+                Debug.LogError($"Building {buildingName} not found!");
             }
+        }
 
-            if (currentFloor - 1 < minFloor)
+        private void NotifyUIUpdate()
+        {
+            if (registry.topMenu != null)
             {
-                decreaseFloorButton.interactable = false;
-            }
-            else
-            {
-                decreaseFloorButton.interactable = true;
+                registry.topMenu.UpdateUI();
             }
         }
 
         private int GetFloorIndex(int floorLevel)
         {
+            if (activeBuilding == null) return 0;
+            
             for (int i = 0; i < activeBuilding.floors.Count; i++)
             {
                 if (activeBuilding.floors[i].level == floorLevel)
@@ -179,43 +150,6 @@ namespace controller
             }
 
             return 0;
-        }
-
-        private void UpdateFloorText()
-        {
-            if (currentFloorText != null && activeBuilding != null)
-            {
-                currentFloorText.text = $"Floor: {activeFloorLevel}";
-            }
-        }
-
-        private void UpdateBuildingUI()
-        {
-            // Update building dropdown to match current building
-            if (activeBuilding != null)
-            {
-                int index = buildingField.options.FindIndex(option => option.text == activeBuilding.buildingName);
-                if (index >= 0 && buildingField.value != index)
-                {
-                    buildingField.SetValueWithoutNotify(index);
-                    buildingField.RefreshShownValue();
-                }
-            }
-
-            // Update floor text
-            UpdateFloorText();
-
-            // Update button interactability based on available floors
-            if (activeBuilding != null)
-            {
-                int currentIndex = GetFloorIndex(activeFloorLevel);
-
-                if (increaseFloorButton != null)
-                    increaseFloorButton.interactable = (currentIndex < activeBuilding.floors.Count - 1);
-
-                if (decreaseFloorButton != null)
-                    decreaseFloorButton.interactable = (currentIndex > 0);
-            }
         }
 
         void LoadBuildingConfigs()
@@ -269,12 +203,11 @@ namespace controller
             }
         }
 
-
         /// <summary>
         /// Updates the active building based on the most common BSSID matches from Wi-Fi data.
         /// If the first matched BSSID maps to the current building, we assume all others likely belong to the same and skip full evaluation.
         /// </summary>
-        public void updateBuilding(Coordinate wifiNetworks)
+        public void UpdateBuilding(Coordinate wifiNetworks)
         {
             Dictionary<string, int> buildingCount = new();
 
@@ -302,6 +235,7 @@ namespace controller
                     .First().Key;
 
                 activeBuilding = GetBuilding(mostLikelyBuilding);
+                NotifyUIUpdate();
             }
             else
             {
@@ -360,13 +294,12 @@ namespace controller
                 // Create a new parent object for the building
                 GameObject buildingObject = new GameObject(buildingName);
                 activeBuilding = building;
-
                 activeFloorLevel = floorLevel;
                 building.SpawnFloor(floorLevel, buildingObject.transform);
                 activeFloorObject = buildingObject;
 
-                // Update the UI to reflect the changes
-                UpdateBuildingUI();
+                // Notify UI and other systems
+                NotifyUIUpdate();
                 registry.cameraController.MoveMarkerToPosition(null);
 
                 Debug.Log($"Spawned building {buildingName}, floor {floorLevel}");

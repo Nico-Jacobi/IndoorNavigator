@@ -39,7 +39,7 @@ namespace controller
             }
 
             // Update building information
-            registry.buildingManager.updateBuilding(wifiNetworks);
+            registry.buildingManager.UpdateBuilding(wifiNetworks);
             string currentBuilding = registry.buildingManager.GetActiveBuilding().buildingName;
             
             // Get cached data points for current building

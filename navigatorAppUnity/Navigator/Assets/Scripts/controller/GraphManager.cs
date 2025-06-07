@@ -23,6 +23,8 @@ namespace controller
 
         private List<string> allOptions;
         private List<Edge> currentPath;
+        private int recalculated = 0;
+        
         public bool navigationActive = false;
 
         public GameObject stairsArrowPrefab; 
@@ -99,8 +101,9 @@ namespace controller
 
             Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
 
-            if (currentPath?.Count > 6 && currentPath.Last().target.HasRoomNamed(toField.options[toField.value].text))
+            if (currentPath?.Count > 6 && currentPath.Last().target.HasRoomNamed(toField.options[toField.value].text) && recalculated < 5)
             {
+                recalculated++;
                 //only partly calculate the current path (way faster if the user just moved a bit)
                 Debug.Log("partially recalculating path");
                 // removing the first few edges, and just recalculating them for faster calculations
@@ -109,6 +112,7 @@ namespace controller
             }
             else
             {
+                recalculated = 0;
                 currentPath = await registry.buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
                 Debug.Log("completely calculating path");
             }
@@ -155,7 +159,7 @@ namespace controller
                     })
                     .First();
 
-                registry.buildingManager.setCurrentRoom(string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name)));
+                registry.topMenu.UpdateCurrentRoomDisplay(string.Join(", ", closest.rooms.Where(r => r.IsPointInside(pos.X, pos.Y)).Select(r => r.name)));
 
                 return closest;
             }

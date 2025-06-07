@@ -20,8 +20,11 @@ namespace controller
         public Acceleration accelerationController;
         public KalmanFilter kalmanFilter;
         public SimplePositionFilter simplePositionFilter;
+        
         public NoKnowSignalFound noKnowSignalFoundDialog;
-
+        public SettingsMenu settingsMenu;
+        public TopMenu topMenu;
+        
         public PositionFilter GetPositionFilter()
         {
             if (kalmanFilterActive)
