@@ -75,7 +75,7 @@ namespace model.Database
             {
                 if (other.WifiInfoMap.ContainsKey(bssid))
                 {
-                    Debug.Log($"Common bssid is: {bssid}");
+                    //Debug.Log($"Common bssid is: {bssid}");
                     return true;
                 }
             }

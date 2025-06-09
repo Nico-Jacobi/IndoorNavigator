@@ -18,6 +18,9 @@ namespace Controller
 
         // Store WiFi positions with their timestamps
         private List<Vector3> wifiPositions; // x, y, floor
+
+        private Position lastWifiPositionRaw;
+        
         private List<int> floorHistory;
         private int currentFloor;
 
@@ -53,7 +56,7 @@ namespace Controller
         public void UpdateWithWifi(Position rawWifiPrediction)
         {
             if (rawWifiPrediction == null) return;
-
+            
             Vector3 newPosition = new Vector3(rawWifiPrediction.X, rawWifiPrediction.Y, rawWifiPrediction.Floor); 
 
             float velocity = 0f;
@@ -71,13 +74,29 @@ namespace Controller
             else
             {
                 float deltaTime = currentTime - lastUpdateTimeWifi;
-                if (deltaTime > 0)
+                if (deltaTime > 0 && lastWifiPositionRaw != null)
                 {
-                    float distance = Vector3.Distance(newPosition, wifiPositions[0]);
+                    
+                    Vector2 posA = new Vector2(newPosition.x, newPosition.y);
+                    Position pos = lastWifiPositionRaw;
+
+                    float dx = posA.x - pos.X;
+                    float dy = posA.y - pos.Y;
+                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
+
+
                     velocity = distance / deltaTime;
 
-                    walkingSpeed = walkingSpeed * 0.2f + velocity * 0.8f;   //adjusting walkink speed to the users speed
+                    Debug.Log($"new pos {newPosition}, old pos: {wifiPositions[0]}");
+                    Debug.Log($"distance moved according to wifi: {distance} in {deltaTime} time, which is a speed of {velocity}");
 
+                    walkingSpeed = walkingSpeed * 0.7f + velocity * 0.3f;   //adjusting walkink speed to the users speed
+                    lastWifiPositionRaw = rawWifiPrediction;
+
+                }
+                else
+                {
+                    lastWifiPositionRaw = rawWifiPrediction;
                 }
 
                 for (int i = maxPositions - 1; i > 0; i--)

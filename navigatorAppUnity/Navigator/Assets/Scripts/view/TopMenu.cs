@@ -96,12 +96,12 @@ namespace view
 
         private void OnSettingsClicked()
         {
-            registry.settingsMenu.OpenMenu();
+            registry.settingsMenu.ToggleMenu();
         }
 
         private void OnFloorDownClicked()
         {
-            Debug.Log("Floor down button clicked");
+            //Debug.Log("Floor down button clicked");
             if (registry.buildingManager != null)
             {
                 registry.buildingManager.DecreaseFloor();
@@ -110,7 +110,7 @@ namespace view
 
         private void OnFloorUpClicked()
         {
-            Debug.Log("Floor up button clicked");
+            //Debug.Log("Floor up button clicked");
             if (registry.buildingManager != null)
             {
                 registry.buildingManager.IncreaseFloor();

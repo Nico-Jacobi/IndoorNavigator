@@ -24,15 +24,20 @@ namespace controller
         public NoKnowSignalFound noKnowSignalFoundDialog;
         public SettingsMenu settingsMenu;
         public TopMenu topMenu;
-        
-        public PositionFilter GetPositionFilter()
+        public NavigationDialog navigationDialog;
+        public FloatingButtons floatingButtons;
+
+        public PositionFilter GetPositionFilter(bool getInactive = false)
         {
-            if (kalmanFilterActive)
+            if (getInactive)
             {
-                return kalmanFilter;
+                return kalmanFilterActive ? simplePositionFilter : kalmanFilter;
             }
 
-            return simplePositionFilter;
+            return kalmanFilterActive ? kalmanFilter : simplePositionFilter;
         }
+
+        
+       
     }
 }

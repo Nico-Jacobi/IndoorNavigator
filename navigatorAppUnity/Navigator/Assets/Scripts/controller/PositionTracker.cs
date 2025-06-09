@@ -108,6 +108,8 @@ namespace controller
             }
             
             registry.GetPositionFilter().UpdateWithWifi(prediction);
+            registry.GetPositionFilter(true).UpdateWithWifi(prediction);    //also update the other one, to be always up to date
+
         }
 
         /// <summary>

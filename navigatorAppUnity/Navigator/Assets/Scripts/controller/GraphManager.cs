@@ -5,43 +5,31 @@ using System.Linq;
 using model;
 using model.graph;
 using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
 using Edge = model.graph.Edge;
 
 namespace controller
 {
     public class GraphManager : MonoBehaviour
     {
-        public TMP_Dropdown toField;
-        public RectTransform navigationDialog;
-        public TMP_InputField searchField;
-
-        public Button startNavigationButton;
-        
         public Registry registry;
 
-        private List<string> allOptions;
+        public GameObject stairsArrowPrefab;
+
         private List<Edge> currentPath;
         private int recalculated = 0;
         
         public bool navigationActive = false;
 
-        public GameObject stairsArrowPrefab; 
-
-        
         void Start()
         {
             Debug.Log("Graph Manager script initialized");
 
-            allOptions = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
-            PopulateDropdownFromStrings(allOptions);
+            // Initialize navigation dialog
+            List<string> allRoomNames = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
+            registry.navigationDialog.Initialize(allRoomNames);
+            registry.navigationDialog.OnNavigationRequested += OnNavigationRequested;
 
             StartCoroutine(UpdatePath());
-            CloseNavigationDialog();
-
-            searchField.onValueChanged.AddListener(OnSearchChanged);
-
         }
 
         public float GetHeading()
@@ -51,62 +39,30 @@ namespace controller
             return angle;
         }
 
-
-
-        private void PopulateDropdownFromStrings(List<string> options)
-        {
-            toField.ClearOptions();
-            toField.AddOptions(options);
-            startNavigationButton.interactable = options.Count > 0;
-
-        }
-
-        void OnSearchChanged(string input)
-        {
-            string lowerInput = input.ToLower();
-            List<string> matches = allOptions
-                .Where(option => option.ToLower().Contains(lowerInput))
-                .ToList();
-
-            PopulateDropdownFromStrings(matches);
-        }
-
-
         public void OnNavigateButtonPressed()
         {
-            navigationDialog.gameObject.SetActive(true);
+            registry.navigationDialog.ShowDialog();
             registry.cameraController.inMenu = true;
         }
 
-        public void CloseNavigationDialog()
-        {
-            navigationDialog.gameObject.SetActive(false);
-            registry.cameraController.inMenu = false;
-        }
-
-        private void OnStartNavigationButtonPressed()
+        private void OnNavigationRequested(string destination)
         {
             registry.cameraController.GotoPrediction();
             Vertex fromVertex = GetStart();
-
-            navigate(fromVertex);
-            CloseNavigationDialog();
+            Navigate(fromVertex, destination);
+            registry.cameraController.inMenu = false;
         }
 
-
-        public async void navigate(Vertex fromVertex)
+        public async void Navigate(Vertex fromVertex, string toRoom)
         {
-
-            string toRoom = toField.options[toField.value].text;
-
             Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
 
-            if (currentPath?.Count > 6 && currentPath.Last().target.HasRoomNamed(toField.options[toField.value].text) && recalculated < 5)
+            if (currentPath?.Count > 6 && currentPath.Last().target.HasRoomNamed(toRoom) && recalculated < 5)
             {
                 recalculated++;
-                //only partly calculate the current path (way faster if the user just moved a bit)
-                Debug.Log("partially recalculating path");
-                // removing the first few edges, and just recalculating them for faster calculations
+                // Only partly calculate the current path (way faster if the user just moved a bit)
+                Debug.Log("Partially recalculating path");
+                // Removing the first few edges, and just recalculating them for faster calculations
                 currentPath = await registry.buildingManager.GetActiveGraph()
                     .FindShortestPathToTargetEdgesAsync(fromVertex, currentPath.GetRange(5, currentPath.Count - 5));
             }
@@ -114,10 +70,8 @@ namespace controller
             {
                 recalculated = 0;
                 currentPath = await registry.buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
-                Debug.Log("completely calculating path");
+                Debug.Log("Completely calculating path");
             }
-
-
 
             InterpolateStart();
             navigationActive = true;
@@ -125,7 +79,6 @@ namespace controller
             PlotCurrentPath();
             Debug.Log($"Path found with length {currentPath.Count}");
         }
-
 
         public Vertex GetStart()
         {
@@ -143,7 +96,7 @@ namespace controller
                 })
                 .ToList();
 
-            // Find all vertecies with rooms that contain the user's position
+            // Find all vertices with rooms that contain the user's position
             List<Vertex> candidates = verts
                 .Where(v => v.rooms.Any(r => r.IsPointInside(pos.X, pos.Y)))
                 .ToList();
@@ -164,31 +117,29 @@ namespace controller
                 return closest;
             }
 
-            // fallback to closest vertex if no room matches
+            // Fallback to closest vertex if no room matches
             if (verts.Count > 0)
             {
                 return verts[0];
-
             }
             return null;
         }
 
-
         /// <summary>
-        /// makes the start of the path better, by adding a temporary vertex at the users position, using parts of existing PathData objects if possible
+        /// Makes the start of the path better, by adding a temporary vertex at the user's position, using parts of existing PathData objects if possible
         /// </summary>
         private void InterpolateStart()
         {
             Position pos = registry.GetPositionFilter().GetEstimate();
             Edge firstEdge = currentPath[0];
 
-            // source and target vertices always share exactly one room
+            // Source and target vertices always share exactly one room
             Room commonRoom = firstEdge.source.rooms.First(r1 => firstEdge.target.rooms.Any(r2 => r2.id == r1.id));
 
-            Room currentRoom = null; //the room the user is in 
+            Room currentRoom = null; // The room the user is in 
             if (commonRoom.IsPointInside(pos.X, pos.Y))
             {
-                //in this case the user is in the same room as the first path
+                // In this case the user is in the same room as the first path
                 currentPath.RemoveAt(0);
                 currentRoom = commonRoom;
             }
@@ -197,18 +148,14 @@ namespace controller
                 currentRoom = firstEdge.source.GetOtherRoom(commonRoom);
             }
 
-            //currentRoom.Plot();
+            // Now finding an optimal path within the room to "attach" to
 
-            // now finding a optimal path within the room to "attach" to
-
-            //this represents all edges wihtin the current room, which could be used for a nice path
+            // This represents all edges within the current room, which could be used for a nice path
             List<Edge> possibleCloseEdges = currentPath[0].source.GetEdgesToRoom(currentRoom);
-
 
             Vertex tempVertex = new Vertex(pos.X, pos.Y, pos.Floor, "userPositionVertex", new List<Room>());
 
-
-            // finding a path that gets close to the user, cutting it there and adding it to the path:
+            // Finding a path that gets close to the user, cutting it there and adding it to the path:
             if (possibleCloseEdges.Count > 0)
             {
                 Edge closestEdge = possibleCloseEdges[0];
@@ -217,7 +164,6 @@ namespace controller
 
                 foreach (Edge e in possibleCloseEdges)
                 {
-
                     Point localClosestPoint = GetClosestPoint(e.path.points, pos);
                     double distSq = CalculateDistance(localClosestPoint, pos);
 
@@ -242,14 +188,11 @@ namespace controller
                     new Edge(
                         new Vertex(subPath[0].lat, subPath[0].lon, pos.Floor, "partialPathVertex", new List<Room>()),
                         currentPath[0].source, new PathData(0, subPath)));
-
             }
 
-
-            // add a direct line from the pos to the start (to the door or the partialPathVertex created ealier)
-            List<Point> PathPoints = new List<Point>();
-            currentPath.Insert(0, new Edge(tempVertex, currentPath[0].source, new PathData(0, PathPoints)));
-
+            // Add a direct line from the position to the start (to the door or the partialPathVertex created earlier)
+            List<Point> pathPoints = new List<Point>();
+            currentPath.Insert(0, new Edge(tempVertex, currentPath[0].source, new PathData(0, pathPoints)));
         }
 
         private double CalculateDistance(Point point1, Position pos)
@@ -257,20 +200,9 @@ namespace controller
             return Math.Pow((point1.lat - pos.X), 2) + Math.Pow((point1.lon - pos.Y), 2);
         }
 
-        private List<Point> GetPartialPathAfterPoint(List<Point> points, Point startPoint)
-        {
-            int index = points.IndexOf(startPoint);
-            if (index != -1 && index + 1 < points.Count)
-            {
-                return points.Skip(index + 1).ToList();
-            }
-
-            return new List<Point>();
-        }
-
         private Point GetClosestPoint(List<Point> points, Position pos)
         {
-            double dist = Double.PositiveInfinity;
+            double dist = double.PositiveInfinity;
             Point closestPoint = null;
 
             foreach (Point point in points)
@@ -286,8 +218,6 @@ namespace controller
             return closestPoint;
         }
 
-
-
         private IEnumerator UpdatePath()
         {
             while (true)
@@ -295,13 +225,16 @@ namespace controller
                 Vertex fromVertex = GetStart();
                 if (navigationActive)
                 {
-                    navigate(fromVertex); //will overwrite currentPath
+                    string currentDestination = registry.navigationDialog.GetSelectedDestination();
+                    if (!string.IsNullOrEmpty(currentDestination))
+                    {
+                        Navigate(fromVertex, currentDestination); // Will overwrite currentPath
+                    }
                 }
 
                 yield return new WaitForSeconds(5f);
             }
         }
-
 
         public void PlotCurrentPath()
         {
@@ -345,7 +278,6 @@ namespace controller
 
                     idx = stairsStart + 1;
                     continue;
-                    
                 }
 
                 Edge e = currentPath[idx];
@@ -369,8 +301,10 @@ namespace controller
             return e.source.floor != e.target.floor;
         }
 
-
-    
-
+        public void RefreshRoomOptions()
+        {
+            List<string> allRoomNames = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
+            registry.navigationDialog.RefreshOptions(allRoomNames);
+        }
     }
 }

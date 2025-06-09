@@ -97,6 +97,7 @@ namespace controller
             
             // Update Kalman filter with IMU data
             registry.GetPositionFilter().UpdateWithIMU(acceleration2D, headingDegrees);
+            registry.GetPositionFilter(true).UpdateWithIMU(acceleration2D, headingDegrees);   //also update the other one, to be always up to date
             //registry.kalmanFilter.UpdateWithIMU(headingDegrees);
 
         }

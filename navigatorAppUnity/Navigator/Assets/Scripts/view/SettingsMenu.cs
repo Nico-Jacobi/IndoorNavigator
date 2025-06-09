@@ -35,12 +35,27 @@ namespace view
         private Vector2 visiblePos;
         private float slideDuration = 0.3f;
 
+        private bool open = false;
+        
         private void Start()
         {
             visiblePos = menu.anchoredPosition;
             
-            float screenWidth = Screen.width;
-            hiddenPos = visiblePos + new Vector2(screenWidth + 50f, 0); // offscreen to the right
+            // Method 1: Use Canvas dimensions instead of Screen dimensions
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+            float canvasWidth = canvasRect.rect.width;
+            
+            // Move menu completely off-screen to the right
+            hiddenPos = visiblePos + new Vector2(canvasWidth + menu.rect.width + 100f, 0);
+            
+            // Alternative Method 2: Calculate based on menu width
+            // float menuWidth = menu.rect.width;
+            // hiddenPos = visiblePos + new Vector2(menuWidth + 200f, 0); // Menu width + extra padding
+            
+            // Alternative Method 3: Use a large fixed value that works on all screens
+            // hiddenPos = visiblePos + new Vector2(2000f, 0); // Should be off-screen on most devices
+            
             menu.anchoredPosition = hiddenPos;
 
             
@@ -67,18 +82,27 @@ namespace view
             importJson.onClick.AddListener(registry.database.PickFileAndImport);
             exportJson.onClick.AddListener(registry.database.ExportWithSimpleFilename);
         }
-        
-        
+
+        public void ToggleMenu()
+        {
+            if (open)
+                CloseMenu();
+            else
+                OpenMenu();
+        }
+
         public void OpenMenu()
         {
+            registry.floatingButtons.Hide();
+            open = true;
             registry.cameraController.inMenu = true;
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, visiblePos, slideDuration));
         }
 
         public void CloseMenu()
         {
-            print(registry);
-            print(registry.cameraController);
+            registry.floatingButtons.Show();
+            open = false;
             registry.cameraController.inMenu = false;
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, hiddenPos, slideDuration));
         }
