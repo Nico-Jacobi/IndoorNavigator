@@ -32,7 +32,14 @@ namespace view
         public GameObject CrosshairMarkerPrefab; 
 
         public bool isCollecting = false;
-        
+
+        // Animation properties
+        public float slideDuration = 0.4f;
+        private RectTransform panelRect;
+        private Vector2 visiblePos;
+        private Vector2 hiddenPos;
+        private Coroutine currentSlideCoroutine;
+        private bool isAnimating = false;
 
         private void Start()
         {
@@ -40,15 +47,40 @@ namespace view
             deleteButton.onClick.AddListener(DeleteAtCurrentPosition);
 
             crosshairMarker = Instantiate(CrosshairMarkerPrefab);
-
-            //crosshairMarker.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f); // Adjust size
             crosshairMarker.transform.rotation = Quaternion.Euler(90, 0, 0);
-            crosshairMarker.SetActive(false); // Initially hidden
+            crosshairMarker.SetActive(false);
+
+            // Initialize slide animation
+            InitializeSlideAnimation();
 
             Deactivate();
         }
 
-        
+        private void InitializeSlideAnimation()
+        {
+            if (managePointsDialogPanel != null)
+            {
+                panelRect = managePointsDialogPanel.GetComponent<RectTransform>();
+                if (panelRect == null)
+                {
+                    Debug.LogError("managePointsDialogPanel must have a RectTransform component!");
+                    return;
+                }
+
+                // Store the visible position (current position)
+                visiblePos = panelRect.anchoredPosition;
+                
+                // Calculate hidden position (slide down off-screen)
+                // Adjust this value based on your panel height and desired effect
+                float panelHeight = panelRect.rect.height;
+                hiddenPos = visiblePos + new Vector2(0, -panelHeight - 50f);
+
+                // Start in hidden position
+                panelRect.anchoredPosition = hiddenPos;
+                managePointsDialogPanel.SetActive(true); // Keep active for animations
+            }
+        }
+
         private void Update()
         {
             // Update crosshair when active
@@ -62,8 +94,9 @@ namespace view
         
         public void Activate()
         {
+            if (isAnimating) return;
+
             Debug.Log("Activate called");
-            managePointsDialogPanel.SetActive(true);
             active = true;
             registry.cameraController.DeactivateMarker();
 
@@ -73,15 +106,19 @@ namespace view
                 crosshairMarker.SetActive(true);
                 crosshairMarker.transform.position = registry.cameraController.GetCrosshairPosition();
             }
+
+            // Slide panel up from bottom
+            SlideUp();
             
             Refresh();
         }
 
         public void Deactivate()
         {
+            if (isAnimating) return;
+
             Debug.Log("Data collection mode de-activated");
             active = false;
-            managePointsDialogPanel.SetActive(false);
             
             if (registry.cameraController != null && registry.cameraController.positionMarker != null)
             {
@@ -96,6 +133,70 @@ namespace view
                 Destroy(marker);
             }
             markers.Clear();
+
+            // Slide panel down
+            SlideDown();
+        }
+
+        private void SlideUp()
+        {
+            if (panelRect == null) return;
+
+            if (currentSlideCoroutine != null)
+            {
+                StopCoroutine(currentSlideCoroutine);
+            }
+
+            currentSlideCoroutine = StartCoroutine(SlideToPosition(visiblePos));
+        }
+
+        private void SlideDown()
+        {
+            if (panelRect == null) return;
+
+            if (currentSlideCoroutine != null)
+            {
+                StopCoroutine(currentSlideCoroutine);
+            }
+
+            currentSlideCoroutine = StartCoroutine(SlideToPosition(hiddenPos));
+        }
+
+        private IEnumerator SlideToPosition(Vector2 targetPos)
+        {
+            isAnimating = true;
+            Vector2 startPos = panelRect.anchoredPosition;
+            float time = 0f;
+
+            // Ensure panel is active during animation
+            if (!managePointsDialogPanel.activeInHierarchy)
+            {
+                managePointsDialogPanel.SetActive(true);
+            }
+
+            while (time < slideDuration)
+            {
+                time += Time.deltaTime;
+                float t = time / slideDuration;
+                
+                // Use smooth easing for more natural movement
+                t = Mathf.SmoothStep(0f, 1f, t);
+                
+                panelRect.anchoredPosition = Vector2.Lerp(startPos, targetPos, t);
+                yield return null;
+            }
+
+            // Ensure final position is exact
+            panelRect.anchoredPosition = targetPos;
+            
+            // If sliding down to hidden position, deactivate panel
+            if (Vector2.Distance(targetPos, hiddenPos) < 0.1f)
+            {
+                managePointsDialogPanel.SetActive(false);
+            }
+
+            isAnimating = false;
+            currentSlideCoroutine = null;
         }
 
         public void Refresh()
@@ -116,14 +217,10 @@ namespace view
                 Vector3 position = new(coord.X, coord.Floor * 2.0f + 1f, coord.Y);
 
                 GameObject marker = Instantiate(WifiMarkerPrefab, position, Quaternion.identity);
-
-                //marker.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
                 marker.name = $"CoordMarker_{coord.X}_{coord.Y}";
 
                 markers.Add(marker);
             }
-
-
         }
 
         public void DeleteAtCurrentPosition()
@@ -180,7 +277,6 @@ namespace view
             collectButton.interactable = false;
             isCollecting = true;
 
-
             spinner.StartSpinning();
             collectButtonText.text = "";
             
@@ -194,7 +290,6 @@ namespace view
             ));
         }
 
-    
         private IEnumerator CollectDataPointCoroutine(float x, float y, int floor, string building)
         {
             Debug.Log($"Starting data collection at ({x}, {y}, Floor: {floor})");
@@ -223,12 +318,29 @@ namespace view
             collectButton.interactable = true; 
             collectButtonText.text = "Collect";
         }
+
+        // Public methods to manually control animation (useful for debugging)
+        public void ForceSlideUp()
+        {
+            SlideUp();
+        }
+
+        public void ForceSlideDown()
+        {
+            SlideDown();
+        }
         
         private void OnDestroy()
         {
             if (crosshairMarker != null)
             {
                 Destroy(crosshairMarker);
+            }
+
+            // Stop any running animations
+            if (currentSlideCoroutine != null)
+            {
+                StopCoroutine(currentSlideCoroutine);
             }
         }
     }

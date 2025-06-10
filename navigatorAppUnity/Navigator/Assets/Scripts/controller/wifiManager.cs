@@ -8,6 +8,7 @@ using UnityEngine.UI;
 using model;
 using model.Database;
 using model.Database.Plugins;
+using view;
 
 namespace controller
 {
@@ -21,11 +22,6 @@ namespace controller
 
         public Registry registry;
         
-        public GameObject promptPanel;
-        public Button settingsButton;
-        public Button discardButton;
-        public TextMeshProUGUI promptText;
-        
         public bool isUpdating = false;    //set to true to stop the scanning, otherwise to coroutine will use this
         public float updateInterval = 2f;  //seconds between scans (if wifi scans are throttled (android 12+ default) set to 30)
         
@@ -34,6 +30,12 @@ namespace controller
         private float scanTimeout = 5.0f; // Maximum time to wait for scan results in seconds
 
         void Start()
+        {
+            InitializeAndroidWifi();
+            SetupLocationPromptDialog();
+        }
+
+        private void InitializeAndroidWifi()
         {
             try
             {
@@ -50,24 +52,42 @@ namespace controller
             {
                 Debug.LogAssertion("Couldn't get android API, some functionality wont work");
             }
-            promptText.text = "Location services are disabled. Please enable GPS in your device settings.";
-            settingsButton.onClick.AddListener(OpenLocationSettings);
-            discardButton.onClick.AddListener(ClosePrompt);
-            promptPanel.SetActive(false);
+        }
+
+        private void SetupLocationPromptDialog()
+        {
+            if (registry.locationPromptDialog != null)
+            {
+                // Subscribe to dialog events
+                registry.locationPromptDialog.OnSettingsButtonClicked += OpenLocationSettings;
+                registry.locationPromptDialog.OnDiscardButtonClicked += OnDiscardPrompt;
+                
+                // Set the prompt text
+                registry.locationPromptDialog.SetPromptText("Location services are disabled. Please enable GPS in your device settings.");
+            }
+            else
+            {
+                Debug.LogError("LocationPromptDialog reference missing in WifiManager!");
+            }
         }
 
         // Check if location is activated
         private bool IsLocationEnabled()
         {
+            if (context == null) return false;
+            
             AndroidJavaObject locationManager = context.Call<AndroidJavaObject>("getSystemService", "location");
             return locationManager.Call<bool>("isProviderEnabled", "gps") ||
                    locationManager.Call<bool>("isProviderEnabled", "network");
         }
 
-        // Popup to turn on the location
+        // Show the location prompt dialog
         public void PromptUserToEnableLocation()
         {
-            promptPanel.SetActive(true);
+            if (registry.locationPromptDialog != null)
+            {
+                registry.locationPromptDialog.Open();
+            }
         }
 
         // Request coarse location privileges (just the app's privileges, not if it's actually on)
@@ -396,10 +416,16 @@ namespace controller
             }
         }
 
-        // Opens the location settings for the user to enable GPS
+        // Event handler for settings button click
         private void OpenLocationSettings()
         {
-            ClosePrompt();
+            // Close the dialog first
+            if (registry.locationPromptDialog != null)
+            {
+                registry.locationPromptDialog.Close();
+            }
+
+            if (context == null) return;
 
             AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
             AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
@@ -415,13 +441,23 @@ namespace controller
             }));
         }
 
-        // Closes the prompt when the discard button is clicked
-        private void ClosePrompt()
+        // Event handler for discard button click
+        private void OnDiscardPrompt()
         {
-            if (promptPanel != null)
+            if (registry.locationPromptDialog != null)
             {
-                promptPanel.SetActive(false); // Hide the prompt panel
-                Debug.Log("Prompt closed by user.");
+                registry.locationPromptDialog.Close();
+            }
+            Debug.Log("Location prompt dismissed by user.");
+        }
+
+        private void OnDestroy()
+        {
+            // Unsubscribe from events to prevent memory leaks
+            if (registry.locationPromptDialog != null)
+            {
+                registry.locationPromptDialog.OnSettingsButtonClicked -= OpenLocationSettings;
+                registry.locationPromptDialog.OnDiscardButtonClicked -= OnDiscardPrompt;
             }
         }
     }

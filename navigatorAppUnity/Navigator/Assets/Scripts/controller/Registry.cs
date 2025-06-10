@@ -26,7 +26,8 @@ namespace controller
         public TopMenu topMenu;
         public NavigationDialog navigationDialog;
         public FloatingButtons floatingButtons;
-
+        public LocationPromptDialog locationPromptDialog;
+        
         public PositionFilter GetPositionFilter(bool getInactive = false)
         {
             if (getInactive)

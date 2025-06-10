@@ -10,21 +10,17 @@
     /// </summary>
     public class SwitchButton : MonoBehaviour, IPointerClickHandler
     {
-        [Header("UI Elements")]
         [SerializeField] private RectTransform onHandle;  // Handle shown when switch is ON
         [SerializeField] private RectTransform offHandle; // Handle shown when switch is OFF
         [SerializeField] private Image offBackgroundImage; 
         [SerializeField] private Image onBackgroundImage; 
         
-        [Header("Animation Settings")]
         [SerializeField] private float animationDuration = 0.2f; // Animation time
         [SerializeField] private AnimationCurve animationCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f); // Curve for smoothness
         
-        [Header("Positioning")]
         [SerializeField] private float handlePadding = 0f; // Padding from edges
         
-        [Header("State")]
-        [SerializeField] private bool isOn = false; // Current state
+        [SerializeField] private bool isOn = false; // if this is set in the start or awake sowhere it should be the same in the editor
 
         // Events
         public System.Action<bool> OnValueChanged;

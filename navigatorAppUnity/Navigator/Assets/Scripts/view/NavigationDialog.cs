@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using controller;
@@ -12,13 +13,18 @@ namespace view
     {
         Registry registry;
         
-        [Header("UI Components")] public TMP_Dropdown toField;
+        [Header("UI Components")] 
+        public TMP_Dropdown toField;
         public RectTransform navigationDialog;
         public TMP_InputField searchField;
         public Button startNavigationButton;
         public Button closeButton;
+        public Button pressedOutsideButton;
 
         private List<string> allOptions;
+        private Vector2 hiddenPos;
+        private Vector2 visiblePos;
+        private float slideDuration = 0.3f;
 
         public event Action<string> OnNavigationRequested;
 
@@ -27,7 +33,25 @@ namespace view
             searchField.onValueChanged.AddListener(OnSearchChanged);
             startNavigationButton.onClick.AddListener(OnStartNavigationButtonPressed);
             closeButton.onClick.AddListener(OnCloseButtonPressed);
+            pressedOutsideButton.onClick.AddListener(OnCloseButtonPressed);
 
+            // Initialize positions
+            InitializePositions();
+        }
+
+        private void InitializePositions()
+        {
+            visiblePos = navigationDialog.anchoredPosition;
+            
+            // Calculate hidden position - move completely off-screen to the right
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+            float canvasWidth = canvasRect.rect.width;
+            
+            hiddenPos = visiblePos + new Vector2(canvasWidth + navigationDialog.rect.width + 100f, 0);
+            
+            // Start hidden
+            navigationDialog.anchoredPosition = hiddenPos;
         }
 
         public void Initialize(List<string> roomNames)
@@ -40,11 +64,42 @@ namespace view
         public void ShowDialog()
         {
             Debug.Log("showing navigation dialog");
+            pressedOutsideButton.gameObject.SetActive(true);
             navigationDialog.gameObject.SetActive(true);
+            
+            StartCoroutine(SlideDialog(navigationDialog, navigationDialog.anchoredPosition, visiblePos, slideDuration));
         }
 
         public void CloseDialog()
         {
+            StartCoroutine(SlideDialogAndHide(navigationDialog, navigationDialog.anchoredPosition, hiddenPos, slideDuration));
+        }
+
+        private IEnumerator SlideDialog(RectTransform rect, Vector2 from, Vector2 to, float duration)
+        {
+            float time = 0f;
+            while (time < duration)
+            {
+                time += Time.deltaTime;
+                rect.anchoredPosition = Vector2.Lerp(from, to, time / duration);
+                yield return null;
+            }
+            rect.anchoredPosition = to;
+        }
+
+        private IEnumerator SlideDialogAndHide(RectTransform rect, Vector2 from, Vector2 to, float duration)
+        {
+            float time = 0f;
+            while (time < duration)
+            {
+                time += Time.deltaTime;
+                rect.anchoredPosition = Vector2.Lerp(from, to, time / duration);
+                yield return null;
+            }
+            rect.anchoredPosition = to;
+            
+            // Hide after animation completes
+            pressedOutsideButton.gameObject.SetActive(false);
             navigationDialog.gameObject.SetActive(false);
         }
 

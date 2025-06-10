@@ -96,6 +96,7 @@ namespace view
             registry.floatingButtons.Hide();
             open = true;
             registry.cameraController.inMenu = true;
+            closeButton.gameObject.SetActive(true);
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, visiblePos, slideDuration));
         }
 
@@ -104,6 +105,7 @@ namespace view
             registry.floatingButtons.Show();
             open = false;
             registry.cameraController.inMenu = false;
+            closeButton.gameObject.SetActive(false);
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, hiddenPos, slideDuration));
         }
 
@@ -135,7 +137,7 @@ namespace view
             if (collectDataModeStart)
             {
                 registry.wifiManager.isUpdating = false; //cant measure while collecting data
-                CloseMenu();
+                //CloseMenu();
                 registry.dataCollectionMode.Activate();
                 navigateButton.gameObject.SetActive(false);
                 gotoPositionButton.gameObject.SetActive(false);
@@ -144,7 +146,7 @@ namespace view
             else
             {
                 registry.wifiManager.isUpdating = true;
-                CloseMenu();
+                //CloseMenu();
                 registry.dataCollectionMode.Deactivate();
                 navigateButton.gameObject.SetActive(true);
                 gotoPositionButton.gameObject.SetActive(true);
