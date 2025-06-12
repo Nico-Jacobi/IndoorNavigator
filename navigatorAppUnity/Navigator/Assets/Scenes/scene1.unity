@@ -3333,6 +3333,67 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 408078653}
   m_CullTransparentMesh: 1
+--- !u!1 &420678741
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 420678742}
+  - component: {fileID: 420678743}
+  m_Layer: 5
+  m_Name: collectDataDialog
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &420678742
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 420678741}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1362844248}
+  m_Father: {fileID: 1560725851}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &420678743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 420678741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1b124eaa70e4085b4bd471a1615578d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WifiMarkerPrefab: {fileID: 919132149155446097, guid: ee5d3ebc37a1aed4cbbefb74d1b374e4, type: 3}
+  registry: {fileID: 2037691650}
+  collectButton: {fileID: 759050956}
+  collectButtonText: {fileID: 34462841}
+  deleteButton: {fileID: 1653278545}
+  managePointsDialogPanel: {fileID: 1362844247}
+  compasActive: 0
+  collectIcon: {fileID: 193813528}
+  spinner: {fileID: 1561805968}
+  CrosshairMarkerPrefab: {fileID: 919132149155446097, guid: 290ad6bdb245d154e9fc16a196142041, type: 3}
+  isCollecting: 0
+  slideDuration: 0.4
 --- !u!1 &428692231
 GameObject:
   m_ObjectHideFlags: 0
@@ -6471,7 +6532,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 924ff3b0ea783784db255b3c90394c65, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 08c061b4eec4ace40a7d15781ca173b9, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -8981,14 +9042,14 @@ RectTransform:
   m_GameObject: {fileID: 1255664760}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.2, y: 1.5, z: 1}
+  m_LocalScale: {x: 1, y: 1.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1524186708}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -97, y: 5}
+  m_AnchoredPosition: {x: -99, y: 5}
   m_SizeDelta: {x: 110, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1255664762
@@ -9357,7 +9418,7 @@ GameObject:
   - component: {fileID: 1362844250}
   - component: {fileID: 1362844249}
   m_Layer: 5
-  m_Name: CollectDataDialog
+  m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9372,16 +9433,16 @@ RectTransform:
   m_GameObject: {fileID: 1362844247}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.6, y: 0.6, z: 1}
+  m_LocalScale: {x: 0.59999996, y: 0.59999996, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 759050955}
   - {fileID: 1653278544}
-  m_Father: {fileID: 1560725851}
+  m_Father: {fileID: 420678742}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -94, y: 489}
+  m_AnchoredPosition: {x: -94, y: -981}
   m_SizeDelta: {x: 650, y: 1238}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1362844249
@@ -9830,11 +9891,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f52df3a0685e46ceb2b2afd2db880109, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  registry: {fileID: 2037691650}
   toField: {fileID: 672309276}
   navigationDialog: {fileID: 573077512}
   searchField: {fileID: 1854058684}
   startNavigationButton: {fileID: 1894183356}
-  closeButton: {fileID: 1480678316}
+  cancelButton: {fileID: 1480678316}
   pressedOutsideButton: {fileID: 268945782}
 --- !u!1 &1477418578
 GameObject:
@@ -10635,8 +10697,8 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1362844248}
   - {fileID: 501557194}
+  - {fileID: 420678742}
   - {fileID: 833396299}
   - {fileID: 866442661}
   - {fileID: 301707013}
@@ -12776,61 +12838,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1809146823}
   m_CullTransparentMesh: 1
---- !u!1 &1830119848
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1830119849}
-  - component: {fileID: 1830119850}
-  m_Layer: 0
-  m_Name: DataCollectionMode
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1830119849
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1830119848}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 166.66006, y: 302.3204, z: -46.06594}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2037691651}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1830119850
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1830119848}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1b124eaa70e4085b4bd471a1615578d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  WifiMarkerPrefab: {fileID: 919132149155446097, guid: ee5d3ebc37a1aed4cbbefb74d1b374e4, type: 3}
-  registry: {fileID: 2037691650}
-  collectButton: {fileID: 759050956}
-  collectButtonText: {fileID: 34462841}
-  deleteButton: {fileID: 1653278545}
-  managePointsDialogPanel: {fileID: 1362844247}
-  compasActive: 0
-  spinner: {fileID: 1561805968}
-  CrosshairMarkerPrefab: {fileID: 919132149155446097, guid: 290ad6bdb245d154e9fc16a196142041, type: 3}
-  isCollecting: 0
-  slideDuration: 0.4
 --- !u!1 &1854058683
 GameObject:
   m_ObjectHideFlags: 0
@@ -14272,7 +14279,7 @@ MonoBehaviour:
   graphManager: {fileID: 1952910964}
   positionTracker: {fileID: 512473753}
   cameraController: {fileID: 365250949}
-  dataCollectionMode: {fileID: 1830119850}
+  dataCollectionMode: {fileID: 420678743}
   accelerationController: {fileID: 1666494002}
   kalmanFilter: {fileID: 604436164}
   simplePositionFilter: {fileID: 144430730}
@@ -14297,7 +14304,6 @@ Transform:
   m_Children:
   - {fileID: 1666494003}
   - {fileID: 512473754}
-  - {fileID: 1830119849}
   - {fileID: 364252162}
   - {fileID: 1002911266}
   - {fileID: 604436165}

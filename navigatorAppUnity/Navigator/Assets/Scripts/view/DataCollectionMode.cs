@@ -28,6 +28,7 @@ namespace view
         public GameObject managePointsDialogPanel;
         public bool compasActive = false;
 
+        public RectTransform collectIcon;
         public LoadingSpinner spinner;
         public GameObject CrosshairMarkerPrefab; 
 
@@ -98,7 +99,9 @@ namespace view
 
             Debug.Log("Activate called");
             active = true;
-            registry.cameraController.DeactivateMarker();
+            
+            //deactivate the normal pos marker
+            //registry.cameraController.DeactivateMarker();
 
             // Show crosshair marker
             if (crosshairMarker != null)
@@ -265,7 +268,8 @@ namespace view
                 Debug.Log("Already collecting data point, please wait...");
                 return;
             }
-
+            collectIcon.gameObject.SetActive(false);
+            
             // Null checks
             if (registry.cameraController == null) Debug.LogError("cameraController is NULL");
             if (collectButton == null) Debug.LogError("collectButton is NULL");
@@ -309,6 +313,8 @@ namespace view
         
         private void OnDataPointCollected(Coordinate dataPoint)
         {
+            collectIcon.gameObject.SetActive(true);
+
             Debug.Log($"Successfully collected data point with {dataPoint.WifiInfoMap.Count} WiFi networks");
         
             // Reset collection state

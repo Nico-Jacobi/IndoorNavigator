@@ -17,7 +17,7 @@ namespace view
         public bool compassActive = false;
         
         private float orbitDistance = 10f;  // Distance from camera to orbit point
-        private float cameraHeight = 40f;   // Height offset above the floor
+        private float cameraHeight = 30f;   // Height offset above the floor
         private Vector3 orbitPoint;        // The point we're orbiting around
         
         private float minCameraHeight = 10f;
@@ -40,6 +40,8 @@ namespace view
         
         private float positionUpdateTimer = 0f;
         private float positionUpdateInterval = 0.5f;
+
+        private float cameraAngle = 45f;
         
         // Touch input variables
         private Vector2 touchLastPos;
@@ -52,7 +54,7 @@ namespace view
         void Start()
         {
             registry.cam = Camera.main;
-            SetCameraTilt(65f);
+            SetCameraTilt(cameraAngle);
             orbitPoint = transform.position;  // Initialize orbit point to current position
             
         }
@@ -106,22 +108,10 @@ namespace view
             
             
             PositionCameraOrbit(newHeading);
-            registry.cam.transform.rotation = Quaternion.Euler(65f, newHeading, 0f);
+            registry.cam.transform.rotation = Quaternion.Euler(cameraAngle, newHeading, 0f);
         }
 
-        private void PositionCameraOrbit(float heading)
-        {
-            // Convert heading to radians
-            float headingRad = heading * Mathf.Deg2Rad;
-            
-            // Calculate the camera position around the orbit point
-            float xPos = orbitPoint.x - Mathf.Sin(headingRad) * orbitDistance;
-            float zPos = orbitPoint.z - Mathf.Cos(headingRad) * orbitDistance;
-            float yPos = registry.buildingManager.GetShownFloor() * 2.0f + cameraHeight;
-
-            registry.cam.transform.position = new Vector3(xPos, yPos, zPos);
-        }
-
+      
         private void HandleMovementOrTracking()
         {
             if (freeMovement)
@@ -133,40 +123,7 @@ namespace view
                 HandlePositionTracking();
             }
         }
-
-        private void HandleFreeMovement()
-        {
-            Vector3 movement = Vector3.zero;
-
-            // Handle keyboard input (WASD)
-            float h = Input.GetAxis("Horizontal");
-            float v = Input.GetAxis("Vertical");
-            
-            // Handle touch input
-            Vector2 touchMovement = GetTouchMovementInput();
-            
-            // Apply touch movement, with heading compensation
-            if (touchMovement.magnitude > 0)
-            {
-                // Rotate the touch movement vector to account for camera heading
-                Vector2 rotatedMovement = RotateTouchVectorByHeading(touchMovement);
-                h += rotatedMovement.x * touchMoveSpeed;
-                v += rotatedMovement.y * touchMoveSpeed;
-            }
-            else
-            {
-                // No touch movement, use regular keyboard input
-                h += touchMovement.x * touchMoveSpeed;
-                v += touchMovement.y * touchMoveSpeed;
-            }
-
-            movement = new Vector3(h, 0, v) * moveSpeed * Time.deltaTime;
-            
-            orbitPoint += movement;
-            
-            float y = registry.buildingManager.GetShownFloor() * 2.0f + cameraHeight;
-            orbitPoint = new Vector3(orbitPoint.x, y - cameraHeight, orbitPoint.z);
-        }
+        
 
         // Rotate a 2D vector by the current heading to make movement relative to camera direction
         private Vector2 RotateTouchVectorByHeading(Vector2 input)
@@ -248,24 +205,7 @@ namespace view
             }
         }
 
-
-
-        private void HandlePositionTracking()
-        {
-            positionUpdateTimer += Time.deltaTime;
-
-            if (positionUpdateTimer >= positionUpdateInterval)
-            {
-                Position pos = registry.GetPositionFilter().GetEstimate();
-                if (pos != null)
-                {
-                    // Update the orbit point to the marker position
-                    orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
-                    registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
-                }
-                positionUpdateTimer = 0f;
-            }
-        }
+        
         
         private void HandleMarkerUpdate()
         {
@@ -277,36 +217,8 @@ namespace view
                 markerUpdateTimer = 0f;
             }
         }
+        
 
-        private void HandleMarkerSmoothing()
-        {
-            if (markerIsMoving && positionMarker != null)
-            {
-                markerMoveTimer += Time.deltaTime;
-                float progress = markerMoveTimer / markerMoveDuration;
-                
-                if (progress >= 1f)
-                {
-                    // Movement complete
-                    progress = 1f;
-                    markerIsMoving = false;
-                }
-                
-                // Smooth interpolation using ease-in-out curve
-                float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
-                Vector3 currentPosition = Vector3.Lerp(markerStartPosition, markerTargetPosition, smoothProgress);
-                
-                positionMarker.transform.position = currentPosition;
-                
-                // If we're not in free movement mode, update the orbit point smoothly too
-                if (!freeMovement)
-                {
-                    Vector3 orbitTarget = new Vector3(markerTargetPosition.x, markerTargetPosition.y - 1f, markerTargetPosition.z);
-                    Vector3 orbitStart = new Vector3(markerStartPosition.x, markerStartPosition.y - 1f, markerStartPosition.z);
-                    orbitPoint = Vector3.Lerp(orbitStart, orbitTarget, smoothProgress);
-                }
-            }
-        }
 
         public void MoveMarkerToPosition(Position pos)
         {
@@ -348,36 +260,21 @@ namespace view
             }
         }
         
-        public void GotoPosition(Position pos)
-        {
-            if (pos == null) return;
-
-            Debug.Log($"Current Position: {pos}");
-            
-            // Update the orbit point
-            orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
-            
-            // Handle camera positioning will be done in Update()
-            registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
-        }
-        
+       
         public void GotoPrediction()
         {
            GotoPosition(registry.GetPositionFilter().GetEstimate());
         }
 
-        public void OnViewModeButtonPressed()
+        public void ToggleViewMode()
         {
             freeMovement = !freeMovement;
-            
+    
             // When switching to tracking mode, immediately update orbit point to current marker position
             if (!freeMovement && positionMarker != null)
             {
-                orbitPoint = new Vector3(
-                    positionMarker.transform.position.x,
-                    positionMarker.transform.position.y - 1f, // Adjust for marker height offset
-                    positionMarker.transform.position.z
-                );
+                // Set orbit point to same position as marker
+                orbitPoint = positionMarker.transform.position;
             }
         }
         
@@ -405,10 +302,183 @@ namespace view
             }
         }
         
+        
+        // The key insight: The orbit point should be where the camera's center ray hits the target plane
+
+        // Replace your PositionCameraOrbit method:
+        private void PositionCameraOrbit(float heading)
+        {
+            // Convert heading to radians
+            float headingRad = heading * Mathf.Deg2Rad;
+            
+            // Calculate the camera position around the orbit point
+            float xPos = orbitPoint.x - Mathf.Sin(headingRad) * orbitDistance;
+            float zPos = orbitPoint.z - Mathf.Cos(headingRad) * orbitDistance;
+            float yPos = orbitPoint.y + cameraHeight;
+
+            registry.cam.transform.position = new Vector3(xPos, yPos, zPos);
+        }
+
+        // Add this new method to calculate where the camera center ray hits the target plane:
+        private Vector3 CalculateGroundIntersection(Vector3 cameraPos, Vector3 cameraForward, float targetY)
+        {
+            // Ray from camera pointing forward
+            // We want to find where this ray intersects the plane at height targetY
+            
+            // Ray equation: point = cameraPos + t * cameraForward
+            // Plane equation: y = targetY
+            // Solve for t: targetY = cameraPos.y + t * cameraForward.y
+            // t = (targetY - cameraPos.y) / cameraForward.y
+            
+            if (Mathf.Abs(cameraForward.y) < 0.001f) // Avoid division by zero
+                return new Vector3(cameraPos.x, targetY, cameraPos.z);
+            
+            float t = (targetY - cameraPos.y) / cameraForward.y;
+            
+            Vector3 intersection = cameraPos + t * cameraForward;
+            return new Vector3(intersection.x, targetY, intersection.z);
+        }
+
+        // Update GetCrosshairPosition to return the actual center of screen in world coords:
         public Vector3 GetCrosshairPosition()
         {
-            // Return the orbit point as the theoretical point we're rotating around
-            return orbitPoint;
+            if (registry.cam == null) return orbitPoint;
+            
+            // Get the camera's forward direction
+            Vector3 cameraForward = registry.cam.transform.forward;
+            Vector3 cameraPos = registry.cam.transform.position;
+            
+            // Calculate where the center ray hits the current floor level, height should be z
+            float targetY = registry.buildingManager.GetShownFloor() * 2.0f + 2f; // Same as marker height
+            
+            Vector3 pos = CalculateGroundIntersection(cameraPos, cameraForward, targetY);
+            pos.y = registry.buildingManager.GetShownFloor() * 2.0f + 1f;
+            
+            return pos;
         }
+
+        // Update HandleFreeMovement to maintain proper relationship:
+        private void HandleFreeMovement()
+        {
+            Vector3 movement = Vector3.zero;
+
+            // Handle keyboard input (WASD)
+            float h = Input.GetAxis("Horizontal");
+            float v = Input.GetAxis("Vertical");
+            
+            // Handle touch input
+            Vector2 touchMovement = GetTouchMovementInput();
+            
+            // Apply touch movement, with heading compensation
+            if (touchMovement.magnitude > 0)
+            {
+                Vector2 rotatedMovement = RotateTouchVectorByHeading(touchMovement);
+                h += rotatedMovement.x * touchMoveSpeed;
+                v += rotatedMovement.y * touchMoveSpeed;
+            }
+            else
+            {
+                h += touchMovement.x * touchMoveSpeed;
+                v += touchMovement.y * touchMoveSpeed;
+            }
+
+            movement = new Vector3(h, 0, v) * moveSpeed * Time.deltaTime;
+            
+            // Move the orbit point horizontally
+            orbitPoint += movement;
+            
+            // Keep orbit point at the intersection level (where camera looks)
+            float targetY = registry.buildingManager.GetShownFloor() * 2.0f + 1f;
+            orbitPoint = new Vector3(orbitPoint.x, targetY, orbitPoint.z);
+        }
+
+        // Update HandlePositionTracking:
+        private void HandlePositionTracking()
+        {
+            positionUpdateTimer += Time.deltaTime;
+
+            if (positionUpdateTimer >= positionUpdateInterval)
+            {
+                Position pos = registry.GetPositionFilter().GetEstimate();
+                if (pos != null)
+                {
+                    // Set orbit point to marker level (this is where we want the camera to look)
+                    orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
+                    registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
+                }
+                positionUpdateTimer = 0f;
+            }
+        }
+
+        public void GotoPosition(Position pos)
+        {
+            if (pos == null) return;
+
+            Debug.Log($"Current Position: {pos}");
+    
+            // The target position we want to show at 2/3 down the screen
+            Vector3 targetPosition = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
+    
+            // Calculate where the orbit point should be so that targetPosition appears at 2/3 down screen
+            // Using the camera's current heading and tilt
+            float headingRad = currentHeading * Mathf.Deg2Rad;
+            float tiltRad = cameraAngle * Mathf.Deg2Rad;
+    
+            // Calculate offset for 2/3 position (0.5 would be center, 0.33 moves it up toward 2/3 down)
+            float screenPositionFactor = 0.33f; // This positions target at 2/3 down the screen
+            float horizontalOffset = (cameraHeight / Mathf.Tan(tiltRad)) * screenPositionFactor;
+    
+            // Apply the offset in the direction the camera is facing
+            Vector3 offsetDirection = new Vector3(Mathf.Sin(headingRad), 0, Mathf.Cos(headingRad));
+            orbitPoint = targetPosition - offsetDirection * horizontalOffset;
+    
+            registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
+        }
+
+        // The HandleMarkerSmoothing method stays mostly the same:
+        private void HandleMarkerSmoothing()
+        {
+            if (markerIsMoving && positionMarker != null)
+            {
+                markerMoveTimer += Time.deltaTime;
+                float progress = markerMoveTimer / markerMoveDuration;
+                
+                if (progress >= 1f)
+                {
+                    progress = 1f;
+                    markerIsMoving = false;
+                }
+                
+                float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
+                Vector3 currentPosition = Vector3.Lerp(markerStartPosition, markerTargetPosition, smoothProgress);
+                
+                positionMarker.transform.position = currentPosition;
+                
+                // If we're not in free movement mode, update the orbit point smoothly too
+                if (!freeMovement)
+                {
+                    // Keep orbit point at same height as marker (this keeps the marker centered)
+                    orbitPoint = Vector3.Lerp(markerStartPosition, markerTargetPosition, smoothProgress);
+                }
+            }
+        }
+
+        // Update OnViewModeButtonPressed:
+        public void OnViewModeButtonPressed()
+        {
+            freeMovement = !freeMovement;
+            
+            // When switching to tracking mode, set orbit point to marker position
+            if (!freeMovement && positionMarker != null)
+            {
+                orbitPoint = positionMarker.transform.position;
+            }
+            else if (freeMovement)
+            {
+                // When switching to free movement, set orbit point to current crosshair position
+                orbitPoint = GetCrosshairPosition();
+            }
+        }
+        
     }
 }

@@ -124,7 +124,7 @@ namespace view
 
         public void HandleFreeMovementToggle(bool freeMovementMode)
         {
-            registry.cameraController.freeMovement = !freeMovementMode;
+            registry.cameraController.ToggleViewMode();
         }
 
         public void HandleCompasActiveToggle(bool compasActiveMode)

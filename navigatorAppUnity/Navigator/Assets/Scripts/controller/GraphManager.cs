@@ -306,5 +306,21 @@ namespace controller
             List<string> allRoomNames = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
             registry.navigationDialog.RefreshOptions(allRoomNames);
         }
+        
+        
+        public void CancelNavigation()
+        {
+            Debug.Log("Navigation cancelled");
+            navigationActive = false;
+            currentPath = null;
+            recalculated = 0;
+    
+            foreach (GameObject obj in GameObject.FindGameObjectsWithTag("PlottedPath"))
+            {
+                Destroy(obj);
+            }
+    
+        }
+        
     }
 }

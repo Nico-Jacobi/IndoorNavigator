@@ -5,20 +5,20 @@ using System.Linq;
 using controller;
 using UnityEngine;
 using TMPro;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace view
 {
     public class NavigationDialog : MonoBehaviour
     {
-        Registry registry;
+        public Registry registry;
         
-        [Header("UI Components")] 
         public TMP_Dropdown toField;
         public RectTransform navigationDialog;
         public TMP_InputField searchField;
         public Button startNavigationButton;
-        public Button closeButton;
+        public Button cancelButton;
         public Button pressedOutsideButton;
 
         private List<string> allOptions;
@@ -32,7 +32,7 @@ namespace view
         {
             searchField.onValueChanged.AddListener(OnSearchChanged);
             startNavigationButton.onClick.AddListener(OnStartNavigationButtonPressed);
-            closeButton.onClick.AddListener(OnCloseButtonPressed);
+            cancelButton.onClick.AddListener(OnCancelNavigationButtonPressed);
             pressedOutsideButton.onClick.AddListener(OnCloseButtonPressed);
 
             // Initialize positions
@@ -140,6 +140,12 @@ namespace view
         
         private void OnCloseButtonPressed()
         {
+            CloseDialog();
+        }
+        
+        private void OnCancelNavigationButtonPressed()
+        {
+            registry.graphManager.CancelNavigation();
             CloseDialog();
         }
 
