@@ -1,4 +1,5 @@
 import json
+import os
 import random
 import matplotlib.pyplot as plt
 import matplotlib
@@ -62,10 +63,15 @@ def parse_geojson_to_graph(geojson_string) -> tuple[Graph, list, list, list]:
         else:
             broken.append(feature)
 
+
+    coordinateUtilities.origin_lat = rooms[0].coordinates[0][0]
+    coordinateUtilities.origin_lon = rooms[0].coordinates[0][1]
+
+
     Stair.link_stairs(stairs)
     Room.setup_all_rooms(rooms + stairs, doors)
     graph.keep_largest_component()
-    graph.normalize_coordinates(origin_lat, origin_lon)
+    graph.normalize_coordinates()
 
     return graph, rooms, stairs, doors
 
@@ -102,21 +108,44 @@ def visualize_level(rooms, stairs, level=3, max_features=10000):
     plt.show()
 
 
-
-
 if __name__ == "__main__":
 
-    geojson_string = open("resources/h4.geojson", encoding="utf-8").read()
-    building_name = "h4"
-    geojson_data = json.loads(geojson_string)
+    geojson_folder = "resources\\geojsonFiles"
 
-    graph, rooms, stairs, doors = parse_geojson_to_graph(geojson_data)
+    geojson_files = [f for f in os.listdir(geojson_folder) if f.endswith('.geojson')]
 
-    with open(f"resources/{building_name}_graph.json", "w") as f:
-        f.write(graph.export_json())
+    for geojson_file in geojson_files:
 
-    parse_obj_files(rooms, stairs, doors, building_name, origin_lat, origin_lon)
+        # Extract building name from filename
+        building_name = os.path.splitext(geojson_file)[0]
 
+        print(f"Processing building: {building_name}")
 
-    print("origon lat: ", origin_lat)
-    print("origon lon: ", origin_lon)
+        # Read and parse the GeoJSON file
+        geojson_path = os.path.join(geojson_folder, geojson_file)
+        with open(geojson_path, encoding="utf-8") as f:
+            geojson_string = f.read()
+        geojson_data = json.loads(geojson_string)
+
+        # Parse the GeoJSON to graph
+        graph, rooms, stairs, doors = parse_geojson_to_graph(geojson_data)
+
+        # Save the graph JSON in the resources folder
+        graph_path = os.path.join(geojson_folder, f"{building_name}_graph.json")
+        with open(graph_path, "w") as f:
+            f.write(graph.export_json())
+
+        # Create building-specific folder for OBJ files
+        building_obj_folder = os.path.join(geojson_folder, building_name)
+        os.makedirs(building_obj_folder, exist_ok=True)
+
+        # Parse OBJ files and save them in the building-specific folder
+        parse_obj_files(rooms, stairs, doors, building_name, building_obj_folder)
+
+        # Visualize the level
+        visualize_level(rooms, stairs)
+
+        print(f"Completed processing for {building_name}")
+        print("origin lat: ", origin_lat)
+        print("origin lon: ", origin_lon)
+        print("-" * 50)  # Separator between buildings

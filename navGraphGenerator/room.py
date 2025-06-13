@@ -106,20 +106,20 @@ class Room:
         return BoundingBox(min_x, min_y, max_x, max_y)
 
 
-    def get_meter_geometry(self, origin_lat: float, origin_lon: float) -> Polygon:
+    def get_meter_geometry(self) -> Polygon:
         """
         Returns the geometry of the room as a shapely Polygon object.
         Subtracts holes (if they were set up)
         """
-        coordinates: List[Tuple] = [normalize_lat_lon_to_meter(lat, lon, origin_lat, origin_lon) for lat, lon in self.coordinates]
+        coordinates: List[Tuple] = [normalize_lat_lon_to_meter(lat, lon) for lat, lon in self.coordinates]
         holes = []
         for hole in self.holes:
-            holes.append([normalize_lat_lon_to_meter(lat, lon, origin_lat, origin_lon) for lat, lon in hole])
+            holes.append([normalize_lat_lon_to_meter(lat, lon) for lat, lon in hole])
 
         return Polygon(coordinates, holes=holes)
 
 
-    def get_wavefront_walls(self, origin_lat: float, origin_lon: float, add_to_wavefront: "Wavefront", height: float = 2.0, outside=False, inside=True, top=True) -> None:
+    def get_wavefront_walls(self, add_to_wavefront: "Wavefront", height: float = 2.0, outside=False, inside=True, top=True) -> None:
         """
         Creates an OBJ file representation of walls from room polygons.
 
@@ -226,7 +226,7 @@ class Room:
                         (outer[i][0], 0.0, outer[i][1])
                     ], [normal_out] * 4)
 
-        polygon: Polygon = self.get_meter_geometry(origin_lat, origin_lon)
+        polygon: Polygon = self.get_meter_geometry()
         wall_thickness = 0.2
 
         inner_geom = polygon.buffer(-wall_thickness / 2, join_style="mitre")
@@ -1017,7 +1017,7 @@ class Room:
             "name": self.name,
             "outline": [
                 {"lat": lat, "lon": lon}
-                for lat, lon in (normalize_lat_lon_to_meter(x, y,0,0) for x, y in self.coordinates)
+                for lat, lon in (normalize_lat_lon_to_meter(x, y) for x, y in self.coordinates)
             ]
         }
 

@@ -51,7 +51,7 @@ class Door:
             print("Door found with more than 2 rooms, ignoring room")
 
 
-    def get_wavefront_walls(self, origin_lat, origin_lon, wavefront):
+    def get_wavefront_walls(self, wavefront):
 
         if not self.geometry:
             return
@@ -62,8 +62,8 @@ class Door:
             x, y = point
             x1, y1 = self.geometry[(i+1) % len(self.geometry)]
 
-            x, y = normalize_lat_lon_to_meter(x, y, origin_lat, origin_lon)
-            x1, y1 = normalize_lat_lon_to_meter(x1, y1, origin_lat, origin_lon)
+            x, y = normalize_lat_lon_to_meter(x, y)
+            x1, y1 = normalize_lat_lon_to_meter(x1, y1)
 
             top_face.append((x,1.8,y))
 

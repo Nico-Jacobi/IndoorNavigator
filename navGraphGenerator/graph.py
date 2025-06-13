@@ -296,7 +296,7 @@ class Graph:
             vertex.neighbours = {n for n in vertex.neighbours if n in largest_component}
 
 
-    def normalize_coordinates(self, origin_lat: float, origin_lon: float) -> None:
+    def normalize_coordinates(self) -> None:
         """
         Normalizes all coordinates in the graph relative to the specified origin,
         converting latitude/longitude to meters.
@@ -308,7 +308,7 @@ class Graph:
         new_vertices = {}
 
         for (x, y, floor), vertex in self.vertices.items():
-            vertex.x, vertex.y = normalize_lat_lon_to_meter(vertex.x, vertex.y, origin_lat, origin_lon)
+            vertex.x, vertex.y = normalize_lat_lon_to_meter(vertex.x, vertex.y)
             new_vertices[(vertex.x, vertex.y, floor)] = vertex
 
         self.vertices = new_vertices
@@ -319,5 +319,5 @@ class Graph:
             if hasattr(edge.navigation_path, "points") and edge.navigation_path.points:
                 for i, point in enumerate(edge.navigation_path.points):
                     if isinstance(point, tuple) and len(point) >= 2:
-                        x, y = normalize_lat_lon_to_meter(point[0], point[1], origin_lat, origin_lon)
+                        x, y = normalize_lat_lon_to_meter(point[0], point[1])
                         edge.navigation_path.points[i] = (x, y)

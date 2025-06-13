@@ -1,6 +1,8 @@
 from typing import Tuple
 import math
 
+origin_lat = 50.80977
+origin_lon = 8.81048
 
 def meters_to_latlon(x_meter: float, y_meter: float, origin_lat: float, origin_lon: float) -> Tuple[float, float]:
     """
@@ -43,7 +45,7 @@ def latlon_to_meters(lat: float, lon: float, origin_lat: float, origin_lon: floa
     return x_meter, y_meter
 
 
-def normalize_lat_lon_to_meter(lat: float, lon: float, origin_lat: float, origin_lon: float) -> Tuple[float, float]:
+def normalize_lat_lon_to_meter(lat: float, lon: float) -> Tuple[float, float]:
     """
     Normalizes a GPS coordinate pair by first converting to meters from the origin point,
     then scaling based on the specified width and height in meters.
@@ -55,8 +57,6 @@ def normalize_lat_lon_to_meter(lat: float, lon: float, origin_lat: float, origin
     :return: A tuple containing normalized x and y values in meters (0-100 range)
     """
 
-    origin_lat=50.80977
-    origin_lon=8.81048
 
     # Convert lat/lon to meters from origin
     x_meter, y_meter = latlon_to_meters(lat-origin_lat, lon-origin_lon, origin_lat, origin_lon)

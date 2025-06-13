@@ -15,7 +15,7 @@ matplotlib.use('TkAgg')
 
 import os
 
-def parse_obj_files(rooms: List[Door], stairs: List[Stair], doors: List[Door], source_filename, origin_lat, origin_lon) -> None:
+def parse_obj_files(rooms: List[Door], stairs: List[Stair], doors: List[Door], source_filename, fileLocation) -> None:
     """
     generates .obj files per floor, and a config .json with output paths.
     Expects the rooms to be already parsed and setup. (the graph doesn't need to be setup)
@@ -36,13 +36,13 @@ def parse_obj_files(rooms: List[Door], stairs: List[Stair], doors: List[Door], s
             continue
 
         floor_doors = [d for d in doors if d.level == level]
-        walls = parse_walls_obj_from_rooms(floor_rooms, origin_lat, origin_lon)
-        ground = parse_ground_floor_obj_from_rooms(floor_rooms, origin_lat, origin_lon)
-        doors_obj = parse_door_obj(floor_doors, origin_lat, origin_lon)
+        walls = parse_walls_obj_from_rooms(floor_rooms)
+        ground = parse_ground_floor_obj_from_rooms(floor_rooms)
+        doors_obj = parse_door_obj(floor_doors)
 
-        walls_file = f"resources/{building_name}_floor{level}_walls.obj"
-        ground_file = f"resources/{building_name}_floor{level}_ground.obj"
-        doors_file = f"resources/{building_name}_floor{level}_doors.obj"
+        walls_file = f"{fileLocation}/{building_name}_floor{level}_walls.obj"
+        ground_file = f"{fileLocation}/{building_name}_floor{level}_ground.obj"
+        doors_file = f"{fileLocation}/{building_name}_floor{level}_doors.obj"
 
 
         with open(walls_file, "w") as f:
@@ -92,11 +92,11 @@ def write_default_mtl(filename: str):
             """)
 
 
-def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origin_lon: float) -> Wavefront:
+def parse_walls_obj_from_rooms(all_rooms: List['Room']) -> Wavefront:
     wavefront: Wavefront = Wavefront()
 
     for room in all_rooms:
-        room.get_wavefront_walls(origin_lat, origin_lon, wavefront)
+        room.get_wavefront_walls(wavefront)
 
     merged_geometry_outside = unary_union([room.polygon for room in all_rooms if room.polygon.geom_type == "Polygon"])
     merged_geometry_outside = merged_geometry_outside.buffer(Room.wall_thickness[0], join_style="mitre").buffer(-Room.wall_thickness[0], join_style="mitre")
@@ -134,10 +134,10 @@ def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origi
 
     # Process all collected rooms
     for room in outside_holes:
-        room.get_wavefront_walls(origin_lat, origin_lon, wavefront, outside=False, inside=True, top=True)
+        room.get_wavefront_walls(wavefront, outside=False, inside=True, top=True)
 
     for outside_room in outside:
-        outside_room.get_wavefront_walls(origin_lat, origin_lon, wavefront, outside=True, inside=False, top=True)
+        outside_room.get_wavefront_walls(wavefront, outside=True, inside=False, top=True)
 
 
 
@@ -145,12 +145,12 @@ def parse_walls_obj_from_rooms(all_rooms: List['Room'], origin_lat: float, origi
 
 
 
-def parse_ground_floor_obj_from_rooms(rooms: List['Room'], origin_lat: float, origin_lon: float) -> Wavefront:
+def parse_ground_floor_obj_from_rooms(rooms: List['Room']) -> Wavefront:
 
     wavefront = Wavefront()
     for room in rooms:
 
-        geometry = room.get_meter_geometry(origin_lat, origin_lon)
+        geometry = room.get_meter_geometry()
 
         if not geometry.is_empty:
             polygon = Polygon2D.from_shapely(geometry)
@@ -160,11 +160,11 @@ def parse_ground_floor_obj_from_rooms(rooms: List['Room'], origin_lat: float, or
 
 
 
-def parse_door_obj(all_doors: List['Door'], origin_lat: float,origin_lon: float) -> Wavefront:
+def parse_door_obj(all_doors: List['Door']) -> Wavefront:
 
     wavefront = Wavefront()
     for door in all_doors:
-        door.get_wavefront_walls(origin_lat, origin_lon, wavefront)
+        door.get_wavefront_walls(wavefront)
 
     return wavefront
 
