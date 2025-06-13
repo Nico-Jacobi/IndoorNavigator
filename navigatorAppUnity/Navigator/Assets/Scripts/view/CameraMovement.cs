@@ -404,7 +404,7 @@ namespace view
                 {
                     // Set orbit point to marker level (this is where we want the camera to look)
                     orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
-                    registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
+                    registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetShownBuilding().buildingName, pos.Floor);
                 }
                 positionUpdateTimer = 0f;
             }

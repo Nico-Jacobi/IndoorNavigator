@@ -105,6 +105,7 @@ namespace view
         private void OnGotoPositionClicked()
         {
             registry.cameraController.GotoPrediction();
+            registry.topMenu.UpdateUI();
         }
 
         // Force stop any running animation

@@ -212,7 +212,7 @@ namespace view
             }
             markers.Clear();
        
-            List<Coordinate> coords = registry.database.GetCoordinatesForBuilding(registry.buildingManager.GetActiveBuilding().buildingName)
+            List<Coordinate> coords = registry.database.GetCoordinatesForBuilding(registry.buildingManager.GetShownBuilding().buildingName)
                 .Where(coord => coord.Floor == registry.buildingManager.GetShownFloor()).ToList();
 
             foreach (var coord in coords)
@@ -233,7 +233,7 @@ namespace view
             Coordinate closest = null;
             float closestDistance = float.PositiveInfinity;
 
-            List<Coordinate> coords = registry.database.GetCoordinatesForBuilding(registry.buildingManager.GetActiveBuilding().buildingName)
+            List<Coordinate> coords = registry.database.GetCoordinatesForBuilding(registry.buildingManager.GetShownBuilding().buildingName)
                 .Where(coord => coord.Floor == registry.buildingManager.GetShownFloor()).ToList();
             
             foreach (Coordinate coord in coords)
@@ -284,7 +284,7 @@ namespace view
             spinner.StartSpinning();
             collectButtonText.text = "";
             
-            string buildingName = registry.buildingManager.GetActiveBuilding().buildingName;
+            string buildingName = registry.buildingManager.GetShownBuilding().buildingName;
             int floor = registry.buildingManager.GetShownFloor();
             
             StartCoroutine(CollectDataPointCoroutine(

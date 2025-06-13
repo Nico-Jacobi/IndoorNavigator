@@ -1,4 +1,7 @@
-﻿using controller;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using controller;
 using model;
 using TMPro;
 using UnityEngine;
@@ -10,6 +13,7 @@ namespace view
     {
         public Registry registry;
 
+        public RectTransform menu;
         public Button settingsButton;
         public TMP_Dropdown buildingField;
         public Button increaseFloorButton;
@@ -17,8 +21,27 @@ namespace view
         public TMP_Text currentFloorText;
         public TMP_Text currentRoomText;
 
+       
+        private Vector2 hiddenPos;
+        private Vector2 visiblePos;
+        private float slideDuration = 0.5f;
+
+        private bool open = false;
+        
         private void Start()
         {
+            visiblePos = menu.anchoredPosition;
+            
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+            
+            float canvasHeight = canvasRect.rect.height;
+            hiddenPos = visiblePos + new Vector2(0, menu.rect.height + canvasHeight + 100f);
+
+
+            menu.anchoredPosition = hiddenPos;
+
+
             settingsButton.onClick.AddListener(OnSettingsClicked);
             decreaseFloorButton.onClick.AddListener(OnFloorDownClicked);
             increaseFloorButton.onClick.AddListener(OnFloorUpClicked);
@@ -30,19 +53,67 @@ namespace view
 
         private void InitializeBuildingDropdown()
         {
-            if (registry.buildingManager != null)
+            List<string> buildingNames = registry.buildingManager.GetAvailableBuildingNames();
+    
+            // Clear and set options directly
+            buildingField.options.Clear();
+    
+            foreach (string name in buildingNames)
             {
-                buildingField.ClearOptions();
-                buildingField.AddOptions(registry.buildingManager.GetAvailableBuildingNames());
-                
-                // Set default to h4 if available
-                SetBuildingDropdownToActive();
+                buildingField.options.Add(new TMP_Dropdown.OptionData(name));
             }
+    
+            // Force refresh the dropdown display
+            buildingField.RefreshShownValue();
+    
+            Debug.Log($"found {buildingNames.Count} building names");
+    
+            // Debug: Print all option texts to verify they're set correctly
+            for (int i = 0; i < buildingField.options.Count; i++)
+            {
+                Debug.Log($"Option {i}: {buildingField.options[i].text}");
+            }
+    
+            // Set default to active building if available
+            SetBuildingDropdownToActive();
         }
 
+        public void ToggleMenu()
+        {
+            if (open)
+                CloseMenu();
+            else
+                OpenMenu();
+        }
+
+        public void OpenMenu()
+        {
+            open = true;
+            StartCoroutine(SlideMenu(menu, menu.anchoredPosition, visiblePos, slideDuration));
+        }
+
+        public void CloseMenu()
+        {
+            open = false;
+            StartCoroutine(SlideMenu(menu, menu.anchoredPosition, hiddenPos, slideDuration));
+        }
+
+        private IEnumerator SlideMenu(RectTransform rect, Vector2 from, Vector2 to, float duration)
+        {
+            float time = 0f;
+            while (time < duration)
+            {
+                time += Time.deltaTime;
+                rect.anchoredPosition = Vector2.Lerp(from, to, time / duration);
+                yield return null;
+            }
+
+            rect.anchoredPosition = to;
+        }
+        
         private void SetBuildingDropdownToActive()
         {
-            var activeBuilding = registry.buildingManager.GetActiveBuilding();
+            var activeBuilding = registry.buildingManager.GetShownBuilding();
             if (activeBuilding != null)
             {
                 int index = buildingField.options.FindIndex(option => option.text == activeBuilding.buildingName);
@@ -123,11 +194,10 @@ namespace view
             {
                 string selectedBuilding = buildingField.options[index].text;
                 Debug.Log($"Building changed to index {index}: {selectedBuilding}");
+                registry.cameraController.GotoPosition(new Position(0,0,registry.buildingManager.GetShownFloor()));
+
+                registry.buildingManager.ChangeBuilding(selectedBuilding);
                 
-                if (registry.buildingManager != null)
-                {
-                    registry.buildingManager.ChangeBuilding(selectedBuilding);
-                }
             }
         }
     }

@@ -37,6 +37,9 @@ namespace view
 
             // Initialize positions
             InitializePositions();
+            
+            List<string> allRoomNames = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
+            registry.navigationDialog.Initialize(allRoomNames);
         }
 
         private void InitializePositions()

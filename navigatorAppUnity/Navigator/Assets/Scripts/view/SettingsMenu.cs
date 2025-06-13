@@ -41,21 +41,12 @@ namespace view
         {
             visiblePos = menu.anchoredPosition;
             
-            // Method 1: Use Canvas dimensions instead of Screen dimensions
             Canvas canvas = GetComponentInParent<Canvas>();
             RectTransform canvasRect = canvas.GetComponent<RectTransform>();
             float canvasWidth = canvasRect.rect.width;
             
-            // Move menu completely off-screen to the right
             hiddenPos = visiblePos + new Vector2(canvasWidth + menu.rect.width + 100f, 0);
-            
-            // Alternative Method 2: Calculate based on menu width
-            // float menuWidth = menu.rect.width;
-            // hiddenPos = visiblePos + new Vector2(menuWidth + 200f, 0); // Menu width + extra padding
-            
-            // Alternative Method 3: Use a large fixed value that works on all screens
-            // hiddenPos = visiblePos + new Vector2(2000f, 0); // Should be off-screen on most devices
-            
+
             menu.anchoredPosition = hiddenPos;
 
             
@@ -93,6 +84,7 @@ namespace view
 
         public void OpenMenu()
         {
+            registry.topMenu.CloseMenu();
             registry.floatingButtons.Hide();
             open = true;
             registry.cameraController.inMenu = true;
@@ -102,6 +94,7 @@ namespace view
 
         public void CloseMenu()
         {
+            registry.topMenu.OpenMenu();
             registry.floatingButtons.Show();
             open = false;
             registry.cameraController.inMenu = false;

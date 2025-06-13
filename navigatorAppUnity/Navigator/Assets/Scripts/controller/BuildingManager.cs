@@ -11,7 +11,8 @@ namespace controller
     {
         private Dictionary<string, Building> buildings = new Dictionary<string, Building>();
 
-        private Building activeBuilding;
+        private Building currentBuilding;   //the currently detectedPosition is here
+        private Building shownBuilding;
         private GameObject activeFloorObject; //the model shown
         private int activeFloorLevel = -1; // Track the active floor level
         private string currentRoom = "";
@@ -20,7 +21,17 @@ namespace controller
 
         public Building GetActiveBuilding()
         {
-            return activeBuilding;
+            return currentBuilding;
+        }
+        
+        public Building GetShownBuilding()
+        {
+            return shownBuilding;
+        }
+
+        public bool ShownEqualsActiveBuilding()
+        {
+            return currentBuilding == shownBuilding;
         }
 
         public int GetShownFloor()
@@ -30,8 +41,9 @@ namespace controller
 
         public Graph GetActiveGraph()
         {
-            return activeBuilding?.graph;
+            return currentBuilding?.graph;
         }
+        
 
         public string GetCurrentRoom()
         {
@@ -58,22 +70,22 @@ namespace controller
             LoadBuildingConfigs();
             
             // Default building setup
-            SpawnBuildingFloor("h4", 3);
+            SpawnBuildingFloor("h4", 3, true);
 
             Debug.Log($"Buildings Manager script initialized");
-            Debug.Log($"activeBuilding is: {activeBuilding?.buildingName}");
+            Debug.Log($"activeBuilding is: {currentBuilding?.buildingName}");
         }
 
         public void IncreaseFloor()
         {
-            if (activeBuilding == null) return;
-            Debug.Log("IncreaseFloor called");
+            if (shownBuilding == null) return;
+            //Debug.Log("IncreaseFloor called");
 
             int currentIndex = GetFloorIndex(activeFloorLevel);
-            if (currentIndex < activeBuilding.floors.Count - 1)
+            if (currentIndex < shownBuilding.floors.Count - 1)
             {
-                int nextFloorLevel = activeBuilding.floors[currentIndex + 1].level;
-                SpawnBuildingFloor(activeBuilding.buildingName, nextFloorLevel);
+                int nextFloorLevel = shownBuilding.floors[currentIndex + 1].level;
+                SpawnBuildingFloor(shownBuilding.buildingName, nextFloorLevel);
             }
 
             registry.dataCollectionMode.Refresh();
@@ -85,15 +97,14 @@ namespace controller
 
         public void DecreaseFloor()
         {
-            if (activeBuilding == null) return;
-            registry.dataCollectionMode.Refresh();
-            Debug.Log("DecreaseFloor called");
+            if (shownBuilding == null) return;
+            //Debug.Log("DecreaseFloor called");
 
             int currentIndex = GetFloorIndex(activeFloorLevel);
             if (currentIndex > 0)
             {
-                int prevFloorLevel = activeBuilding.floors[currentIndex - 1].level;
-                SpawnBuildingFloor(activeBuilding.buildingName, prevFloorLevel);
+                int prevFloorLevel = shownBuilding.floors[currentIndex - 1].level;
+                SpawnBuildingFloor(shownBuilding.buildingName, prevFloorLevel);
             }
 
             registry.dataCollectionMode.Refresh();
@@ -105,23 +116,34 @@ namespace controller
 
         public bool CanIncreaseFloor()
         {
-            if (activeBuilding == null) return false;
+            if (shownBuilding == null) return false;
             int currentIndex = GetFloorIndex(activeFloorLevel);
-            return currentIndex < activeBuilding.floors.Count - 1;
+            return currentIndex < shownBuilding.floors.Count -1;
         }
 
         public bool CanDecreaseFloor()
         {
-            if (activeBuilding == null) return false;
+            if (shownBuilding == null) return false;
             int currentIndex = GetFloorIndex(activeFloorLevel);
             return currentIndex > 0;
         }
 
         public void ChangeBuilding(string buildingName)
         {
+            Debug.Log($"Changing Building to {buildingName}");
             if (buildings.ContainsKey(buildingName))
             {
+                activeFloorLevel = buildings[buildingName].floors[0].level;
                 SpawnBuildingFloor(buildingName, buildings[buildingName].floors[0].level);
+
+                if (ShownEqualsActiveBuilding())
+                {
+                    registry.cameraController.ActivateMarker();
+                }
+                else
+                {
+                    registry.cameraController.DeactivateMarker();
+                }
             }
             else
             {
@@ -139,11 +161,11 @@ namespace controller
 
         private int GetFloorIndex(int floorLevel)
         {
-            if (activeBuilding == null) return 0;
+            if (shownBuilding == null) return 0;
             
-            for (int i = 0; i < activeBuilding.floors.Count; i++)
+            for (int i = 0; i < shownBuilding.floors.Count; i++)
             {
-                if (activeBuilding.floors[i].level == floorLevel)
+                if (shownBuilding.floors[i].level == floorLevel)
                 {
                     return i;
                 }
@@ -219,7 +241,7 @@ namespace controller
                     continue;
 
                 // Early return if the first match equals current building (for efficiency, as this will be the case most times anyway)
-                if (activeBuilding != null && building == activeBuilding.buildingName)
+                if (currentBuilding != null && building == currentBuilding.buildingName)
                 {
                     return;
                 }
@@ -234,8 +256,9 @@ namespace controller
                     .OrderByDescending(kv => kv.Value)
                     .First().Key;
 
-                activeBuilding = GetBuilding(mostLikelyBuilding);
+                currentBuilding = GetBuilding(mostLikelyBuilding);
                 NotifyUIUpdate();
+                registry.graphManager.RefreshRoomOptions();
             }
             else
             {
@@ -255,11 +278,11 @@ namespace controller
             return null;
         }
 
-        public void SpawnBuildingFloor(string buildingName, int floorLevel)
+        public void SpawnBuildingFloor(string buildingName, int floorLevel, bool updateCurrentBuilding = false)
         {
             // Check if the requested building and floor are already active
-            if (activeBuilding != null &&
-                activeBuilding.buildingName == buildingName &&
+            if (shownBuilding != null &&
+                shownBuilding.buildingName == buildingName &&
                 activeFloorLevel == floorLevel)
             {
                 //Debug.Log($"Building {buildingName}, floor {floorLevel} already active - skipping respawn");
@@ -280,8 +303,7 @@ namespace controller
                 bool floorExists = building.floors.Any(f => f.level == floorLevel);
                 if (!floorExists)
                 {
-                    Debug.LogWarning(
-                        $"Floor {floorLevel} not found in building {buildingName}. Using first available floor.");
+                    Debug.LogWarning($"Floor {floorLevel} not found in building {buildingName}. Using first available floor.");
                     floorLevel = building.floors[0].level;
                 }
 
@@ -293,12 +315,17 @@ namespace controller
 
                 // Create a new parent object for the building
                 GameObject buildingObject = new GameObject(buildingName);
-                activeBuilding = building;
+                if (updateCurrentBuilding)
+                {
+                    currentBuilding = building;
+                }
+
+                shownBuilding = building;
                 activeFloorLevel = floorLevel;
+                Debug.Log($"Set current floor to {floorLevel}");
                 building.SpawnFloor(floorLevel, buildingObject.transform);
                 activeFloorObject = buildingObject;
 
-                // Notify UI and other systems
                 NotifyUIUpdate();
                 registry.cameraController.MoveMarkerToPosition(null);
 

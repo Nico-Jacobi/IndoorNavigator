@@ -25,8 +25,6 @@ namespace controller
             Debug.Log("Graph Manager script initialized");
 
             // Initialize navigation dialog
-            List<string> allRoomNames = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
-            registry.navigationDialog.Initialize(allRoomNames);
             registry.navigationDialog.OnNavigationRequested += OnNavigationRequested;
 
             StartCoroutine(UpdatePath());
@@ -246,6 +244,8 @@ namespace controller
                 navigationActive = false;
                 return;
             }
+            
+            if (!registry.buildingManager.ShownEqualsActiveBuilding()) return;  //the path cant be shown as we are in the wrong building
 
             Color[] startColors = { Color.cyan, Color.magenta };
             Color[] endColors = { Color.magenta, Color.cyan };
