@@ -55,11 +55,20 @@ def parse_geojson_to_graph(geojson_string) -> tuple[Graph, list, list, list]:
                     origin_lon = doors[-1].coordinates[1]
 
             elif is_stairs:
-                stairs.append(Stair(feature, graph))
+                try:
+                    stairs.append(Stair(feature, graph))
+                except ValueError as e:
+                    print(f"Skipping invalid stair: {e}")
+                    broken.append(feature)
+
             else:
                 if len(feature.get("geometry", {}).get("coordinates", [])) <= 2:
                     continue
-                rooms.append(Room(feature, graph))
+                try:
+                    rooms.append(Room(feature, graph))
+                except ValueError as e:
+                    print(f"Skipping invalid room: {e}")
+                    broken.append(feature)
         else:
             broken.append(feature)
 
@@ -110,7 +119,7 @@ def visualize_level(rooms, stairs, level=3, max_features=10000):
 
 if __name__ == "__main__":
 
-    geojson_folder = "resources\\geojsonFiles"
+    geojson_folder = "resources"
 
     geojson_files = [f for f in os.listdir(geojson_folder) if f.endswith('.geojson')]
 
@@ -143,7 +152,7 @@ if __name__ == "__main__":
         parse_obj_files(rooms, stairs, doors, building_name, building_obj_folder)
 
         # Visualize the level
-        visualize_level(rooms, stairs)
+        #visualize_level(rooms, stairs)
 
         print(f"Completed processing for {building_name}")
         print("origin lat: ", origin_lat)

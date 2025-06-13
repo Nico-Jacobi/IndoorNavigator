@@ -1,5 +1,7 @@
 import math
 import random
+
+from nlopt import INVALID_ARGS
 from scipy.spatial import distance_matrix
 from typing import Tuple, List, Any, Dict, Optional
 import numpy as np
@@ -42,11 +44,19 @@ class Room:
         self.name: str = properties.get("name", "")
 
         geometry = json.get("geometry", {})
-        #self.geometry_type: str = geometry.get("type", "")
+        geometry_type: str = geometry.get("type", "")
         # Flip x and y when loading coordinates (for having it in lat lon order)
-        self.coordinates: List[Tuple[float, float]] = [
-            (float(coord[1]), float(coord[0])) for coord in geometry.get("coordinates", [])
-        ]
+
+        if geometry_type == "Point":  #this is invalid for a room
+            raise ValueError("Invalid geometry type 'Point' for a room.")
+
+        try:
+            self.coordinates: List[Tuple[float, float]] = [
+                (float(coord[1]), float(coord[0])) for coord in geometry.get("coordinates", [])
+            ]
+        except Exception as e:
+            print(f"Failed to parse coordinates: {geometry.get('coordinates', [])} — {e}")
+            raise
 
         self.coordinates = Room.simplify_geometry(self.coordinates, loop=True)
 
