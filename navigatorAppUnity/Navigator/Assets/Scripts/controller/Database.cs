@@ -26,7 +26,7 @@ namespace controller
 
         void Awake()
         {
-            //DeleteDatabase(); //just for debugging
+            //DeleteDatabase(); //todo just for debugging
             //DontDestroyOnLoad(gameObject);
             InitializeDatabase();
         }
@@ -270,8 +270,8 @@ namespace controller
                 .Where(c => c.BuildingName == buildingName)
                 .ToList();
 
-            if (!coords.Any())
-                throw new ArgumentException($"no data found for Building '{buildingName}'.");
+            //if (!coords.Any())
+                //throw new ArgumentException($"no data found for Building '{buildingName}'.");
 
             foreach (var coord in coords)
                 coord.WifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coord.Id).ToList();

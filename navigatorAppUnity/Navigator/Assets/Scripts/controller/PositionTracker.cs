@@ -24,6 +24,7 @@ namespace controller
         
         public int numberOfNeighboursToConsider = 10;   //for the wknn
 
+        public bool foundPosition = false;
 
         /// <summary>
         /// Update the position based on WiFi measurements.
@@ -63,7 +64,9 @@ namespace controller
                     if (sorted.Count == 0)
                     {
                         Debug.Log("no known signal found...");
-                        registry.noKnowSignalFoundDialog.Show(); 
+                        registry.noKnowSignalFoundDialog.Show();
+                        foundPosition = false;
+                        registry.floatingButtons.DeactivateGotoPositionButton();
                         return new Position(0, 0, 3);    
                     }
 
@@ -84,6 +87,8 @@ namespace controller
                     float finalY = weightedY / totalWeight;
                     float finalFloor = weightedFloor / totalWeight;
 
+                    foundPosition = true;
+                    registry.floatingButtons.ActivateGotoPositionButton();
                     return new Position(finalX, finalY, (int)Math.Round(finalFloor));
                 });
             

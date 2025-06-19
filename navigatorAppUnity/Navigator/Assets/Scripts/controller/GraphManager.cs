@@ -53,7 +53,7 @@ namespace controller
 
         public async void Navigate(Vertex fromVertex, string toRoom)
         {
-            Debug.Log($"Navigating from {fromVertex.name} to {toRoom}");
+            Debug.Log($"Navigating from {fromVertex} to {toRoom}");
 
             if (currentPath?.Count > 6 && currentPath.Last().target.HasRoomNamed(toRoom) && recalculated < 5)
             {
@@ -120,6 +120,8 @@ namespace controller
             {
                 return verts[0];
             }
+            
+            Debug.Log("getStart retuning null, no pos found");
             return null;
         }
 
@@ -128,6 +130,10 @@ namespace controller
         /// </summary>
         private void InterpolateStart()
         {
+            // check if we have a path to work with
+            if (currentPath == null || currentPath.Count == 0)
+                return;
+
             Position pos = registry.GetPositionFilter().GetEstimate();
             Edge firstEdge = currentPath[0];
 
@@ -135,21 +141,34 @@ namespace controller
             Room commonRoom = firstEdge.source.rooms.First(r1 => firstEdge.target.rooms.Any(r2 => r2.id == r1.id));
 
             Room currentRoom = null; // The room the user is in 
+            Vertex nextVertex = null; // vertex we'll connect to after potential removal
+            
             if (commonRoom.IsPointInside(pos.X, pos.Y))
             {
                 // In this case the user is in the same room as the first path
+                nextVertex = firstEdge.target; // save the target before removing
                 currentPath.RemoveAt(0);
                 currentRoom = commonRoom;
             }
             else
             {
+                nextVertex = firstEdge.source; // keep the source
                 currentRoom = firstEdge.source.GetOtherRoom(commonRoom);
             }
 
-            // Now finding an optimal path within the room to "attach" to
+            // check again after potential removal
+            if (currentPath.Count == 0)
+            {
+                // just add direct connection if no path left
+                Vertex tempVertex1 = new Vertex(pos.X, pos.Y, pos.Floor, "userPositionVertex", new List<Room>());
+                List<Point> pathPoints1 = new List<Point>();
+                currentPath.Add(new Edge(tempVertex1, nextVertex, new PathData(0, pathPoints1)));
+                return;
+            }
 
+            // Now finding an optimal path within the room to "attach" to
             // This represents all edges within the current room, which could be used for a nice path
-            List<Edge> possibleCloseEdges = currentPath[0].source.GetEdgesToRoom(currentRoom);
+            List<Edge> possibleCloseEdges = nextVertex.GetEdgesToRoom(currentRoom);
 
             Vertex tempVertex = new Vertex(pos.X, pos.Y, pos.Floor, "userPositionVertex", new List<Room>());
 
@@ -181,11 +200,14 @@ namespace controller
                     subPath = closestEdge.path.points.GetRange(0, idx + 1);
                 }
 
-                subPath.Reverse();
-                currentPath.Insert(0,
-                    new Edge(
-                        new Vertex(subPath[0].lat, subPath[0].lon, pos.Floor, "partialPathVertex", new List<Room>()),
-                        currentPath[0].source, new PathData(0, subPath)));
+                if (subPath != null)
+                {
+                    subPath.Reverse();
+                    currentPath.Insert(0,
+                        new Edge(
+                            new Vertex(subPath[0].lat, subPath[0].lon, pos.Floor, "partialPathVertex", new List<Room>()),
+                            currentPath[0].source, new PathData(0, subPath)));
+                }
             }
 
             // Add a direct line from the position to the start (to the door or the partialPathVertex created earlier)

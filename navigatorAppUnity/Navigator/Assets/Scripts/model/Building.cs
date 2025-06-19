@@ -21,7 +21,7 @@ namespace model
         }
 
         // Method to spawn a floor by its level
-        public void SpawnFloor(int level, Transform parent)
+        public GameObject SpawnFloor(int level, Transform parent)
         {
             Floor floor = floors.Find(f => f.level == level);
 
@@ -61,6 +61,7 @@ namespace model
                         Debug.LogWarning("Door material not found at Resources/Materials/DoorMaterial");
                     }
                     
+                    return groundInstance;
                 }
                 else
                 {
@@ -71,6 +72,8 @@ namespace model
             {
                 Debug.LogError($"Floor {level} not found for building {buildingName}");
             }
+
+            return null;
         }
 
         [System.Serializable]

@@ -70,7 +70,7 @@ namespace controller
             LoadBuildingConfigs();
             
             // Default building setup
-            SpawnBuildingFloor("h4", 3, true);
+            SpawnBuildingFloor("H4", 3, true);
 
             Debug.Log($"Buildings Manager script initialized");
             Debug.Log($"activeBuilding is: {currentBuilding?.buildingName}");
@@ -135,7 +135,9 @@ namespace controller
             {
                 activeFloorLevel = buildings[buildingName].floors[0].level;
                 SpawnBuildingFloor(buildingName, buildings[buildingName].floors[0].level);
-
+                
+                registry.graphManager.CancelNavigation();
+                
                 if (ShownEqualsActiveBuilding())
                 {
                     registry.cameraController.ActivateMarker();
@@ -323,11 +325,32 @@ namespace controller
                 shownBuilding = building;
                 activeFloorLevel = floorLevel;
                 Debug.Log($"Set current floor to {floorLevel}");
-                building.SpawnFloor(floorLevel, buildingObject.transform);
+                GameObject floor = building.SpawnFloor(floorLevel, buildingObject.transform);
                 activeFloorObject = buildingObject;
 
                 NotifyUIUpdate();
-                registry.cameraController.MoveMarkerToPosition(null);
+
+                // set the camera to show the model, as this might not be where it was before
+                if (floor != null)
+                {
+                    Bounds bounds = new Bounds(floor.transform.position, Vector3.zero);
+                    Renderer[] renderers = floor.GetComponentsInChildren<Renderer>();
+    
+                    if (renderers.Length > 0)
+                    {
+                        foreach (Renderer r in renderers)
+                            bounds.Encapsulate(r.bounds);
+    
+                        Position pos = new Position(bounds.center.x, bounds.center.y, floorLevel);
+                        registry.cameraController.MoveMarkerToPosition(pos);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("No renderers found on spawned floor for bounds calculation.");
+                    }
+                }
+                
+
 
                 Debug.Log($"Spawned building {buildingName}, floor {floorLevel}");
             }

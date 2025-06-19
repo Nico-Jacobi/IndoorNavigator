@@ -24,7 +24,7 @@ namespace view
        
         private Vector2 hiddenPos;
         private Vector2 visiblePos;
-        private float slideDuration = 0.5f;
+        private float slideDuration = 0.3f;
 
         private bool open = false;
         
@@ -32,15 +32,10 @@ namespace view
         {
             visiblePos = menu.anchoredPosition;
             
-            Canvas canvas = GetComponentInParent<Canvas>();
-            RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-            
-            float canvasHeight = canvasRect.rect.height;
-            hiddenPos = visiblePos + new Vector2(0, menu.rect.height + canvasHeight + 100f);
-
+            // just move up by menu height + small padding to hide it
+            hiddenPos = visiblePos + new Vector2(0, menu.rect.height + 50f);
 
             menu.anchoredPosition = hiddenPos;
-
 
             settingsButton.onClick.AddListener(OnSettingsClicked);
             decreaseFloorButton.onClick.AddListener(OnFloorDownClicked);

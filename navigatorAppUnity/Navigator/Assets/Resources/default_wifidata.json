@@ -5,7 +5,7 @@
       "X": 17.88390663709737,
       "Y": 2.2060434689478825,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1,
@@ -248,7 +248,7 @@
       "X": 18.132240483006747,
       "Y": 0.9302880608012742,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 40,
@@ -485,7 +485,7 @@
       "X": 18.07386761489949,
       "Y": -0.9290893621266605,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 78,
@@ -746,7 +746,7 @@
       "X": 15.367369898294966,
       "Y": -0.808880785851045,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 120,
@@ -989,7 +989,7 @@
       "X": 15.399266507010339,
       "Y": 0.9852258748941267,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 159,
@@ -1232,7 +1232,7 @@
       "X": 13.440892777501555,
       "Y": 1.9484320882028783,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 198,
@@ -1505,7 +1505,7 @@
       "X": 10.794825046875033,
       "Y": 1.624621426254862,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 242,
@@ -1784,7 +1784,7 @@
       "X": 8.78806207078289,
       "Y": 2.1127338717241173,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 287,
@@ -2081,7 +2081,7 @@
       "X": 8.913908619270675,
       "Y": 5.865219848247136,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 335,
@@ -2324,7 +2324,7 @@
       "X": 8.913300681357587,
       "Y": 3.7664667131286933,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 374,
@@ -2597,7 +2597,7 @@
       "X": 6.1466291562281175,
       "Y": 0.5968352411036904,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 418,
@@ -2864,7 +2864,7 @@
       "X": 3.130058524764621,
       "Y": 0.5428224522893288,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 461,
@@ -3131,7 +3131,7 @@
       "X": 3.1505827254144636,
       "Y": 2.7745418634705743,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 504,
@@ -3386,7 +3386,7 @@
       "X": 5.776734193179278,
       "Y": 2.965386249355788,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 545,
@@ -3659,7 +3659,7 @@
       "X": 1.9441810342819583,
       "Y": -1.5194029119430752,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 589,
@@ -3902,7 +3902,7 @@
       "X": 1.8264531667080959,
       "Y": -3.217591132763573,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 628,
@@ -4079,7 +4079,7 @@
       "X": 1.9353427117262862,
       "Y": -6.021189118194457,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 656,
@@ -4238,7 +4238,7 @@
       "X": 1.8370091410770297,
       "Y": -8.613593261861183,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 681,
@@ -4415,7 +4415,7 @@
       "X": -1.0941790924275288,
       "Y": -8.357717944887781,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 709,
@@ -4634,7 +4634,7 @@
       "X": -3.6028497869681457,
       "Y": -8.625756923513563,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 744,
@@ -4823,7 +4823,7 @@
       "X": -4.156372701913817,
       "Y": -9.888675033567722,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 774,
@@ -5024,7 +5024,7 @@
       "X": -4.45348437122419,
       "Y": -12.409459433604866,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 806,
@@ -5213,7 +5213,7 @@
       "X": -4.276562143238133,
       "Y": -15.657544565542594,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 836,
@@ -5420,7 +5420,7 @@
       "X": -4.2098848169379215,
       "Y": -18.124689871085593,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 869,
@@ -5627,7 +5627,7 @@
       "X": -4.077926164931454,
       "Y": -22.19663740853747,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 902,
@@ -5846,7 +5846,7 @@
       "X": -2.6506182717635314,
       "Y": -24.18836881129039,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 937,
@@ -6053,7 +6053,7 @@
       "X": -0.42669437034880886,
       "Y": -23.37869134217982,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 970,
@@ -6212,7 +6212,7 @@
       "X": 0.8608259731599752,
       "Y": -26.263139190517677,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 995,
@@ -6389,7 +6389,7 @@
       "X": 2.8406839092017258,
       "Y": -25.81258033372478,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1023,
@@ -6542,7 +6542,7 @@
       "X": 5.032049754372778,
       "Y": -25.649343614649638,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1047,
@@ -6695,7 +6695,7 @@
       "X": 4.958795958827324,
       "Y": -23.23286164840937,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1071,
@@ -6830,7 +6830,7 @@
       "X": 7.189882625993129,
       "Y": -23.152427691057085,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1092,
@@ -6977,7 +6977,7 @@
       "X": 0.6711821162712559,
       "Y": -30.002342879990636,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1115,
@@ -7160,7 +7160,7 @@
       "X": 4.722758018268903,
       "Y": -29.45082684436585,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1144,
@@ -7301,7 +7301,7 @@
       "X": 7.079409632101813,
       "Y": -29.910531901028037,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1166,
@@ -7430,7 +7430,7 @@
       "X": -3.099160680165535,
       "Y": -30.017551901946717,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1186,
@@ -7607,7 +7607,7 @@
       "X": -3.329472498743411,
       "Y": -33.2174162994022,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1214,
@@ -7820,7 +7820,7 @@
       "X": -7.7704961229579315,
       "Y": -8.620246644160545,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1248,
@@ -8063,7 +8063,7 @@
       "X": -10.029578080102807,
       "Y": -8.515269580457527,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1287,
@@ -8264,7 +8264,7 @@
       "X": -13.375033244616183,
       "Y": -8.515459019251068,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1319,
@@ -8417,7 +8417,7 @@
       "X": -16.543412074646252,
       "Y": -8.538452037730053,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1343,
@@ -8600,7 +8600,7 @@
       "X": -20.144507136988572,
       "Y": -8.319594114594793,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1372,
@@ -8813,7 +8813,7 @@
       "X": 8.703642330840317,
       "Y": 8.865933574608391,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1406,
@@ -9092,7 +9092,7 @@
       "X": 8.206462130048058,
       "Y": 13.030090721657928,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1451,
@@ -9317,7 +9317,7 @@
       "X": 8.94726412018684,
       "Y": 16.472432138143347,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1487,
@@ -9530,7 +9530,7 @@
       "X": 10.78018460675718,
       "Y": 16.39810025111558,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1521,
@@ -9677,7 +9677,7 @@
       "X": 11.277773024522691,
       "Y": 14.713137794978763,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1544,
@@ -9830,7 +9830,7 @@
       "X": 8.903342431096169,
       "Y": 19.503681936299415,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1568,
@@ -10055,7 +10055,7 @@
       "X": 9.054700064400532,
       "Y": 21.37909188071518,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1604,
@@ -10280,7 +10280,7 @@
       "X": 8.120146051986534,
       "Y": 23.25839034784309,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1640,
@@ -10487,7 +10487,7 @@
       "X": 8.468239247753482,
       "Y": 24.91002392108186,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1673,
@@ -10712,7 +10712,7 @@
       "X": 11.298722992832747,
       "Y": 25.904207490210638,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1709,
@@ -10907,7 +10907,7 @@
       "X": -15.421287672225613,
       "Y": 41.5066482309831,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1740,
@@ -11168,7 +11168,7 @@
       "X": -17.18649099121687,
       "Y": 44.76969481882634,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1782,
@@ -11381,7 +11381,7 @@
       "X": -19.89250518600821,
       "Y": 42.62667907863204,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1816,
@@ -11564,7 +11564,7 @@
       "X": -23.125390486124918,
       "Y": 41.90893452537097,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1845,
@@ -11735,7 +11735,7 @@
       "X": -22.63515577970685,
       "Y": 44.5737349321692,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1872,
@@ -11906,7 +11906,7 @@
       "X": -25.913006701038334,
       "Y": 44.83287577845516,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1899,
@@ -12083,7 +12083,7 @@
       "X": -29.15582103559165,
       "Y": 45.84622526660553,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1927,
@@ -12236,7 +12236,7 @@
       "X": -29.25774958103378,
       "Y": 50.101769098760656,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1951,
@@ -12425,7 +12425,7 @@
       "X": -29.2501183587109,
       "Y": 53.64612683173959,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 1981,
@@ -12650,7 +12650,7 @@
       "X": -29.194295565384355,
       "Y": 56.2452720840821,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2017,
@@ -12845,7 +12845,7 @@
       "X": -29.444156073527083,
       "Y": 58.27663733414681,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2048,
@@ -13046,7 +13046,7 @@
       "X": -29.11742660522096,
       "Y": 62.10331894809684,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2080,
@@ -13211,7 +13211,7 @@
       "X": -29.943206867315617,
       "Y": 64.43177972290385,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2106,
@@ -13388,7 +13388,7 @@
       "X": -32.91369074893267,
       "Y": 63.28673907239647,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2134,
@@ -13553,7 +13553,7 @@
       "X": -35.504855048689286,
       "Y": 63.49502676645443,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2160,
@@ -13730,7 +13730,7 @@
       "X": -36.35708535397931,
       "Y": 60.9541088865825,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2188,
@@ -13883,7 +13883,7 @@
       "X": -39.29689259317755,
       "Y": 61.00716423433283,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2212,
@@ -14024,7 +14024,7 @@
       "X": -42.89105180528927,
       "Y": 61.060042853485754,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2234,
@@ -14171,7 +14171,7 @@
       "X": -36.83217400422843,
       "Y": 58.187715225597856,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2257,
@@ -14330,7 +14330,7 @@
       "X": -36.61645236206439,
       "Y": 54.59052824066191,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2282,
@@ -14447,7 +14447,7 @@
       "X": -36.530593325968134,
       "Y": 51.971026374897065,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2300,
@@ -14552,7 +14552,7 @@
       "X": -36.3734262382202,
       "Y": 49.29378684345721,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2316,
@@ -14675,7 +14675,7 @@
       "X": -29.44781537851384,
       "Y": 66.93167436152066,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2335,
@@ -14894,7 +14894,7 @@
       "X": -29.659325333128237,
       "Y": 69.01974430509057,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2370,
@@ -15071,7 +15071,7 @@
       "X": -28.056273940691508,
       "Y": 70.74198488691451,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2398,
@@ -15254,7 +15254,7 @@
       "X": -34.20124883282853,
       "Y": 44.56855451914663,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2427,
@@ -15503,7 +15503,7 @@
       "X": -37.55024991622912,
       "Y": 26.503854683847976,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2467,
@@ -15872,7 +15872,7 @@
       "X": 13.31078256202672,
       "Y": 13.606449002121508,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2527,
@@ -16043,7 +16043,7 @@
       "X": 19.792591898488546,
       "Y": 1.0213169486257812,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2554,
@@ -16334,7 +16334,7 @@
       "X": 22.107887843173838,
       "Y": 1.2429884736729946,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2601,
@@ -16589,7 +16589,7 @@
       "X": 25.964020198937558,
       "Y": 0.5903518055720269,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2642,
@@ -16766,7 +16766,7 @@
       "X": 15.387887810671293,
       "Y": -13.948039114582684,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2670,
@@ -16871,7 +16871,7 @@
       "X": 14.888896853881857,
       "Y": -19.981649328100843,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2686,
@@ -16982,7 +16982,7 @@
       "X": 18.683899793217897,
       "Y": -23.860932515471234,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2703,
@@ -17087,7 +17087,7 @@
       "X": 20.0282349525888,
       "Y": -28.878756013074565,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2719,
@@ -17198,7 +17198,7 @@
       "X": 15.655328316191552,
       "Y": -27.863297215315868,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2736,
@@ -17303,7 +17303,7 @@
       "X": 11.490853547701777,
       "Y": -22.72255225135723,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2752,
@@ -17432,7 +17432,7 @@
       "X": 6.60877972876508,
       "Y": -20.048185449671223,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2772,
@@ -17573,7 +17573,7 @@
       "X": 12.743786039129132,
       "Y": -16.64251297117147,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2794,
@@ -17696,7 +17696,7 @@
       "X": 11.56914888172612,
       "Y": -11.49246020537447,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2813,
@@ -17855,7 +17855,7 @@
       "X": 17.019016500170743,
       "Y": -6.945473980499912,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2838,
@@ -18008,7 +18008,7 @@
       "X": 17.42391394500124,
       "Y": -1.060864559374295,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2862,
@@ -18143,7 +18143,7 @@
       "X": 17.095514826556744,
       "Y": 4.723590200226226,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2883,
@@ -18266,7 +18266,7 @@
       "X": 11.036997742481653,
       "Y": 7.3555078615814296,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2902,
@@ -18407,7 +18407,7 @@
       "X": 11.216561015355365,
       "Y": 2.643077579182318,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2924,
@@ -18536,7 +18536,7 @@
       "X": 6.584513160189665,
       "Y": -0.6803966023773,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2944,
@@ -18671,7 +18671,7 @@
       "X": 4.281515180585096,
       "Y": 3.372190970614213,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2965,
@@ -18794,7 +18794,7 @@
       "X": 9.113099038245608,
       "Y": 11.982660482671008,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 2984,
@@ -18965,7 +18965,7 @@
       "X": 8.559454826783476,
       "Y": 17.91377106082365,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3011,
@@ -19112,7 +19112,7 @@
       "X": 8.666474841158127,
       "Y": 22.891157371193174,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3034,
@@ -19277,7 +19277,7 @@
       "X": 11.832677193451778,
       "Y": 24.146078996885194,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3060,
@@ -19412,7 +19412,7 @@
       "X": 8.20642344301498,
       "Y": 29.790299637774922,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3081,
@@ -19559,7 +19559,7 @@
       "X": 11.860571832693948,
       "Y": 33.85100881094871,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3104,
@@ -19700,7 +19700,7 @@
       "X": 14.691614604601485,
       "Y": 37.994415130751804,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3126,
@@ -19805,7 +19805,7 @@
       "X": 8.187781171997106,
       "Y": 38.3447486823556,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3142,
@@ -19952,7 +19952,7 @@
       "X": 8.455205494069126,
       "Y": 46.96074035422754,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3165,
@@ -20081,7 +20081,7 @@
       "X": 8.584150793286575,
       "Y": 51.24201553273508,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3185,
@@ -20186,7 +20186,7 @@
       "X": 8.264274854494676,
       "Y": 58.97492287691108,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3201,
@@ -20315,7 +20315,7 @@
       "X": 8.488010956545832,
       "Y": 65.89438949299705,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3221,
@@ -20450,7 +20450,7 @@
       "X": 2.693479773956816,
       "Y": 46.7701808083541,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3242,
@@ -20609,7 +20609,7 @@
       "X": -4.2579517176867245,
       "Y": 47.11937757770215,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3267,
@@ -20714,7 +20714,7 @@
       "X": -10.504143681319844,
       "Y": 46.840970034120346,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3283,
@@ -20837,7 +20837,7 @@
       "X": -16.855085441769972,
       "Y": 46.98644509372343,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3302,
@@ -20960,7 +20960,7 @@
       "X": -20.86304018591902,
       "Y": 45.66450912305754,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3321,
@@ -21113,7 +21113,7 @@
       "X": -23.904773691911487,
       "Y": 41.978102033254174,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3345,
@@ -21230,7 +21230,7 @@
       "X": -15.36970603580371,
       "Y": 41.94588052411774,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3363,
@@ -21383,7 +21383,7 @@
       "X": -10.97173051248105,
       "Y": 41.70638686076927,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3387,
@@ -21518,7 +21518,7 @@
       "X": -2.87938888517135,
       "Y": 41.68904201251962,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3408,
@@ -21665,7 +21665,7 @@
       "X": 4.641484855046581,
       "Y": 41.99291396302385,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3431,
@@ -21758,7 +21758,7 @@
       "X": 14.831963905819986,
       "Y": 12.952642485005867,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3445,
@@ -21899,7 +21899,7 @@
       "X": 3.898398871376652,
       "Y": -3.961908343110281,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3467,
@@ -22052,7 +22052,7 @@
       "X": 4.170496426654425,
       "Y": -8.878628556717842,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3491,
@@ -22205,7 +22205,7 @@
       "X": 5.031849002693383,
       "Y": -13.367297400779137,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3515,
@@ -22352,7 +22352,7 @@
       "X": 0.8945099919776653,
       "Y": -18.413780736727006,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3538,
@@ -22493,7 +22493,7 @@
       "X": 2.043163739438937,
       "Y": -22.198545108601877,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3560,
@@ -22640,7 +22640,7 @@
       "X": 5.124909220050339,
       "Y": -25.40197044282337,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3583,
@@ -22805,7 +22805,7 @@
       "X": -1.3861762259311878,
       "Y": -27.385525535154045,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3609,
@@ -22928,7 +22928,7 @@
       "X": -1.5916862265888465,
       "Y": -34.11245179616543,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3628,
@@ -23039,7 +23039,7 @@
       "X": -1.304894854278389,
       "Y": -38.220990468813625,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3645,
@@ -23144,7 +23144,7 @@
       "X": -0.5986331959911109,
       "Y": -45.09709516518342,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3661,
@@ -23231,7 +23231,7 @@
       "X": -7.426375737693112,
       "Y": -12.025488115788505,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3674,
@@ -23390,7 +23390,7 @@
       "X": -10.651058493881271,
       "Y": -8.606591835807933,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3699,
@@ -23513,7 +23513,7 @@
       "X": -12.384081441019696,
       "Y": -14.451924880229683,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3718,
@@ -23702,7 +23702,7 @@
       "X": -2.5120930821728997,
       "Y": -6.970264178315517,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3748,
@@ -23873,7 +23873,7 @@
       "X": 20.161471464117792,
       "Y": -11.209387424998454,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3775,
@@ -24002,7 +24002,7 @@
       "X": 20.64007816542523,
       "Y": -15.389323439341638,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3795,
@@ -24119,7 +24119,7 @@
       "X": 19.796238450869108,
       "Y": -20.108172699833062,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3813,
@@ -24230,7 +24230,7 @@
       "X": -9.820799182591216,
       "Y": -5.065299351437602,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3830,
@@ -24359,7 +24359,7 @@
       "X": -4.462889672509538,
       "Y": -4.724993149533248,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3850,
@@ -24488,7 +24488,7 @@
       "X": -14.724249553692967,
       "Y": -5.3349429430866735,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3870,
@@ -24605,7 +24605,7 @@
       "X": -21.058437568540718,
       "Y": -4.84702651575077,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3888,
@@ -24776,7 +24776,7 @@
       "X": -25.787843749046296,
       "Y": -4.91489132067926,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3915,
@@ -24941,7 +24941,7 @@
       "X": -32.15506599782222,
       "Y": -5.160040096654939,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3941,
@@ -25076,7 +25076,7 @@
       "X": -36.49426165510852,
       "Y": -4.760506766363619,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3962,
@@ -25241,7 +25241,7 @@
       "X": -2.690712125014149,
       "Y": 5.229268049741336,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 3988,
@@ -25406,7 +25406,7 @@
       "X": -0.27065498964755363,
       "Y": -50.90921364412054,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4014,
@@ -25481,7 +25481,7 @@
       "X": -0.07447014249631145,
       "Y": -56.36330568431248,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4025,
@@ -25574,7 +25574,7 @@
       "X": -0.09969309181046349,
       "Y": -63.27750479219844,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4039,
@@ -25655,7 +25655,7 @@
       "X": -37.186977527684576,
       "Y": -9.601253861678174,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4051,
@@ -25784,7 +25784,7 @@
       "X": -37.60755874123272,
       "Y": -16.449275755805388,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4071,
@@ -25895,7 +25895,7 @@
       "X": -37.36174914638577,
       "Y": -20.717843315182165,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4088,
@@ -26000,7 +26000,7 @@
       "X": -41.30114860086946,
       "Y": -4.7403557363495,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4104,
@@ -26093,7 +26093,7 @@
       "X": -41.20905346574734,
       "Y": 2.2401273457222715,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4118,
@@ -26192,7 +26192,7 @@
       "X": -40.21698922939238,
       "Y": 6.134093238711955,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4133,
@@ -26345,7 +26345,7 @@
       "X": -35.945430536676895,
       "Y": 3.276036735155401,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4157,
@@ -26510,7 +26510,7 @@
       "X": -36.05349786091256,
       "Y": 7.522370158368403,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4183,
@@ -26699,7 +26699,7 @@
       "X": -29.48293486191802,
       "Y": 10.2634251578678,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4213,
@@ -26912,7 +26912,7 @@
       "X": -36.19189631114706,
       "Y": 13.434402010757935,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4247,
@@ -27143,7 +27143,7 @@
       "X": -36.27523717465787,
       "Y": 19.264149238276786,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4284,
@@ -27344,7 +27344,7 @@
       "X": -36.41524183575371,
       "Y": 25.66565903310675,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4316,
@@ -27527,7 +27527,7 @@
       "X": -39.060520068486056,
       "Y": 29.363407120301588,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4345,
@@ -27722,7 +27722,7 @@
       "X": -37.46809543219958,
       "Y": 36.85019871380206,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4376,
@@ -27911,7 +27911,7 @@
       "X": -36.335597319252884,
       "Y": 32.847001108928,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4406,
@@ -28094,7 +28094,7 @@
       "X": -45.66552628664715,
       "Y": 27.284380731622946,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4435,
@@ -28265,7 +28265,7 @@
       "X": -44.97780835322884,
       "Y": 31.93957111202593,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4462,
@@ -28448,7 +28448,7 @@
       "X": -49.75557460297857,
       "Y": 29.441848876022902,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4491,
@@ -28613,7 +28613,7 @@
       "X": -37.90989074953496,
       "Y": 43.426792693470304,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4517,
@@ -28814,7 +28814,7 @@
       "X": -43.07125730762783,
       "Y": 41.93639248965752,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4549,
@@ -28919,7 +28919,7 @@
       "X": -42.61383926737188,
       "Y": 46.21457348564803,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4565,
@@ -28940,7 +28940,7 @@
       "X": -37.47733902595507,
       "Y": 49.169878928568664,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4567,
@@ -29099,7 +29099,7 @@
       "X": -32.81393049478826,
       "Y": 54.77645748162189,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4592,
@@ -29234,7 +29234,7 @@
       "X": -26.616997132770287,
       "Y": 56.44297470085803,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4613,
@@ -29351,7 +29351,7 @@
       "X": -32.19991595428955,
       "Y": 50.93427638423634,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4631,
@@ -29504,7 +29504,7 @@
       "X": -31.615756225781162,
       "Y": 47.64255750096481,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4655,
@@ -29645,7 +29645,7 @@
       "X": -30.292415342651474,
       "Y": 44.47770340875394,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4677,
@@ -29774,7 +29774,7 @@
       "X": -25.30092461565272,
       "Y": 46.90649847735699,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4697,
@@ -29909,7 +29909,7 @@
       "X": -33.2709358293745,
       "Y": 62.07189962801209,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4718,
@@ -30116,7 +30116,7 @@
       "X": -32.89879865604477,
       "Y": 68.27651741031332,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4751,
@@ -30275,7 +30275,7 @@
       "X": -37.26672654085912,
       "Y": 65.65597648423505,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4776,
@@ -30398,7 +30398,7 @@
       "X": -40.12658337169406,
       "Y": 62.753574059709365,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4795,
@@ -30503,7 +30503,7 @@
       "X": -46.60381598536029,
       "Y": 62.9558516565703,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4811,
@@ -30620,7 +30620,7 @@
       "X": -49.56363661247556,
       "Y": 65.60824488071773,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4829,
@@ -30737,7 +30737,7 @@
       "X": -44.095672416827185,
       "Y": 66.46379231894258,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4847,
@@ -30854,7 +30854,7 @@
       "X": -33.023590655753516,
       "Y": 74.2255954812947,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4865,
@@ -30977,7 +30977,7 @@
       "X": -28.593238202705365,
       "Y": 75.11322175711967,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4884,
@@ -31088,7 +31088,7 @@
       "X": -21.604374462635523,
       "Y": 75.09199659886349,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4901,
@@ -31223,7 +31223,7 @@
       "X": -14.451198143232034,
       "Y": 75.05435387587312,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4922,
@@ -31352,7 +31352,7 @@
       "X": -7.174163428250788,
       "Y": 74.85197709850979,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4942,
@@ -31475,7 +31475,7 @@
       "X": -0.1004602149466236,
       "Y": 75.08273861824136,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4961,
@@ -31586,7 +31586,7 @@
       "X": 6.983734416367169,
       "Y": 74.95652715768045,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4978,
@@ -31703,7 +31703,7 @@
       "X": 8.134500420705095,
       "Y": 70.87137381108278,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 4996,
@@ -31808,7 +31808,7 @@
       "X": 12.838620349193414,
       "Y": 75.53333933823922,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5012,
@@ -31919,7 +31919,7 @@
       "X": 12.426962465912515,
       "Y": 79.75279304267019,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5029,
@@ -32012,7 +32012,7 @@
       "X": 7.63242743393331,
       "Y": 35.22586242753192,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5043,
@@ -32213,7 +32213,7 @@
       "X": 25.194348694608735,
       "Y": -17.00557905449159,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5075,
@@ -32318,7 +32318,7 @@
       "X": 14.884378901734127,
       "Y": -34.286189361469894,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5091,
@@ -32435,7 +32435,7 @@
       "X": 19.662330265385965,
       "Y": -35.320452356145324,
       "Floor": 3,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5109,
@@ -32558,7 +32558,7 @@
       "X": 12.370433837656233,
       "Y": -25.304945248471427,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5128,
@@ -32705,7 +32705,7 @@
       "X": 7.366687137873838,
       "Y": -25.73212435717778,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5151,
@@ -32774,7 +32774,7 @@
       "X": 1.3165740687626908,
       "Y": -25.811954195403928,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5161,
@@ -32843,7 +32843,7 @@
       "X": -0.3917189678159336,
       "Y": -35.583147610479955,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5171,
@@ -32912,7 +32912,7 @@
       "X": -4.76692053702861,
       "Y": -35.93415475976599,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5181,
@@ -32981,7 +32981,7 @@
       "X": -4.807632617094806,
       "Y": -40.74988185812117,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5191,
@@ -33050,7 +33050,7 @@
       "X": -5.087983764211888,
       "Y": -45.80962996257881,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5201,
@@ -33161,7 +33161,7 @@
       "X": -5.161886030638226,
       "Y": -52.622635742532395,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5218,
@@ -33218,7 +33218,7 @@
       "X": -0.1191159940381854,
       "Y": -31.526682893759528,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5226,
@@ -33275,7 +33275,7 @@
       "X": 1.2177066469957676,
       "Y": -21.122612172924846,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5234,
@@ -33476,7 +33476,7 @@
       "X": 1.3066299213525467,
       "Y": -17.18299569201747,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5266,
@@ -33641,7 +33641,7 @@
       "X": 1.6993903294235628,
       "Y": -10.126715142149578,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5292,
@@ -33806,7 +33806,7 @@
       "X": 1.901650762124294,
       "Y": -2.940940198559474,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5318,
@@ -33971,7 +33971,7 @@
       "X": 1.9923614924412427,
       "Y": 4.400949699728471,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5344,
@@ -34136,7 +34136,7 @@
       "X": 2.0552216245469848,
       "Y": 11.442095035208979,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5370,
@@ -34301,7 +34301,7 @@
       "X": 1.8186563134475016,
       "Y": 15.813484402456481,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5396,
@@ -34622,7 +34622,7 @@
       "X": 8.491738015321225,
       "Y": 15.641167552169861,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5448,
@@ -34823,7 +34823,7 @@
       "X": 8.709219918364962,
       "Y": 20.82920778159462,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5480,
@@ -35024,7 +35024,7 @@
       "X": 8.630902924440287,
       "Y": 24.770399650537627,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5512,
@@ -35225,7 +35225,7 @@
       "X": 8.76600847129804,
       "Y": 29.38456629611636,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5544,
@@ -35426,7 +35426,7 @@
       "X": 15.4026272872547,
       "Y": 29.340292826191785,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5576,
@@ -35627,7 +35627,7 @@
       "X": 8.841538734938762,
       "Y": 32.8956021226071,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5608,
@@ -35828,7 +35828,7 @@
       "X": 8.735102340945684,
       "Y": 36.563416225115475,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5640,
@@ -36077,7 +36077,7 @@
       "X": 8.544508209284913,
       "Y": 40.28675161478276,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5680,
@@ -36170,7 +36170,7 @@
       "X": 8.239196462498665,
       "Y": 43.14463258253397,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5694,
@@ -36263,7 +36263,7 @@
       "X": 8.488898132038706,
       "Y": 47.29252724205594,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5708,
@@ -36356,7 +36356,7 @@
       "X": 8.403423721112794,
       "Y": 52.41044991816068,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5722,
@@ -36449,7 +36449,7 @@
       "X": 9.817471443764386,
       "Y": 54.50417811295125,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5736,
@@ -36542,7 +36542,7 @@
       "X": 11.35662589443284,
       "Y": 59.98989664808022,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5750,
@@ -36635,7 +36635,7 @@
       "X": 12.563804069076214,
       "Y": 68.80806125009997,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5764,
@@ -36776,7 +36776,7 @@
       "X": 13.028235840314444,
       "Y": 75.73596676013238,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5786,
@@ -36869,7 +36869,7 @@
       "X": 11.978346193506777,
       "Y": 63.89712996646864,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5800,
@@ -36962,7 +36962,7 @@
       "X": 4.862155974365611,
       "Y": -18.108360741442482,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5814,
@@ -37163,7 +37163,7 @@
       "X": 11.077408338162204,
       "Y": -18.040221412413473,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5846,
@@ -37280,7 +37280,7 @@
       "X": 17.17798544049527,
       "Y": -19.364552374298114,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5864,
@@ -37397,7 +37397,7 @@
       "X": 19.827785912272272,
       "Y": -22.189282925523344,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5882,
@@ -37514,7 +37514,7 @@
       "X": 15.070673537930817,
       "Y": -23.233974517873435,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5900,
@@ -37631,7 +37631,7 @@
       "X": 7.0782921014996765,
       "Y": -22.82930238148822,
       "Floor": 5,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5918,
@@ -37748,7 +37748,7 @@
       "X": -9.998639742544256,
       "Y": 41.32597659124656,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5936,
@@ -37985,7 +37985,7 @@
       "X": -3.594879512308064,
       "Y": 41.18119617561973,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5974,
@@ -38114,7 +38114,7 @@
       "X": 1.3730459611102288,
       "Y": 40.9865979805474,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 5994,
@@ -38243,7 +38243,7 @@
       "X": 5.953231261402799,
       "Y": 41.37629831110388,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6014,
@@ -38372,7 +38372,7 @@
       "X": 8.696804759108717,
       "Y": 40.51643523885275,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6034,
@@ -38501,7 +38501,7 @@
       "X": 8.749108684182529,
       "Y": 36.74702181220681,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6054,
@@ -38630,7 +38630,7 @@
       "X": 8.607694563775585,
       "Y": 30.92077901095223,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6074,
@@ -38843,7 +38843,7 @@
       "X": 8.682746662225021,
       "Y": 26.391032831566292,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6108,
@@ -39008,7 +39008,7 @@
       "X": -39.33336735115508,
       "Y": 26.50550959821004,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6134,
@@ -39173,7 +39173,7 @@
       "X": -37.228565446482996,
       "Y": 22.748433439830933,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6160,
@@ -39428,7 +39428,7 @@
       "X": -37.26114268692778,
       "Y": 16.73113578975091,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6201,
@@ -39599,7 +39599,7 @@
       "X": -38.39909273138788,
       "Y": 31.986453300468156,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6228,
@@ -39770,7 +39770,7 @@
       "X": -38.82103074606353,
       "Y": 37.0895559606538,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6255,
@@ -39989,7 +39989,7 @@
       "X": -38.84133219888438,
       "Y": 40.193564270045385,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6290,
@@ -40112,7 +40112,7 @@
       "X": -40.85179123072043,
       "Y": 46.27233593023362,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6309,
@@ -40235,7 +40235,7 @@
       "X": -37.65922341835176,
       "Y": 45.851645812875574,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6328,
@@ -40358,7 +40358,7 @@
       "X": -36.87501256835105,
       "Y": 48.9797472960592,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6347,
@@ -40481,7 +40481,7 @@
       "X": -34.25918178831505,
       "Y": 44.53163923400467,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6366,
@@ -40640,7 +40640,7 @@
       "X": -29.2800193288155,
       "Y": 44.74866602277814,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6391,
@@ -40751,7 +40751,7 @@
       "X": -22.110215851722383,
       "Y": 44.396082736402036,
       "Floor": 4,
-      "BuildingName": "h4",
+      "BuildingName": "H4",
       "WifiInfos": [
         {
           "Id": 6408,

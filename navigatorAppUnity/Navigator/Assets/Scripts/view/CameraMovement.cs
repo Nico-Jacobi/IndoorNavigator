@@ -30,6 +30,8 @@ namespace view
         private float markerUpdateTimer = 0f;
         private float markerUpdateInterval = 0.1f;
         private bool markerActive = true;
+        private bool markerWasJustActivated = false;  // Track if marker was just reactivated
+
         
         // Smooth marker movement variables
         private Vector3 markerStartPosition;
@@ -72,6 +74,15 @@ namespace view
             {
                 HandleMarkerUpdate();
                 HandleMarkerSmoothing();
+            }
+            
+            if (registry.positionTracker.foundPosition)
+            {
+                ActivateMarker();
+            }
+            else
+            {
+                DeactivateMarker();
             }
         }
 
@@ -220,7 +231,7 @@ namespace view
         
 
 
-        public void MoveMarkerToPosition(Position pos)
+         public void MoveMarkerToPosition(Position pos)
         {
             if (pos == null || !markerActive) return;
             
@@ -236,6 +247,21 @@ namespace view
             if (!correctFloor) return;
 
             Vector3 newTargetPosition = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
+            
+            // If marker was just activated, move instantly without smoothing
+            if (markerWasJustActivated)
+            {
+                positionMarker.transform.position = newTargetPosition;
+                markerIsMoving = false; // Stop any ongoing smoothing
+                markerWasJustActivated = false; // Reset the flag
+                
+                // Update orbit point immediately if not in free movement mode
+                if (!freeMovement)
+                {
+                    orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
+                }
+                return;
+            }
             
             // Check if this is a significant position change (threshold to avoid micro-movements)
             float positionChangeThreshold = 0.1f;
@@ -260,10 +286,11 @@ namespace view
             }
         }
         
+        
        
         public void GotoPrediction()
         {
-           GotoPosition(registry.GetPositionFilter().GetEstimate());
+            GotoPosition(registry.GetPositionFilter().GetEstimate());
         }
 
         public void ToggleViewMode()
@@ -283,6 +310,11 @@ namespace view
         /// </summary>
         public void ActivateMarker()
         {
+            if (!markerActive) // Only set flag if marker was previously inactive
+            {
+                markerWasJustActivated = true;
+            }
+            
             markerActive = true;
             if (positionMarker != null)
             {
@@ -296,6 +328,7 @@ namespace view
         public void DeactivateMarker()
         {
             markerActive = false;
+            markerWasJustActivated = false; // Reset the flag when deactivating
             if (positionMarker != null)
             {
                 positionMarker.SetActive(false);

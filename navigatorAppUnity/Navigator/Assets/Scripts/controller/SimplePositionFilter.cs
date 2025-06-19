@@ -14,44 +14,32 @@ namespace Controller
         public int floorHistorySize = 10;
         public float minDeltaTime = 0.001f;
         
-        private float lastUpdateTimeWifi = 0f; // add this field
+        private float lastUpdateTimeWifi = 0f;
 
-        // Store WiFi positions with their timestamps
+        // wifi positions with timestamps
         private List<Vector3> wifiPositions; // x, y, floor
 
         private Position lastWifiPositionRaw;
         
+        // floor tracking
         private List<int> floorHistory;
         private int currentFloor;
 
         private float lastUpdateTimeIMU;
         private bool initialized = false;
 
-        // Debug visualization objects
-        private List<GameObject> debugSpheres;
-        private GameObject estimateSphere;
-
-        [Header("Debug Visualization")]
-        public bool enableDebugVisualization = true;
-        public GameObject debugSpherePrefab;
-
         private void Awake()
         {
             wifiPositions = new List<Vector3>();
             floorHistory = new List<int>();
-            debugSpheres = new List<GameObject>();
             lastUpdateTimeIMU = Time.time;
 
-            // Initialize positions with zero
+            // fill with zeros initially
             for (int i = 0; i < maxPositions; i++)
             {
                 wifiPositions.Add(Vector3.zero);
             }
-
-            if (enableDebugVisualization)
-                SetupDebugVisualization();
         }
-
 
         public void UpdateWithWifi(Position rawWifiPrediction)
         {
@@ -64,6 +52,7 @@ namespace Controller
 
             if (!initialized)
             {
+                // first wifi update - fill all positions with same value
                 for (int i = 0; i < maxPositions; i++)
                 {
                     wifiPositions[i] = newPosition;
@@ -73,10 +62,10 @@ namespace Controller
             }
             else
             {
+                // calculate velocity from last update
                 float deltaTime = currentTime - lastUpdateTimeWifi;
                 if (deltaTime > 0 && lastWifiPositionRaw != null)
                 {
-                    
                     Vector2 posA = new Vector2(newPosition.x, newPosition.y);
                     Position pos = lastWifiPositionRaw;
 
@@ -84,21 +73,21 @@ namespace Controller
                     float dy = posA.y - pos.Y;
                     float distance = Mathf.Sqrt(dx * dx + dy * dy);
 
-
                     velocity = distance / deltaTime;
 
                     Debug.Log($"new pos {newPosition}, old pos: {wifiPositions[0]}");
                     Debug.Log($"distance moved according to wifi: {distance} in {deltaTime} time, which is a speed of {velocity}");
 
-                    walkingSpeed = walkingSpeed * 0.7f + velocity * 0.3f;   //adjusting walkink speed to the users speed
+                    // smooth walking speed adjustment
+                    walkingSpeed = walkingSpeed * 0.7f + velocity * 0.3f;
                     lastWifiPositionRaw = rawWifiPrediction;
-
                 }
                 else
                 {
                     lastWifiPositionRaw = rawWifiPrediction;
                 }
 
+                // shift positions - newest goes to front
                 for (int i = maxPositions - 1; i > 0; i--)
                 {
                     wifiPositions[i] = wifiPositions[i - 1];
@@ -109,24 +98,20 @@ namespace Controller
 
             lastUpdateTimeWifi = currentTime;
             UpdateFloorHistory(rawWifiPrediction.Floor);
-
-            if (enableDebugVisualization)
-                UpdateDebugVisualization();
         }
-
 
         public void UpdateWithIMU(Vector2 ignored, float headingDegrees)
         {
-            
             if (!initialized) return;
 
             float deltaTime = Time.time - lastUpdateTimeIMU;
             if (deltaTime < minDeltaTime) return;
 
+            // convert heading to movement direction
             float headingRad = -(headingDegrees+90) * Mathf.Deg2Rad;
             Vector2 direction = new Vector2(Mathf.Cos(headingRad), Mathf.Sin(headingRad));
 
-
+            // move all positions by walking distance
             Vector2 positionDelta = direction * walkingSpeed * deltaTime;
 
             for (int i = 0; i < maxPositions; i++)
@@ -138,9 +123,6 @@ namespace Controller
             }
             
             lastUpdateTimeIMU = Time.time;
-
-            if (enableDebugVisualization)
-                UpdateDebugVisualization();
         }
 
         private void UpdateFloorHistory(int newFloor)
@@ -156,12 +138,14 @@ namespace Controller
         {
             if (floorHistory.Count == 0) return;
 
+            // count floor occurrences
             Dictionary<int, int> floorCounts = new Dictionary<int, int>();
             foreach (int floor in floorHistory)
             {
                 floorCounts[floor] = floorCounts.ContainsKey(floor) ? floorCounts[floor] + 1 : 1;
             }
 
+            // pick most frequent floor
             int maxCount = 0;
             int mostFrequentFloor = currentFloor;
             foreach (var kvp in floorCounts)
@@ -176,7 +160,7 @@ namespace Controller
             currentFloor = mostFrequentFloor;
         }
 
-        // Calculate weighted average position with exponentially decaying weights
+        // weighted average of recent positions
         public Position GetEstimate()
         {
             if (!initialized)
@@ -187,7 +171,7 @@ namespace Controller
 
             for (int i = 0; i < maxPositions; i++)
             {
-                float weight = Mathf.Pow(0.8f, i); // exponential decay: newest=1, oldest ~0
+                float weight = Mathf.Pow(0.8f, i); // newer positions matter more
                 Vector2 pos2D = new Vector2(wifiPositions[i].x, wifiPositions[i].y);
                 weightedSum += pos2D * weight;
                 totalWeight += weight;
@@ -211,6 +195,7 @@ namespace Controller
 
         public void Reset()
         {
+            // clear everything
             for (int i = 0; i < maxPositions; i++)
             {
                 wifiPositions[i] = Vector3.zero;
@@ -218,69 +203,6 @@ namespace Controller
             floorHistory.Clear();
             initialized = false;
             lastUpdateTimeIMU = Time.time;
-
-            if (enableDebugVisualization)
-            {
-                foreach (var sphere in debugSpheres)
-                {
-                    sphere.SetActive(false);
-                }
-            }
-        }
-
-        // Debug visualization setup and update
-        private void SetupDebugVisualization()
-        {
-            if (debugSpherePrefab == null)
-            {
-                Debug.LogWarning("Debug Sphere Prefab not assigned!");
-                return;
-            }
-
-            for (int i = 0; i < maxPositions; i++)
-            {
-                var sphere = Instantiate(debugSpherePrefab);
-                sphere.name = $"DebugSphere_{i}";
-                sphere.transform.localScale = Vector3.one * 50f;
-                sphere.SetActive(true);
-                debugSpheres.Add(sphere);
-            }
-            Debug.Log("Setting up debug visualization");
-
-        }
-
-        private void UpdateDebugVisualization()
-        {
-            for (int i = 0; i < maxPositions; i++)
-            {
-                Vector3 pos = wifiPositions[i];
-                Vector3 correctPos = new Vector3(pos.x, pos.z*2 +1 ,pos.y);
-                debugSpheres[i].transform.position = correctPos;
-                debugSpheres[i].SetActive(true);
-
-
-                // Optionally color by weight (newer = brighter)
-                float weight = Mathf.Pow(0.8f, i);
-                Color c = Color.Lerp(Color.red, Color.green, weight); // red oldest, green newest
-                var renderer = debugSpheres[i].GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    renderer.material.color = c;
-                }
-            }
-        }
-
-
-        private void OnDestroy()
-        {
-            if (debugSpheres != null)
-            {
-                foreach (var sphere in debugSpheres)
-                {
-                    if (sphere != null)
-                        DestroyImmediate(sphere);
-                }
-            }
         }
     }
 }

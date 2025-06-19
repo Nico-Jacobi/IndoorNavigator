@@ -71,6 +71,17 @@ namespace view
             else
                 Show();
         }
+        
+        public void ActivateGotoPositionButton()
+        {
+            gotoPositionButton.interactable = true;
+        }
+
+        public void DeactivateGotoPositionButton()
+        {
+            gotoPositionButton.interactable = false;
+        }
+        
 
         private IEnumerator SlideToPosition(Vector2 targetPos, bool willBeVisible)
         {
