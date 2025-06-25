@@ -328,6 +328,9 @@ namespace controller
                 GameObject floor = building.SpawnFloor(floorLevel, buildingObject.transform);
                 activeFloorObject = buildingObject;
 
+                //make sure the marker is hidden when the floor or building is switched to another one with no marker
+                registry.cameraController.SetMarkerInShownBuilding( registry.GetPositionFilter().GetEstimate().Floor == floorLevel && currentBuilding == shownBuilding);
+                
                 NotifyUIUpdate();
 
                 // set the camera to show the model, as this might not be where it was before

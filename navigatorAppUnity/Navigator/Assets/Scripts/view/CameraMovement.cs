@@ -30,6 +30,7 @@ namespace view
         private float markerUpdateTimer = 0f;
         private float markerUpdateInterval = 0.1f;
         private bool markerActive = true;
+        private bool markerInShownBuilding = false;  // New field to track if marker is in shown building
         private bool markerWasJustActivated = false;  // Track if marker was just reactivated
 
         
@@ -70,7 +71,7 @@ namespace view
                 HandleTouchZoom();
             }
 
-            if (markerActive)
+            if (markerActive && markerInShownBuilding)  // Only update marker if both conditions are true
             {
                 HandleMarkerUpdate();
                 HandleMarkerSmoothing();
@@ -233,7 +234,7 @@ namespace view
 
          public void MoveMarkerToPosition(Position pos)
         {
-            if (pos == null || !markerActive) return;
+            if (pos == null || !markerActive || !markerInShownBuilding) return;  // Check both conditions
             
             if (positionMarker == null)
             {
@@ -316,10 +317,7 @@ namespace view
             }
             
             markerActive = true;
-            if (positionMarker != null)
-            {
-                positionMarker.SetActive(true);
-            }
+            UpdateMarkerVisibility();  // Update visibility based on both conditions
         }
 
         /// <summary>
@@ -329,9 +327,26 @@ namespace view
         {
             markerActive = false;
             markerWasJustActivated = false; // Reset the flag when deactivating
+            UpdateMarkerVisibility();  // Update visibility based on both conditions
+        }
+        
+        /// <summary>
+        /// Sets whether the marker is in the currently shown building.
+        /// </summary>
+        public void SetMarkerInShownBuilding(bool inBuilding)
+        {
+            markerInShownBuilding = inBuilding;
+            UpdateMarkerVisibility();  // Update visibility based on both conditions
+        }
+        
+        /// <summary>
+        /// Updates marker visibility based on both markerActive and markerInShownBuilding conditions.
+        /// </summary>
+        private void UpdateMarkerVisibility()
+        {
             if (positionMarker != null)
             {
-                positionMarker.SetActive(false);
+                positionMarker.SetActive(markerActive && markerInShownBuilding);
             }
         }
         
