@@ -71,7 +71,6 @@ namespace controller
             
             // Default building setup
             SpawnBuildingFloor("H4", 3, true);
-
             Debug.Log($"Buildings Manager script initialized");
             Debug.Log($"activeBuilding is: {currentBuilding?.buildingName}");
         }
@@ -140,11 +139,11 @@ namespace controller
                 
                 if (ShownEqualsActiveBuilding())
                 {
-                    registry.cameraController.ActivateMarker();
+                    registry.positionMarker.ActivateMarker();
                 }
                 else
                 {
-                    registry.cameraController.DeactivateMarker();
+                    registry.positionMarker.DeactivateMarker();
                 }
             }
             else
@@ -328,9 +327,7 @@ namespace controller
                 GameObject floor = building.SpawnFloor(floorLevel, buildingObject.transform);
                 activeFloorObject = buildingObject;
 
-                //make sure the marker is hidden when the floor or building is switched to another one with no marker
-                registry.cameraController.SetMarkerInShownBuilding( registry.GetPositionFilter().GetEstimate().Floor == floorLevel && currentBuilding == shownBuilding);
-                
+                registry.positionMarker.UpdateMarkerInShownBuilding();
                 NotifyUIUpdate();
 
                 // set the camera to show the model, as this might not be where it was before
@@ -345,7 +342,7 @@ namespace controller
                             bounds.Encapsulate(r.bounds);
     
                         Position pos = new Position(bounds.center.x, bounds.center.y, floorLevel);
-                        registry.cameraController.MoveMarkerToPosition(pos);
+                        registry.positionMarker.MoveMarkerToPosition(pos);
                     }
                     else
                     {

@@ -1,4 +1,6 @@
-﻿namespace model
+﻿using Newtonsoft.Json;
+
+namespace model
 {
     /// <summary>
     /// Represents a 2D position on a specific floor.
@@ -23,6 +25,9 @@
         
         
         public override string ToString() => $"({X}, {Y}) on floor {Floor}";
+        
+        public string ToJson() => JsonConvert.SerializeObject(this, Formatting.Indented);
+
     }
     
 }

@@ -21,6 +21,7 @@ namespace controller
         public KalmanFilter kalmanFilter;
         public SimplePositionFilter simplePositionFilter;
         
+        public PositionMarker positionMarker;
         public NoKnowSignalFound noKnowSignalFoundDialog;
         public SettingsMenu settingsMenu;
         public TopMenu topMenu;

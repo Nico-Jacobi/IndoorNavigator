@@ -101,7 +101,7 @@ namespace view
             active = true;
             
             //deactivate the normal pos marker
-            //registry.cameraController.DeactivateMarker();
+            registry.positionMarker.DeactivateMarker();
 
             // Show crosshair marker
             if (crosshairMarker != null)
@@ -123,13 +123,9 @@ namespace view
             Debug.Log("Data collection mode de-activated");
             active = false;
             
-            if (registry.cameraController != null && registry.cameraController.positionMarker != null)
-            {
-                registry.cameraController.positionMarker.SetActive(true);
-            }
             
             crosshairMarker.SetActive(false);
-            registry.cameraController.ActivateMarker();
+            registry.positionMarker.ActivateMarker();
             
             foreach (var marker in markers)
             {

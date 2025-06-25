@@ -14,6 +14,8 @@ namespace Controller
         public float measurementNoiseWifi = 0.7f;
         public float measurementNoiseImu = 2f;
         
+        public float walkingSpeed = 0f; 
+
         public float maxVelocity = 1.5f; // max reasonable walking speed m/s
         public int floorHistorySize = 10;
         public float minDeltaTime = 0.001f; // prevent division by zero
@@ -101,6 +103,12 @@ namespace Controller
                     {
                         Vector2 deltaPosition = measurement - lastRawWifiEstimate;
                         Vector2 estimatedVelocity = deltaPosition / wifiDeltaTime;
+                        
+                        // Calculate velocity magnitude (speed)
+                        float currentSpeed = estimatedVelocity.magnitude;
+                
+                        // Smooth walking speed adjustment (same as SimplePositionFilter)
+                        walkingSpeed = walkingSpeed * 0.7f + currentSpeed * 0.3f;
                         
                         // Clamp velocity to reasonable range
                         if (estimatedVelocity.magnitude > maxVelocity)
@@ -204,10 +212,8 @@ namespace Controller
 
         private void UpdateWithVelocityMeasurement(Vector2 velocityMeasurement, float measurementNoise)
         {
-            // test: assuming contant walking speed todo remove
-            float assumedSpeed = 1.4f;
             float headingRad = registry.compassReader.GetHeadingRadians();
-            Vector2 velocity = new Vector2(Mathf.Cos(headingRad), Mathf.Sin(headingRad)) * assumedSpeed;
+            Vector2 velocity = new Vector2(Mathf.Cos(headingRad), Mathf.Sin(headingRad)) * walkingSpeed;
         
             
             // Measurement matrix H - observes velocity only

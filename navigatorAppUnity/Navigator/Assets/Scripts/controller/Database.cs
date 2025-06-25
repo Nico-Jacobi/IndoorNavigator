@@ -148,34 +148,20 @@ namespace controller
 
         public void ExportWithSimpleFilename()
         {
-            string timestamp = System.DateTime.Now.Ticks.ToString(); // Alternatively, use System.CurrentTimeMillis
-            string filename = "wifi_data_" + timestamp;
+            string filename = "wifi_data_" + DateTime.Now.ToString("yyyyMMdd_HHmmssfff") + ".json";
 
-            string fullPath = Path.Combine(Application.persistentDataPath, filename + ".json");
-
-            ExportToJsonExternal(fullPath);
-
-            Debug.Log($"Exported to: {fullPath}");
-        }
-
-
-
-        /// <summary>
-        /// Exports the coordinates to the specified file.
-        /// </summary>
-        private void ExportToJsonExternal(string fullPath)
-        {
             var coordinates = db.Table<Coordinate>().ToList();
-
             foreach (var coord in coordinates)
                 coord.WifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coord.Id).ToList();
 
             var wrapper = new CoordinateListWrapper { Coordinates = coordinates };
-            string json = JsonConvert.SerializeObject(wrapper, Formatting.Indented);
 
-            // Write to file
-            File.WriteAllText(fullPath, json);
-            Debug.Log($"Exported JSON to: {fullPath}");
+            bool success = IOManager.SaveAsJson(wrapper, filename, null, useDownloadsFolder: true);
+
+            if (success)
+                Debug.Log($"Exported to Downloads folder as {filename}");
+            else
+                Debug.LogError("Export failed.");
         }
 
 
