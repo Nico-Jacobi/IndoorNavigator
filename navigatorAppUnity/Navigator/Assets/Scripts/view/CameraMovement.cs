@@ -1,3 +1,4 @@
+using System;
 using controller;
 using Controller;
 using model;
@@ -23,23 +24,6 @@ namespace view
         private float minCameraHeight = 10f;
         private float maxCameraHeight = 100f;
         private float zoomSpeed = 0.1f;
-
-        
-        public GameObject markerPrefab;
-        public GameObject positionMarker;
-        private float markerUpdateTimer = 0f;
-        private float markerUpdateInterval = 0.1f;
-        private bool markerActive = true;
-        private bool markerInShownBuilding = false;  // New field to track if marker is in shown building
-        private bool markerWasJustActivated = false;  // Track if marker was just reactivated
-
-        
-        // Smooth marker movement variables
-        private Vector3 markerStartPosition;
-        private Vector3 markerTargetPosition;
-        private float markerMoveTimer = 0f;
-        private float markerMoveDuration = 0.5f; // 1 second smooth transition
-        private bool markerIsMoving = false;
         
         private float positionUpdateTimer = 0f;
         private float positionUpdateInterval = 0.5f;
@@ -51,15 +35,12 @@ namespace view
         private bool isTouching = false;
         
         private float currentHeading = 0;
-        
-        
 
         void Start()
         {
             registry.cam = Camera.main;
             SetCameraTilt(cameraAngle);
             orbitPoint = transform.position;  // Initialize orbit point to current position
-            
         }
 
         void Update()
@@ -69,21 +50,6 @@ namespace view
                 HandleCameraRotation();
                 HandleMovementOrTracking();
                 HandleTouchZoom();
-            }
-
-            if (markerActive && markerInShownBuilding)  // Only update marker if both conditions are true
-            {
-                HandleMarkerUpdate();
-                HandleMarkerSmoothing();
-            }
-            
-            if (registry.positionTracker.foundPosition)
-            {
-                ActivateMarker();
-            }
-            else
-            {
-                DeactivateMarker();
             }
         }
 
@@ -109,21 +75,16 @@ namespace view
 
             currentHeading = newHeading;
             
-            
-
-            if (positionMarker != null)
+            // Update marker rotation through registry
+            if (registry.positionMarker != null)
             {
-                positionMarker.transform.rotation = Quaternion.Euler(90f, compass_heading, 0f);
+                registry.positionMarker.SetMarkerRotation(compass_heading);
             }
-
-            
-            
             
             PositionCameraOrbit(newHeading);
             registry.cam.transform.rotation = Quaternion.Euler(cameraAngle, newHeading, 0f);
         }
 
-      
         private void HandleMovementOrTracking()
         {
             if (freeMovement)
@@ -135,7 +96,6 @@ namespace view
                 HandlePositionTracking();
             }
         }
-        
 
         // Rotate a 2D vector by the current heading to make movement relative to camera direction
         private Vector2 RotateTouchVectorByHeading(Vector2 input)
@@ -217,78 +177,6 @@ namespace view
             }
         }
 
-        
-        
-        private void HandleMarkerUpdate()
-        {
-            markerUpdateTimer += Time.deltaTime;
-
-            if (markerUpdateTimer >= markerUpdateInterval)
-            {
-                MoveMarkerToPosition(registry.GetPositionFilter().GetEstimate());
-                markerUpdateTimer = 0f;
-            }
-        }
-        
-
-
-         public void MoveMarkerToPosition(Position pos)
-        {
-            if (pos == null || !markerActive || !markerInShownBuilding) return;  // Check both conditions
-            
-            if (positionMarker == null)
-            {
-                positionMarker = Instantiate(markerPrefab);
-                positionMarker.name = "PositionMarker";
-            }
-            
-            bool correctFloor = registry.buildingManager.GetShownFloor() == pos.Floor;
-            positionMarker.SetActive(correctFloor);
-
-            if (!correctFloor) return;
-
-            Vector3 newTargetPosition = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
-            
-            // If marker was just activated, move instantly without smoothing
-            if (markerWasJustActivated)
-            {
-                positionMarker.transform.position = newTargetPosition;
-                markerIsMoving = false; // Stop any ongoing smoothing
-                markerWasJustActivated = false; // Reset the flag
-                
-                // Update orbit point immediately if not in free movement mode
-                if (!freeMovement)
-                {
-                    orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
-                }
-                return;
-            }
-            
-            // Check if this is a significant position change (threshold to avoid micro-movements)
-            float positionChangeThreshold = 0.1f;
-            if (Vector3.Distance(positionMarker.transform.position, newTargetPosition) > positionChangeThreshold)
-            {
-                // Start smooth movement
-                markerStartPosition = positionMarker.transform.position;
-                markerTargetPosition = newTargetPosition;
-                markerMoveTimer = 0f;
-                markerIsMoving = true;
-            }
-            else if (!markerIsMoving)
-            {
-                // Small movement, just update directly
-                positionMarker.transform.position = newTargetPosition;
-            }
-            
-            // If we're not in free movement mode and not currently smoothing, update orbit point immediately for large jumps
-            if (!freeMovement && !markerIsMoving)
-            {
-                orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f, pos.Y);
-            }
-        }
-        
-        
-       
         public void GotoPrediction()
         {
             GotoPosition(registry.GetPositionFilter().GetEstimate());
@@ -299,61 +187,14 @@ namespace view
             freeMovement = !freeMovement;
     
             // When switching to tracking mode, immediately update orbit point to current marker position
-            if (!freeMovement && positionMarker != null)
+            if (!freeMovement && registry.positionMarker != null && registry.positionMarker.MarkerObject != null)
             {
                 // Set orbit point to same position as marker
-                orbitPoint = positionMarker.transform.position;
+                orbitPoint = registry.positionMarker.GetMarkerPosition();
             }
-        }
-        
-        /// <summary>
-        /// Activates the position marker if it's assigned.
-        /// </summary>
-        public void ActivateMarker()
-        {
-            if (!markerActive) // Only set flag if marker was previously inactive
-            {
-                markerWasJustActivated = true;
-            }
-            
-            markerActive = true;
-            UpdateMarkerVisibility();  // Update visibility based on both conditions
         }
 
-        /// <summary>
-        /// Deactivates the position marker if it's assigned.
-        /// </summary>
-        public void DeactivateMarker()
-        {
-            markerActive = false;
-            markerWasJustActivated = false; // Reset the flag when deactivating
-            UpdateMarkerVisibility();  // Update visibility based on both conditions
-        }
-        
-        /// <summary>
-        /// Sets whether the marker is in the currently shown building.
-        /// </summary>
-        public void SetMarkerInShownBuilding(bool inBuilding)
-        {
-            markerInShownBuilding = inBuilding;
-            UpdateMarkerVisibility();  // Update visibility based on both conditions
-        }
-        
-        /// <summary>
-        /// Updates marker visibility based on both markerActive and markerInShownBuilding conditions.
-        /// </summary>
-        private void UpdateMarkerVisibility()
-        {
-            if (positionMarker != null)
-            {
-                positionMarker.SetActive(markerActive && markerInShownBuilding);
-            }
-        }
-        
-        
         // The key insight: The orbit point should be where the camera's center ray hits the target plane
-
-        // Replace your PositionCameraOrbit method:
         private void PositionCameraOrbit(float heading)
         {
             // Convert heading to radians
@@ -450,8 +291,19 @@ namespace view
                 Position pos = registry.GetPositionFilter().GetEstimate();
                 if (pos != null)
                 {
-                    // Set orbit point to marker level (this is where we want the camera to look)
-                    orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
+                    // Update orbit point based on marker movement
+                    if (registry.positionMarker != null && !registry.positionMarker.IsMoving())
+                    {
+                        // Set orbit point to marker level (this is where we want the camera to look)
+                        orbitPoint = new Vector3(pos.X, pos.Floor * 2.0f + 1f, pos.Y);
+                    }
+                    else if (registry.positionMarker != null && registry.positionMarker.IsMoving())
+                    {
+                        // If marker is smoothly moving, update orbit point to the target position
+                        Vector3 targetPos = registry.positionMarker.GetCurrentTargetPosition();
+                        orbitPoint = targetPos;
+                    }
+                    
                     registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetShownBuilding().buildingName, pos.Floor);
                 }
                 positionUpdateTimer = 0f;
@@ -483,43 +335,15 @@ namespace view
             registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
         }
 
-        // The HandleMarkerSmoothing method stays mostly the same:
-        private void HandleMarkerSmoothing()
-        {
-            if (markerIsMoving && positionMarker != null)
-            {
-                markerMoveTimer += Time.deltaTime;
-                float progress = markerMoveTimer / markerMoveDuration;
-                
-                if (progress >= 1f)
-                {
-                    progress = 1f;
-                    markerIsMoving = false;
-                }
-                
-                float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
-                Vector3 currentPosition = Vector3.Lerp(markerStartPosition, markerTargetPosition, smoothProgress);
-                
-                positionMarker.transform.position = currentPosition;
-                
-                // If we're not in free movement mode, update the orbit point smoothly too
-                if (!freeMovement)
-                {
-                    // Keep orbit point at same height as marker (this keeps the marker centered)
-                    orbitPoint = Vector3.Lerp(markerStartPosition, markerTargetPosition, smoothProgress);
-                }
-            }
-        }
-
         // Update OnViewModeButtonPressed:
         public void OnViewModeButtonPressed()
         {
             freeMovement = !freeMovement;
             
             // When switching to tracking mode, set orbit point to marker position
-            if (!freeMovement && positionMarker != null)
+            if (!freeMovement && registry.positionMarker != null && registry.positionMarker.MarkerObject != null)
             {
-                orbitPoint = positionMarker.transform.position;
+                orbitPoint = registry.positionMarker.GetMarkerPosition();
             }
             else if (freeMovement)
             {
@@ -527,6 +351,5 @@ namespace view
                 orbitPoint = GetCrosshairPosition();
             }
         }
-        
     }
 }
