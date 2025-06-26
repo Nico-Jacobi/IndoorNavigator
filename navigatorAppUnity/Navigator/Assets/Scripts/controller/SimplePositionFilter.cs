@@ -9,9 +9,7 @@ namespace Controller
     {
         public Registry registry;
 
-        public int maxPositions = 10;
         public float walkingSpeed = 0f; // constant walking speed m/s 
-        public int floorHistorySize = 10;
         public float minDeltaTime = 0.001f;
         
         private float lastUpdateTimeWifi = 0f;
@@ -35,7 +33,7 @@ namespace Controller
             lastUpdateTimeIMU = Time.time;
 
             // fill with zeros initially
-            for (int i = 0; i < maxPositions; i++)
+            for (int i = 0; i < registry.positionTracker.numberOfNeighboursToConsider; i++)
             {
                 wifiPositions.Add(Vector3.zero);
             }
@@ -53,7 +51,7 @@ namespace Controller
             if (!initialized)
             {
                 // first wifi update - fill all positions with same value
-                for (int i = 0; i < maxPositions; i++)
+                for (int i = 0; i < registry.positionTracker.numberOfNeighboursToConsider; i++)
                 {
                     wifiPositions[i] = newPosition;
                 }
@@ -88,7 +86,7 @@ namespace Controller
                 }
 
                 // shift positions - newest goes to front
-                for (int i = maxPositions - 1; i > 0; i--)
+                for (int i = registry.positionTracker.numberOfNeighboursToConsider - 1; i > 0; i--)
                 {
                     wifiPositions[i] = wifiPositions[i - 1];
                 }
@@ -114,7 +112,7 @@ namespace Controller
             // move all positions by walking distance
             Vector2 positionDelta = direction * walkingSpeed * deltaTime;
 
-            for (int i = 0; i < maxPositions; i++)
+            for (int i = 0; i < registry.positionTracker.numberOfNeighboursToConsider; i++)
             {
                 Vector3 pos = wifiPositions[i];
                 pos.x += positionDelta.x;
@@ -128,7 +126,7 @@ namespace Controller
         private void UpdateFloorHistory(int newFloor)
         {
             floorHistory.Add(newFloor);
-            if (floorHistory.Count > floorHistorySize)
+            if (floorHistory.Count > registry.positionTracker.numberOfNeighboursToConsider)
                 floorHistory.RemoveAt(0);
 
             UpdateFloorEstimate();
@@ -169,7 +167,7 @@ namespace Controller
             Vector2 weightedSum = Vector2.zero;
             float totalWeight = 0f;
 
-            for (int i = 0; i < maxPositions; i++)
+            for (int i = 0; i < registry.positionTracker.numberOfNeighboursToConsider; i++)
             {
                 float weight = Mathf.Pow(0.8f, i); // newer positions matter more
                 Vector2 pos2D = new Vector2(wifiPositions[i].x, wifiPositions[i].y);
@@ -196,7 +194,7 @@ namespace Controller
         public void Reset()
         {
             // clear everything
-            for (int i = 0; i < maxPositions; i++)
+            for (int i = 0; i < registry.positionTracker.numberOfNeighboursToConsider; i++)
             {
                 wifiPositions[i] = Vector3.zero;
             }
