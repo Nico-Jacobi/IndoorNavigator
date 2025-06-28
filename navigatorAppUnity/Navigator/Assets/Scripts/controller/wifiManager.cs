@@ -129,6 +129,7 @@ namespace controller
             
             if (!scanStarted)
             {
+                // scan will still return the old values, so it still "works"
                 Debug.LogWarning("Failed to start WiFi scan. This could be due to throttling on Android 9+");
                 scanInProgress = false;
                 yield return coord; // Return empty coordinate

@@ -156,7 +156,7 @@ namespace controller
 
             var wrapper = new CoordinateListWrapper { Coordinates = coordinates };
 
-            bool success = IOManager.SaveAsJson(wrapper, filename, null, useDownloadsFolder: true);
+            bool success = IOManager.SaveAsJson(wrapper, filename);
 
             if (success)
                 Debug.Log($"Exported to Downloads folder as {filename}");

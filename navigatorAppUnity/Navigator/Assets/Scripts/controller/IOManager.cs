@@ -6,50 +6,121 @@ using UnityEngine;
 #if UNITY_ANDROID
 using UnityEngine.Android;
 #endif
-
+       using System.IO;
+using UnityEngine;
+using Newtonsoft.Json;
+using System.Collections;
 namespace controller
 {
     public static class IOManager
     {
-        /// <summary>
-        /// Save any object as JSON file with optional filename and folder.
-        /// Requests permission on Android if needed.
-        /// </summary>
-        public static bool SaveAsJson<T>(T data, string filename = null, string customFolder = null, bool useDownloadsFolder = true)
-        {
-#if UNITY_ANDROID
-            if (useDownloadsFolder && !Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
-            {
-                Debug.Log("Requesting WRITE_EXTERNAL_STORAGE permission");
-                Permission.RequestUserPermission(Permission.ExternalStorageWrite);
-                return false; // Permission not granted yet
-            }
-#endif
 
+
+
+    /// <summary>
+    /// Saves data as JSON using NativeFilePicker for file selection
+    /// </summary>
+    /// <typeparam name="T">Type of data to serialize</typeparam>
+    /// <param name="data">Data to save</param>
+    /// <param name="filename">Default filename (optional)</param>
+    /// <returns>True if save was successful, false otherwise</returns>
+    public static bool SaveAsJson<T>(T data, string filename = null, bool silentSave = false)
+        {
             try
             {
-                string finalFilename = filename ?? $"data_{DateTime.Now:yyyyMMdd_HHmmssfff}";
-                if (!finalFilename.EndsWith(".json"))
-                    finalFilename += ".json";
+                // Set default filename if not provided
+                if (string.IsNullOrEmpty(filename))
+                {
+                    filename = $"{typeof(T).Name}_{System.DateTime.Now:yyyyMMdd_HHmmss}.json";
+                }
+                
+                // Ensure filename has .json extension
+                if (!filename.EndsWith(".json"))
+                {
+                    filename += ".json";
+                }
 
-                string json = JsonConvert.SerializeObject(data, Formatting.Indented);
-                string folderPath = GetSavePath(useDownloadsFolder, customFolder);
+                // Serialize data to JSON
+                string jsonData = JsonConvert.SerializeObject(data, Formatting.Indented);
 
-                if (!Directory.Exists(folderPath))
-                    Directory.CreateDirectory(folderPath);
+                if (silentSave)
+                {
+                    // Save directly without user interaction
+                    string savePath = GetSavePath();
+                    
+                    // Ensure directory exists
+                    if (!Directory.Exists(savePath))
+                    {
+                        Directory.CreateDirectory(savePath);
+                    }
+                    
+                    string fullPath = Path.Combine(savePath, filename);
+                    File.WriteAllText(fullPath, jsonData);
+                    
+                    Debug.Log($"JSON file saved successfully to: {fullPath}");
+                    return true;
+                }
+                else
+                {
+                    // Use NativeFilePicker for user file selection
+                    string tempPath = Path.Combine(Application.temporaryCachePath, filename);
+                    File.WriteAllText(tempPath, jsonData);
+                    
+                    // Use NativeFilePicker ExportFile to let user choose save location
+                    NativeFilePicker.ExportFile(tempPath, (success) => 
+                    {
+                        if (success)
+                        {
+                            Debug.Log($"JSON file exported successfully");
+                        }
+                        else
+                        {
+                            Debug.LogWarning("File export was cancelled or failed");
+                        }
+                        
+                        // Clean up temporary file
+                        try
+                        {
+                            if (File.Exists(tempPath))
+                                File.Delete(tempPath);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogWarning($"Could not delete temporary file: {ex.Message}");
+                        }
+                    });
 
-                string fullPath = Path.Combine(folderPath, finalFilename);
-                File.WriteAllText(fullPath, json);
-
-                Debug.Log($"Data saved successfully to: {fullPath}");
-                return true;
+                    return true; // Export initiated successfully
+                }
             }
-            catch (Exception e)
+            catch (System.Exception ex)
             {
-                Debug.LogError($"Failed to save data: {e}");
+                Debug.LogError($"Error in SaveAsJson: {ex.Message}");
                 return false;
             }
         }
+
+    /// <summary>
+    /// Gets the Downloads folder path for different platforms
+    /// </summary>
+    private static string GetDownloadsPath()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // On Android, use the Downloads directory
+        return "/storage/emulated/0/Download";
+#elif UNITY_IOS && !UNITY_EDITOR
+        // On iOS, use Documents directory (Downloads not accessible)
+        return Application.persistentDataPath;
+#else
+        // On desktop platforms, use user's Downloads folder
+        string userProfile = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+        return Path.Combine(userProfile, "Downloads");
+#endif
+    }
+
+    
+    
+  
 
         /// <summary>
         /// Load JSON data from file.

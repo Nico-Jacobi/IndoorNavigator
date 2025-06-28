@@ -165,8 +165,8 @@ namespace view
             string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmssfff");
     
             // Save datasets individually
-            controller.IOManager.SaveAsJson(kalmanPositions, $"kalman_positions_{timestamp}", "PositionData");
-            controller.IOManager.SaveAsJson(simplePositions, $"simple_positions_{timestamp}", "PositionData");
+            controller.IOManager.SaveAsJson(kalmanPositions, $"kalman_positions_{timestamp}", true);
+            controller.IOManager.SaveAsJson(simplePositions, $"simple_positions_{timestamp}", true);
         }
         
         

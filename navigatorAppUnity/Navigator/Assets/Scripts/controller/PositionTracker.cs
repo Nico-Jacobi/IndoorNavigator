@@ -26,6 +26,14 @@ namespace controller
 
         public bool foundPosition = false;
 
+        
+        struct PositionResult
+        {
+            public Position Position;
+            public bool Found;
+            public bool NoSignal;
+        }
+        
         /// <summary>
         /// Update the position based on WiFi measurements.
         /// </summary>
@@ -50,56 +58,71 @@ namespace controller
                 Debug.LogWarning("No recorded data found for this building.");
                 yield break;
             }
-
+            
             // Run computationally expensive comparison on a worker thread
-            Task<Position> positionTask = Task.Run(() => {
-                    // Sort coordinates by similarity - limited to 100 closest matches for performance
-                    var sorted = dataPoints
-                        .Where(coord => coord.HasCommonBssid(wifiNetworks))
-                        .OrderBy(coord => coord.CompareWifiSimilarity(wifiNetworks))
-                        .Take(numberOfNeighboursToConsider)
-                        .ToList();
+            Task<PositionResult> positionTask = Task.Run(() => {
+                var sorted = dataPoints
+                    .Where(coord => coord.HasCommonBssid(wifiNetworks))
+                    .OrderBy(coord => coord.CompareWifiSimilarity(wifiNetworks))
+                    .Take(numberOfNeighboursToConsider)
+                    .ToList();
 
-                    // Check if any usable data remains
-                    if (sorted.Count == 0)
-                    {
-                        Debug.Log("no known signal found...");
-                        registry.noKnowSignalFoundDialog.Show();
-                        foundPosition = false;
-                        registry.floatingButtons.DeactivateGotoPositionButton();
-                        return new Position(0, 0, 3);    
-                    }
+                if (sorted.Count == 0)
+                {
+                    Debug.Log("no known signal found...");
+                    foundPosition = false;
+                    return new PositionResult {
+                        Position = new Position(0, 0, 3),
+                        Found = false,
+                        NoSignal = true
+                    };
+                }
 
-                    // Interpolate using exponential weighting
-                    float weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
-                    int actualLength = sorted.Count;
+                float weightedX = 0, weightedY = 0, weightedFloor = 0, totalWeight = 0;
+                int actualLength = sorted.Count;
 
-                    for (int i = 0; i < actualLength; i++)
-                    {
-                        float weight = (float)Math.Pow(1.2, actualLength - i); // Exponential weighting
-                        weightedX += sorted[i].X * weight;
-                        weightedY += sorted[i].Y * weight;
-                        weightedFloor += sorted[i].Floor * weight;
-                        totalWeight += weight;
-                    }
+                for (int i = 0; i < actualLength; i++)
+                {
+                    float weight = (float)Math.Pow(1.2, actualLength - i);
+                    weightedX += sorted[i].X * weight;
+                    weightedY += sorted[i].Y * weight;
+                    weightedFloor += sorted[i].Floor * weight;
+                    totalWeight += weight;
+                }
 
-                    float finalX = weightedX / totalWeight;
-                    float finalY = weightedY / totalWeight;
-                    float finalFloor = weightedFloor / totalWeight;
+                float finalX = weightedX / totalWeight;
+                float finalY = weightedY / totalWeight;
+                float finalFloor = weightedFloor / totalWeight;
 
-                    foundPosition = true;
-                    registry.floatingButtons.ActivateGotoPositionButton();
-                    return new Position(finalX, finalY, (int)Math.Round(finalFloor));
-                });
+                foundPosition = true;
+                return new PositionResult {
+                    Position = new Position(finalX, finalY, (int)Math.Round(finalFloor)),
+                    Found = true,
+                    NoSignal = false
+                };
+            });
+
             
 
             // Wait for task to complete without blocking the main thread
             while (!positionTask.IsCompleted)
-            {
                 yield return null;
+
+            PositionResult result = positionTask.Result;
+
+            if (result.NoSignal)
+            {
+                registry.noKnowSignalFoundDialog.Show();
+                registry.floatingButtons.DeactivateGotoPositionButton();
+            }
+            else if (result.Found)
+            {
+                registry.floatingButtons.ActivateGotoPositionButton();
             }
 
-            Position prediction = positionTask.Result;
+            Position prediction = result.Position;
+
+
             Debug.Log($"Predicted Position: X={prediction.X:F2}, Y={prediction.Y:F2}, Floor={prediction.Floor}");
 
             if (passiveDataCollectionActive)
