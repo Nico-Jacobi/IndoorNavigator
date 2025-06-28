@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Globalization;
 using System.Linq;
 using controller;
 using Controller;
@@ -159,20 +160,66 @@ namespace view
         }
         
         
+        /// <summary>
+        /// Handles change of measure interval string. Extracts digits, parses float, clamps or sets default.
+        /// </summary>
         private void OnMeasureIntervalChanged(string interval)
         {
+            float defaultValue = 2.0f;
+            
+            if (string.IsNullOrEmpty(interval))
+            {
+                Debug.LogWarning("Empty interval input, using default 1.0s");
+                registry.wifiManager.updateInterval = defaultValue;
+                measureInterval.SetTextWithoutNotify("1s");
+                return;
+            }
+
             string numericInterval = new string(interval.Where(char.IsDigit).ToArray());
-            registry.wifiManager.updateInterval = float.Parse(numericInterval);
-            string intervalWithSeconds = numericInterval + "s";
-            measureInterval.SetTextWithoutNotify(intervalWithSeconds);
+            if (string.IsNullOrEmpty(numericInterval))
+            {
+                Debug.LogWarning($"Interval input '{interval}' contained no digits, using default 1.0s");
+                registry.wifiManager.updateInterval = defaultValue;
+                measureInterval.SetTextWithoutNotify("1s");
+                return;
+            }
+
+            if (!float.TryParse(numericInterval, NumberStyles.Float, CultureInfo.InvariantCulture, out float result))
+            {
+                Debug.LogWarning($"Failed to parse interval '{numericInterval}', using default 1.0s");
+                result = defaultValue;
+            }
+
+            // Avoid ridiculous update intervals
+            result = Mathf.Clamp(result, 0.1f, 60f);
+            registry.wifiManager.updateInterval = result;
+            measureInterval.SetTextWithoutNotify($"{result}s");
         }
-        
-        
-        
+
+        /// <summary>
+        /// Handles change of rolling average size string. Parses int safely and clamps.
+        /// </summary>
         private void OnRollingAverageSizeChanged(string number)
         {
-            registry.positionTracker.numberOfNeighboursToConsider = int.Parse(number);
+            int defaultValue = 5;
+
+            if (string.IsNullOrWhiteSpace(number))
+            {
+                Debug.LogWarning("Empty rolling average size input, using default 5");
+                registry.positionTracker.numberOfNeighboursToConsider = defaultValue;
+                return;
+            }
+
+            if (!int.TryParse(number, out int value))
+            {
+                Debug.LogWarning($"Failed to parse rolling average size '{number}', using default 5");
+                value = defaultValue;
+            }
+
+            value = Mathf.Clamp(value, 1, 100);
+            registry.positionTracker.numberOfNeighboursToConsider = value;
         }
+
         
     }
 }
