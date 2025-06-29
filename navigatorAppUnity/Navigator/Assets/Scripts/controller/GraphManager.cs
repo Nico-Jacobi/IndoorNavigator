@@ -66,9 +66,13 @@ namespace controller
             }
             else
             {
-                recalculated = 0;
-                currentPath = await registry.buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
-                Debug.Log("Completely calculating path");
+                if (fromVertex != null)
+                {
+                    recalculated = 0;
+                    currentPath = await registry.buildingManager.GetActiveGraph().FindShortestPathByNameAsync(fromVertex, toRoom);
+                    Debug.Log("Completely calculating path");
+                }
+                
             }
 
             InterpolateStart();

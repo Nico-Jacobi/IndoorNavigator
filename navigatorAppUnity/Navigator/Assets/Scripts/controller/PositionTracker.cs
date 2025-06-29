@@ -22,7 +22,7 @@ namespace controller
         private string lastBuilding = string.Empty;
         public bool passiveDataCollectionActive = false;
         
-        public int numberOfNeighboursToConsider = 10;   //for the wknn
+        public int numberOfNeighboursToConsider = 5;   //for the wknn
 
         public bool foundPosition = false;
 
@@ -71,6 +71,7 @@ namespace controller
                 {
                     Debug.Log("no known signal found...");
                     foundPosition = false;
+                    
                     return new PositionResult {
                         Position = new Position(0, 0, 3),
                         Found = false,
@@ -95,6 +96,7 @@ namespace controller
                 float finalFloor = weightedFloor / totalWeight;
 
                 foundPosition = true;
+
                 return new PositionResult {
                     Position = new Position(finalX, finalY, (int)Math.Round(finalFloor)),
                     Found = true,

@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
 #if UNITY_ANDROID
 using UnityEngine.Android;
 #endif
-       using System.IO;
-using UnityEngine;
-using Newtonsoft.Json;
-using System.Collections;
+
 namespace controller
 {
     public static class IOManager

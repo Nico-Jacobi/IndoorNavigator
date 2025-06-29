@@ -11,7 +11,6 @@ namespace Controller
 
         public float processNoisePosition = 0.1f;
         public float processNoiseVelocity = 0.5f;
-        public float measurementNoiseWifi = 0.7f;
         public float measurementNoiseImu = 2f;
         
         public float walkingSpeed = 0f; 
@@ -36,6 +35,12 @@ namespace Controller
 
         private Vector2 lastRawWifiEstimate;
         private bool hasWifiHistory = false;
+        
+        
+        private float getMeasurementNoiseWifi()
+        {
+            return registry.settingsMenu.accuracy * 0.7f;
+        }
         
         private void Awake()
         {
@@ -93,7 +98,7 @@ namespace Controller
             {
                 Predict(deltaTime);
                 Vector2 measurement = new Vector2(rawWifiPrediction.X, rawWifiPrediction.Y);
-                UpdateWithPositionMeasurement(measurement, measurementNoiseWifi);
+                UpdateWithPositionMeasurement(measurement, getMeasurementNoiseWifi());
                 
                 // Update IMU velocity estimate if we have previous WiFi data
                 if (hasWifiHistory)
@@ -136,7 +141,7 @@ namespace Controller
         public void UpdateWithIMU(Vector2 acceleration, float headingDegrees)
         {
             float deltaTime = Time.time - lastUpdateTimeIMU;
-            if (deltaTime > minDeltaTime) return;
+            if (deltaTime < minDeltaTime) return;
 
             // Convert heading to radians and get direction vector
             float headingRad = -(headingDegrees + 90) * Mathf.Deg2Rad;

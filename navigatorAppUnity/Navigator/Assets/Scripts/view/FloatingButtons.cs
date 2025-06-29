@@ -19,6 +19,7 @@ namespace view
         private Vector2 visiblePos;
         private Vector2 hiddenPos;
 
+        private bool lastPositionFound = false;
         private bool isVisible = true;
         private Coroutine currentSlideCoroutine;
 
@@ -33,6 +34,9 @@ namespace view
 
             startNavigationButton.onClick.AddListener(OnStartNavigationClicked);
             gotoPositionButton.onClick.AddListener(OnGotoPositionClicked);
+            
+            DeactivateGotoPositionButton();
+            DeactivateNavigationButton();
         }
 
         private void Start()
@@ -48,6 +52,29 @@ namespace view
             hiddenPos = new Vector2(canvasWidth/2 + buttonWidth/2 + 50f, visiblePos.y);
         }
 
+
+        private void Update()
+        {
+            bool currentFound = registry.positionTracker.foundPosition;
+
+            if (currentFound != lastPositionFound)  //to only check this on each update, for efficiency
+            {
+                if (currentFound)
+                {
+                    ActivateNavigationButton();
+                    ActivateGotoPositionButton();
+                }
+                else
+                {
+                    DeactivateNavigationButton();
+                    DeactivateGotoPositionButton();
+                }
+
+                lastPositionFound = currentFound;
+            }
+        }
+
+        
         public void Show()
         {
             if (!isVisible && currentSlideCoroutine == null)
@@ -80,6 +107,16 @@ namespace view
         public void DeactivateGotoPositionButton()
         {
             gotoPositionButton.interactable = false;
+        }
+        
+        public void ActivateNavigationButton()
+        {
+            startNavigationButton.interactable = true;
+        }
+
+        public void DeactivateNavigationButton()
+        {
+            startNavigationButton.interactable = false;
         }
         
 
@@ -139,15 +176,6 @@ namespace view
                 hiddenPos = new Vector2(canvasWidth/2 + buttonWidth/2 + 50f, visiblePos.y);
             }
         }
-
-        // Debug method to test the animation
-        [System.Diagnostics.Conditional("UNITY_EDITOR")]
-        private void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.T))
-            {
-                Toggle();
-            }
-        }
+        
     }
 }

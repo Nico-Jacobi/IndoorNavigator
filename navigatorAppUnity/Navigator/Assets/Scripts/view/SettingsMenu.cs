@@ -36,6 +36,8 @@ namespace view
         private Vector2 visiblePos;
         private float slideDuration = 0.3f;
 
+        public float accuracy = 1.0f; // default accuracy
+        
         private bool open = false;
         
         private void Start()
@@ -68,8 +70,8 @@ namespace view
             
             measureInterval.SetTextWithoutNotify(registry.wifiManager.updateInterval.ToString() + "s");
             measureInterval.onValueChanged.AddListener(OnMeasureIntervalChanged);
-            rollingAverageSize.SetTextWithoutNotify(registry.positionTracker.numberOfNeighboursToConsider.ToString()); 
-            rollingAverageSize.onValueChanged.AddListener(OnRollingAverageSizeChanged);
+            rollingAverageSize.SetTextWithoutNotify(accuracy.ToString()); 
+            rollingAverageSize.onValueChanged.AddListener(OnAccuracyChanged);
             
             importJson.onClick.AddListener(registry.database.PickFileAndImport);
             exportJson.onClick.AddListener(registry.database.ExportWithSimpleFilename);
@@ -197,27 +199,38 @@ namespace view
         }
 
         /// <summary>
-        /// Handles change of rolling average size string. Parses int safely and clamps.
+        /// Handles change of accuracy input string. Extracts digits + dot, parses float safely, clamps.
         /// </summary>
-        private void OnRollingAverageSizeChanged(string number)
+        private void OnAccuracyChanged(string input)
         {
-            int defaultValue = 5;
+            float defaultValue = 1.0f;
 
-            if (string.IsNullOrWhiteSpace(number))
+            if (string.IsNullOrWhiteSpace(input))
             {
-                Debug.LogWarning("Empty rolling average size input, using default 5");
-                registry.positionTracker.numberOfNeighboursToConsider = defaultValue;
+                Debug.LogWarning("Empty accuracy input, using default 1.0");
+                accuracy = defaultValue;
+                rollingAverageSize.SetTextWithoutNotify($"{defaultValue}");
                 return;
             }
 
-            if (!int.TryParse(number, out int value))
+            // Extract digits and dots (so "1.5abc" becomes "1.5")
+            string numericOnly = new string(input.Where(c => char.IsDigit(c) || c == '.').ToArray());
+            if (string.IsNullOrEmpty(numericOnly))
             {
-                Debug.LogWarning($"Failed to parse rolling average size '{number}', using default 5");
+                Debug.LogWarning($"Input '{input}' contained no digits, using default 1.0");
+                accuracy = defaultValue;
+                rollingAverageSize.SetTextWithoutNotify($"{defaultValue}");
+                return;
+            }
+
+            if (!float.TryParse(numericOnly, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            {
+                Debug.LogWarning($"Failed to parse '{numericOnly}', using default 1.0");
                 value = defaultValue;
             }
 
-            value = Mathf.Clamp(value, 1, 100);
-            registry.positionTracker.numberOfNeighboursToConsider = value;
+            accuracy = Mathf.Clamp(value, 0.1f, 5f);
+            rollingAverageSize.SetTextWithoutNotify($"{accuracy}");
         }
 
         
