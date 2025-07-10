@@ -12,7 +12,7 @@ namespace controller
     /// <summary>
     /// Handles position tracking and prediction based on WiFi signals.
     /// </summary>
-    public class PositionTracker : MonoBehaviour
+    public class WifiPositionTracker : MonoBehaviour
     {
 
         public Registry registry;
@@ -116,10 +116,14 @@ namespace controller
             {
                 registry.noKnowSignalFoundDialog.Show();
                 registry.floatingButtons.DeactivateGotoPositionButton();
+                registry.floatingButtons.DeactivateNavigationButton();
+
             }
             else if (result.Found)
             {
                 registry.floatingButtons.ActivateGotoPositionButton();
+                registry.floatingButtons.ActivateNavigationButton();
+
             }
 
             Position prediction = result.Position;

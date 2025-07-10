@@ -55,7 +55,7 @@ namespace view
 
         private void Update()
         {
-            bool currentFound = registry.positionTracker.foundPosition;
+            bool currentFound = registry.wifiPositionTracker.foundPosition;
 
             if (currentFound != lastPositionFound)  //to only check this on each update, for efficiency
             {

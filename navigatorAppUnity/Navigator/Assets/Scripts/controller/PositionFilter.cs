@@ -13,6 +13,6 @@ namespace controller
         Vector2 GetEstimatedVelocity();
 
         
-        bool IsInitialized { get; }
+        //bool IsInitialized { get; }
     }
 }

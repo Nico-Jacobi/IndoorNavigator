@@ -58,7 +58,7 @@ namespace view
                 HandleMarkerSmoothing();
             }
 
-            if (registry.positionTracker.foundPosition)
+            if (registry.wifiPositionTracker.foundPosition)
             {
                 ActivateMarker();
             }

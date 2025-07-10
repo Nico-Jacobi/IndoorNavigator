@@ -24,7 +24,6 @@ namespace Controller
         private int currentFloor;
 
         private float lastUpdateTimeIMU;
-        private bool initialized = false;
 
 
         private int getMaxPositions()
@@ -37,76 +36,50 @@ namespace Controller
             wifiPositions = new List<Vector3>();
             floorHistory = new List<int>();
             lastUpdateTimeIMU = Time.time;
-
-            // fill with zeros initially
-            for (int i = 0; i < getMaxPositions(); i++)
-            {
-                wifiPositions.Add(Vector3.zero);
-            }
+            
         }
 
         public void UpdateWithWifi(Position rawWifiPrediction)
         {
             if (rawWifiPrediction == null) return;
-            
-            Vector3 newPosition = new Vector3(rawWifiPrediction.X, rawWifiPrediction.Y, rawWifiPrediction.Floor); 
 
-            float velocity = 0f;
+            Vector3 newPosition = new Vector3(rawWifiPrediction.X, rawWifiPrediction.Y, rawWifiPrediction.Floor);
             float currentTime = Time.time;
 
-            if (!initialized)
+            if (lastWifiPositionRaw != null)
             {
-                // first wifi update - fill all positions with same value
-                for (int i = 0; i < getMaxPositions(); i++)
-                {
-                    wifiPositions[i] = newPosition;
-                }
-                currentFloor = rawWifiPrediction.Floor;
-                initialized = true;
-            }
-            else
-            {
-                // calculate velocity from last update
                 float deltaTime = currentTime - lastUpdateTimeWifi;
-                if (deltaTime > 0 && lastWifiPositionRaw != null)
+                if (deltaTime > 0)
                 {
                     Vector2 posA = new Vector2(newPosition.x, newPosition.y);
-                    Position pos = lastWifiPositionRaw;
+                    Vector2 posB = new Vector2(lastWifiPositionRaw.X, lastWifiPositionRaw.Y);
 
-                    float dx = posA.x - pos.X;
-                    float dy = posA.y - pos.Y;
-                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    float distance = Vector2.Distance(posA, posB);
+                    float velocity = distance / deltaTime;
 
-                    velocity = distance / deltaTime;
-
-                    Debug.Log($"new pos {newPosition}, old pos: {wifiPositions[0]}");
+                    Debug.Log($"new pos {newPosition}, old pos: {(wifiPositions.Count > 0 ? wifiPositions[^1].ToString() : "none")}");  //that indexing is crazy :D
                     Debug.Log($"distance moved according to wifi: {distance} in {deltaTime} time, which is a speed of {velocity}");
 
-                    // smooth walking speed adjustment
                     walkingSpeed = walkingSpeed * 0.7f + velocity * 0.3f;
-                    lastWifiPositionRaw = rawWifiPrediction;
                 }
-                else
-                {
-                    lastWifiPositionRaw = rawWifiPrediction;
-                }
-
-                // shift positions - newest goes to front
-                for (int i = getMaxPositions() - 1; i > 0; i--)
-                {
-                    wifiPositions[i] = wifiPositions[i - 1];
-                }
-
-                wifiPositions[0] = newPosition;
             }
+
+            lastWifiPositionRaw = rawWifiPrediction;
+
+            // Add newest position at **start** for consistency with GetEstimatedVelocity()
+            wifiPositions.Insert(0, newPosition);
+            if (wifiPositions.Count > getMaxPositions())
+                wifiPositions.RemoveAt(wifiPositions.Count - 1);
 
             lastUpdateTimeWifi = currentTime;
             UpdateFloorHistory(rawWifiPrediction.Floor);
         }
 
+
+
         public void UpdateWithIMU(Vector2 ignored, float headingDegrees)
         {
-            if (!initialized) return;
+            if (wifiPositions.Count == 0) return;
 
             float deltaTime = Time.time - lastUpdateTimeIMU;
             if (deltaTime < minDeltaTime) return;
@@ -118,7 +91,7 @@ namespace Controller
             // move all positions by walking distance
             Vector2 positionDelta = direction * walkingSpeed * deltaTime;
 
-            for (int i = 0; i < getMaxPositions(); i++)
+            for (int i = 0; i < wifiPositions.Count; i++)
             {
                 Vector3 pos = wifiPositions[i];
                 pos.x += positionDelta.x;
@@ -142,14 +115,16 @@ namespace Controller
         {
             if (floorHistory.Count == 0) return;
 
-            // count floor occurrences
+            // take last 5 floors or fewer if less than 5
+            int startIndex = Mathf.Max(0, floorHistory.Count - 5);
+            var recentFloors = floorHistory.GetRange(startIndex, floorHistory.Count - startIndex);
+
             Dictionary<int, int> floorCounts = new Dictionary<int, int>();
-            foreach (int floor in floorHistory)
+            foreach (int floor in recentFloors)
             {
                 floorCounts[floor] = floorCounts.ContainsKey(floor) ? floorCounts[floor] + 1 : 1;
             }
 
-            // pick most frequent floor
             int maxCount = 0;
             int mostFrequentFloor = currentFloor;
             foreach (var kvp in floorCounts)
@@ -167,13 +142,12 @@ namespace Controller
         // weighted average of recent positions
         public Position GetEstimate()
         {
-            if (!initialized)
-                return new Position(0, 0, 0);
+            if (wifiPositions.Count == 0) return new Position(0, 0, 0);
 
             Vector2 weightedSum = Vector2.zero;
             float totalWeight = 0f;
 
-            for (int i = 0; i < getMaxPositions(); i++)
+            for (int i = 0; i < wifiPositions.Count; i++)
             {
                 float weight = Mathf.Pow(0.8f, i); // newer positions matter more
                 Vector2 pos2D = new Vector2(wifiPositions[i].x, wifiPositions[i].y);
@@ -187,7 +161,7 @@ namespace Controller
 
         public Vector2 GetEstimatedVelocity()
         {
-            if (!initialized || wifiPositions.Count < 2) return Vector2.zero;
+            if (wifiPositions.Count < 2) return Vector2.zero;
 
             Vector2 newest = new Vector2(wifiPositions[0].x, wifiPositions[0].y);
             Vector2 previous = new Vector2(wifiPositions[1].x, wifiPositions[1].y);
@@ -195,18 +169,7 @@ namespace Controller
             return direction * walkingSpeed;
         }
 
-        public bool IsInitialized => initialized;
 
-        public void Reset()
-        {
-            // clear everything
-            for (int i = 0; i < getMaxPositions(); i++)
-            {
-                wifiPositions[i] = Vector3.zero;
-            }
-            floorHistory.Clear();
-            initialized = false;
-            lastUpdateTimeIMU = Time.time;
-        }
+       
     }
 }

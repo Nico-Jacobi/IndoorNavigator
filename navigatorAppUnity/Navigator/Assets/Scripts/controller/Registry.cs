@@ -1,5 +1,6 @@
 ﻿using Controller;
 using UnityEngine;
+using UnityEngine.Serialization;
 using view;
 
 namespace controller
@@ -14,7 +15,7 @@ namespace controller
         public BuildingManager buildingManager;
         public CompassReader compassReader;
         public GraphManager graphManager;
-        public PositionTracker positionTracker;
+        [FormerlySerializedAs("positionTracker")] public WifiPositionTracker wifiPositionTracker;
         public CameraController cameraController;
         public DataCollectionMode dataCollectionMode;
         public Acceleration accelerationController;

@@ -69,9 +69,9 @@ namespace view
             closeButton.onClick.AddListener(CloseMenu);
             
             measureInterval.SetTextWithoutNotify(registry.wifiManager.updateInterval.ToString() + "s");
-            measureInterval.onValueChanged.AddListener(OnMeasureIntervalChanged);
+            measureInterval.onEndEdit.AddListener(OnMeasureIntervalCommitted);
             rollingAverageSize.SetTextWithoutNotify(accuracy.ToString()); 
-            rollingAverageSize.onValueChanged.AddListener(OnAccuracyChanged);
+            rollingAverageSize.onEndEdit.AddListener(OnAccuracyInputCommitted);
             
             importJson.onClick.AddListener(registry.database.PickFileAndImport);
             exportJson.onClick.AddListener(registry.database.ExportWithSimpleFilename);
@@ -152,7 +152,7 @@ namespace view
 
         public void HandleDbPassiveCollectionToggle(bool HandleDbPassiveCollection)
         {
-            registry.positionTracker.passiveDataCollectionActive = HandleDbPassiveCollection;
+            registry.wifiPositionTracker.passiveDataCollectionActive = HandleDbPassiveCollection;
         }
         
         
@@ -161,76 +161,76 @@ namespace view
             registry.kalmanFilterActive = active;
         }
         
-        
-        /// <summary>
-        /// Handles change of measure interval string. Extracts digits, parses float, clamps or sets default.
-        /// </summary>
-        private void OnMeasureIntervalChanged(string interval)
+
+        private void OnMeasureIntervalCommitted(string input)
         {
-            float defaultValue = 2.0f;
-            
-            if (string.IsNullOrEmpty(interval))
+            const float defaultValue = 2.0f;
+
+            input = input?.Trim() ?? "";
+
+            if (string.IsNullOrEmpty(input))
             {
-                Debug.LogWarning("Empty interval input, using default 1.0s");
-                registry.wifiManager.updateInterval = defaultValue;
-                measureInterval.SetTextWithoutNotify("1s");
+                Debug.LogWarning("Empty interval input on commit, using default 2.0s");
+                SetMeasureInterval(defaultValue);
                 return;
             }
 
-            string numericInterval = new string(interval.Where(char.IsDigit).ToArray());
-            if (string.IsNullOrEmpty(numericInterval))
+            // Try parse directly, no weird digit extraction mid-typing.
+            if (!float.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
             {
-                Debug.LogWarning($"Interval input '{interval}' contained no digits, using default 1.0s");
-                registry.wifiManager.updateInterval = defaultValue;
-                measureInterval.SetTextWithoutNotify("1s");
+                Debug.LogWarning($"Invalid interval input '{input}', using default 2.0s");
+                SetMeasureInterval(defaultValue);
                 return;
             }
 
-            if (!float.TryParse(numericInterval, NumberStyles.Float, CultureInfo.InvariantCulture, out float result))
+            // Clamp between 0.1 and 60 seconds, like a sane overlord.
+            SetMeasureInterval(Mathf.Clamp(value, 0.1f, 60f));
+        }
+
+        private void SetMeasureInterval(float value)
+        {
+            registry.wifiManager.updateInterval = value;
+            measureInterval.SetTextWithoutNotify($"{value}s");
+        }
+
+
+        /// <summary>
+        /// Call this when the user finishes editing (e.g. OnEndEdit event).
+        /// Validates and clamps the accuracy input once.
+        /// </summary>
+        private void OnAccuracyInputCommitted(string input)
+        {
+            const float defaultValue = 1.0f;
+
+            // Trim whitespace, no need for fancy extraction mid-typing.
+            input = input?.Trim() ?? "";
+
+            if (string.IsNullOrEmpty(input))
             {
-                Debug.LogWarning($"Failed to parse interval '{numericInterval}', using default 1.0s");
-                result = defaultValue;
+                Debug.LogWarning("Empty accuracy input on commit, using default 1.0");
+                SetAccuracy(defaultValue);
+                return;
             }
 
-            // Avoid ridiculous update intervals
-            result = Mathf.Clamp(result, 0.1f, 60f);
-            registry.wifiManager.updateInterval = result;
-            measureInterval.SetTextWithoutNotify($"{result}s");
+            // Try parse directly, no weird char extraction mid-input.
+            if (!float.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            {
+                Debug.LogWarning($"Invalid accuracy input '{input}', using default 1.0");
+                SetAccuracy(defaultValue);
+                return;
+            }
+
+            // Clamp and set.
+            SetAccuracy(Mathf.Clamp(value, 0.1f, 5f));
         }
 
         /// <summary>
-        /// Handles change of accuracy input string. Extracts digits + dot, parses float safely, clamps.
+        /// Updates accuracy and the UI text without triggering input events again.
         /// </summary>
-        private void OnAccuracyChanged(string input)
+        private void SetAccuracy(float value)
         {
-            float defaultValue = 1.0f;
-
-            if (string.IsNullOrWhiteSpace(input))
-            {
-                Debug.LogWarning("Empty accuracy input, using default 1.0");
-                accuracy = defaultValue;
-                rollingAverageSize.SetTextWithoutNotify($"{defaultValue}");
-                return;
-            }
-
-            // Extract digits and dots (so "1.5abc" becomes "1.5")
-            string numericOnly = new string(input.Where(c => char.IsDigit(c) || c == '.').ToArray());
-            if (string.IsNullOrEmpty(numericOnly))
-            {
-                Debug.LogWarning($"Input '{input}' contained no digits, using default 1.0");
-                accuracy = defaultValue;
-                rollingAverageSize.SetTextWithoutNotify($"{defaultValue}");
-                return;
-            }
-
-            if (!float.TryParse(numericOnly, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
-            {
-                Debug.LogWarning($"Failed to parse '{numericOnly}', using default 1.0");
-                value = defaultValue;
-            }
-
-            accuracy = Mathf.Clamp(value, 0.1f, 5f);
-            rollingAverageSize.SetTextWithoutNotify($"{accuracy}");
+            accuracy = value;
+            rollingAverageSize.SetTextWithoutNotify(value.ToString(CultureInfo.InvariantCulture));
         }
 
         

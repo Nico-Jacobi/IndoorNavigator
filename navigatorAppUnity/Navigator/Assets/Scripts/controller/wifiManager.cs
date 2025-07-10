@@ -350,9 +350,9 @@ namespace controller
                 Debug.Log($"Saved data point to database for building {buildingName}");
                 
                 // Clear position tracker cache for this building to refresh data
-                if (registry.positionTracker != null)
+                if (registry.wifiPositionTracker != null)
                 {
-                    registry.positionTracker.ClearCache(buildingName);
+                    registry.wifiPositionTracker.ClearCache(buildingName);
                 }
             }
             
@@ -407,9 +407,9 @@ namespace controller
             }
 
             // Update position using the position tracker
-            if (registry.positionTracker != null)
+            if (registry.wifiPositionTracker != null)
             {
-                yield return StartCoroutine(registry.positionTracker.UpdatePosition(wifiNetworks));
+                yield return StartCoroutine(registry.wifiPositionTracker.UpdatePosition(wifiNetworks));
             }
             else
             {

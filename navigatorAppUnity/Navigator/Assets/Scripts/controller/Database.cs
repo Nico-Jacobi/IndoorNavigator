@@ -26,7 +26,7 @@ namespace controller
 
         void Awake()
         {
-            //DeleteDatabase(); //todo just for debugging
+            //DeleteDatabase(); // just for debugging
             //DontDestroyOnLoad(gameObject);
             InitializeDatabase();
         }
@@ -44,7 +44,7 @@ namespace controller
 
             if (!db.Table<Coordinate>().Any())
             {
-                ImportFromJson();
+                //ImportFromJson(); //this dataset seems to be broken or not up to date (leads to less precise positioning)
             }
 
             // Build full BSSID-to-building map

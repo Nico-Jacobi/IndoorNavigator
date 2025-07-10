@@ -11,7 +11,7 @@ namespace Controller
 
         public float processNoisePosition = 0.1f;
         public float processNoiseVelocity = 0.5f;
-        public float measurementNoiseImu = 2f;
+        public float measurementNoiseImu = 0.1f;
         
         public float walkingSpeed = 0f; 
 
@@ -39,7 +39,7 @@ namespace Controller
         
         private float getMeasurementNoiseWifi()
         {
-            return registry.settingsMenu.accuracy * 0.7f;
+            return registry.settingsMenu.accuracy * 2f;
         }
         
         private void Awake()
@@ -149,6 +149,7 @@ namespace Controller
 
             // Use acceleration magnitude (length) only - direction comes from compass
             float accelerationMagnitude = acceleration.magnitude;
+            //Debug.Log($"Acceleration magnitude: {accelerationMagnitude:F2} m/s²");
     
             // Predict step
             Predict(deltaTime);
@@ -217,7 +218,8 @@ namespace Controller
 
         private void UpdateWithVelocityMeasurement(Vector2 velocityMeasurement, float measurementNoise)
         {
-            float headingRad = registry.compassReader.GetHeadingRadians();
+            // Convert heading to radians and get direction vector
+            float headingRad = -(registry.compassReader.GetHeading() + 90) * Mathf.Deg2Rad;
             Vector2 velocity = new Vector2(Mathf.Cos(headingRad), Mathf.Sin(headingRad)) * walkingSpeed;
         
             
