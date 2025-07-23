@@ -4,6 +4,7 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib
 import coordinateUtilities
+import room
 from door import Door
 from graph import Graph
 from parseObj import parse_obj_files
@@ -65,7 +66,12 @@ def parse_geojson_to_graph(geojson_string) -> tuple[Graph, list, list, list]:
                 if len(feature.get("geometry", {}).get("coordinates", [])) <= 2:
                     continue
                 try:
-                    rooms.append(Room(feature, graph))
+
+                    room = Room(feature, graph)
+                    rooms.append(room)
+                    #room.plot()
+                    #plt.show()
+
                 except ValueError as e:
                     print(f"Skipping invalid room: {e}")
                     broken.append(feature)
@@ -158,3 +164,6 @@ if __name__ == "__main__":
         print("origin lat: ", origin_lat)
         print("origin lon: ", origin_lon)
         print("-" * 50)  # Separator between buildings
+
+        print("saved point in geometry: ", room.saved_points_geometry)
+        print("saved point in path: ", room.saved_points_path)

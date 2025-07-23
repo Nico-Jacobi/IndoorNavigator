@@ -14,7 +14,8 @@ import heapq
 from shapely.geometry import Polygon
 from graph import Graph
 
-
+saved_points_geometry = 0
+saved_points_path = 0
 
 
 class Room:
@@ -54,6 +55,9 @@ class Room:
             self.coordinates: List[Tuple[float, float]] = [
                 (float(coord[1]), float(coord[0])) for coord in geometry.get("coordinates", [])
             ]
+            #raw_coords = [
+            #    (float(coord[1]), float(coord[0])) for coord in geometry.get("coordinates", [])
+            #]
         except Exception as e:
             print(f"Failed to parse coordinates: {geometry.get('coordinates', [])} — {e}")
             raise
@@ -74,6 +78,37 @@ class Room:
         # grid for finding the visual paths
         self.grid: List[List[Optional[PathVertex]]] = []
 
+        #self._debug_plot_geometry(raw_coords, self.coordinates)
+
+    def _debug_plot_geometry(self, raw_coords: List[Tuple[float, float]], simplified_coords: List[Tuple[float, float]]):
+        """
+        Debug plot of raw vs simplified room geometry.
+        Shows the before/after shapes and point counts.
+        """
+        fig, ax = plt.subplots()
+
+        if raw_coords:
+            raw_x, raw_y = zip(*(raw_coords + [raw_coords[0]]))
+            ax.plot(raw_x, raw_y, label=f'Raw ({len(raw_coords)})', color='blue', linestyle='--', alpha=0.5)
+            ax.scatter(raw_x, raw_y, color='blue', s=10)  # dot those raw points
+
+        if simplified_coords:
+            simp_x, simp_y = zip(*(simplified_coords + [simplified_coords[0]]))
+            ax.plot(simp_x, simp_y, label=f'Simplified ({len(simplified_coords)})', color='green', alpha=0.8)
+            ax.scatter(simp_x, simp_y, color='green', s=25)  # dot those simplified points bigger
+
+        reduction = len(raw_coords) - len(simplified_coords)
+        reduction_pct = (reduction / len(raw_coords) * 100) if raw_coords else 0
+
+        ax.legend()
+        ax.set_title(
+            f"Name: '{self.name}', Level: {self.level}\n"
+            f"{len(raw_coords)} → {len(simplified_coords)} vertecies "
+
+        )
+        ax.set_aspect('equal')
+        plt.tight_layout()
+        plt.show()
 
     @classmethod
     def from_data(cls, level: int, name: str, coordinates: List[Tuple[float, float]], graph: Graph, holes: Optional[List[List[Tuple[float, float]]]] = None):
@@ -872,8 +907,14 @@ class Room:
 
         if loop:
             print("simplified geometry from", before_count, "to", len(coordinates), "vertecies")
+            global saved_points_geometry
+            saved_points_geometry += before_count - len(coordinates)
         else:
             print("simplified path from", before_count, "to", len(coordinates), "vertecies")
+            global saved_points_path
+            saved_points_path += before_count - len(coordinates)
+
+
 
         #visualize_shapely_polygon(Polygon(coordinates), title="after")
 
