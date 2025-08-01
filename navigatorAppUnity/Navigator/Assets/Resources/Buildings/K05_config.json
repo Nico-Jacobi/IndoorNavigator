@@ -1,0 +1,48 @@
+{
+    "building": "K05",
+    "graph": "K05_graph.json",
+    "floors": [
+        {
+            "level": -1,
+            "walls": "K05_floor-1_walls.obj",
+            "ground": "K05_floor-1_ground.obj",
+            "doors": "K05_floor-1_doors.obj"
+        },
+        {
+            "level": 0,
+            "walls": "K05_floor0_walls.obj",
+            "ground": "K05_floor0_ground.obj",
+            "doors": "K05_floor0_doors.obj"
+        },
+        {
+            "level": 1,
+            "walls": "K05_floor1_walls.obj",
+            "ground": "K05_floor1_ground.obj",
+            "doors": "K05_floor1_doors.obj"
+        },
+        {
+            "level": 2,
+            "walls": "K05_floor2_walls.obj",
+            "ground": "K05_floor2_ground.obj",
+            "doors": "K05_floor2_doors.obj"
+        },
+        {
+            "level": 3,
+            "walls": "K05_floor3_walls.obj",
+            "ground": "K05_floor3_ground.obj",
+            "doors": "K05_floor3_doors.obj"
+        },
+        {
+            "level": 4,
+            "walls": "K05_floor4_walls.obj",
+            "ground": "K05_floor4_ground.obj",
+            "doors": "K05_floor4_doors.obj"
+        },
+        {
+            "level": 5,
+            "walls": "K05_floor5_walls.obj",
+            "ground": "K05_floor5_ground.obj",
+            "doors": "K05_floor5_doors.obj"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "building": "A01",
+    "graph": "A01_graph.json",
+    "floors": [
+        {
+            "level": 0,
+            "walls": "A01_floor0_walls.obj",
+            "ground": "A01_floor0_ground.obj",
+            "doors": "A01_floor0_doors.obj"
+        },
+        {
+            "level": 1,
+            "walls": "A01_floor1_walls.obj",
+            "ground": "A01_floor1_ground.obj",
+            "doors": "A01_floor1_doors.obj"
+        }
+    ]
+}

@@ -1,0 +1,36 @@
+{
+    "building": "B11",
+    "graph": "B11_graph.json",
+    "floors": [
+        {
+            "level": -1,
+            "walls": "B11_floor-1_walls.obj",
+            "ground": "B11_floor-1_ground.obj",
+            "doors": "B11_floor-1_doors.obj"
+        },
+        {
+            "level": 0,
+            "walls": "B11_floor0_walls.obj",
+            "ground": "B11_floor0_ground.obj",
+            "doors": "B11_floor0_doors.obj"
+        },
+        {
+            "level": 1,
+            "walls": "B11_floor1_walls.obj",
+            "ground": "B11_floor1_ground.obj",
+            "doors": "B11_floor1_doors.obj"
+        },
+        {
+            "level": 2,
+            "walls": "B11_floor2_walls.obj",
+            "ground": "B11_floor2_ground.obj",
+            "doors": "B11_floor2_doors.obj"
+        },
+        {
+            "level": 3,
+            "walls": "B11_floor3_walls.obj",
+            "ground": "B11_floor3_ground.obj",
+            "doors": "B11_floor3_doors.obj"
+        }
+    ]
+}

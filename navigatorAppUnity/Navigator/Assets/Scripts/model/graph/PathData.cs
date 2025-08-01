@@ -12,7 +12,7 @@ namespace model.graph
     [Serializable]
     public class PathData
     {
-        public bool smoothPath = false;
+        public bool smoothPath = true;
         public double weight;
         public List<Point> points;
 

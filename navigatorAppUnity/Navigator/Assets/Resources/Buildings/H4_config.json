@@ -1,0 +1,60 @@
+{
+    "building": "H4",
+    "graph": "H4_graph.json",
+    "floors": [
+        {
+            "level": 1,
+            "walls": "H4_floor1_walls.obj",
+            "ground": "H4_floor1_ground.obj",
+            "doors": "H4_floor1_doors.obj"
+        },
+        {
+            "level": 2,
+            "walls": "H4_floor2_walls.obj",
+            "ground": "H4_floor2_ground.obj",
+            "doors": "H4_floor2_doors.obj"
+        },
+        {
+            "level": 3,
+            "walls": "H4_floor3_walls.obj",
+            "ground": "H4_floor3_ground.obj",
+            "doors": "H4_floor3_doors.obj"
+        },
+        {
+            "level": 4,
+            "walls": "H4_floor4_walls.obj",
+            "ground": "H4_floor4_ground.obj",
+            "doors": "H4_floor4_doors.obj"
+        },
+        {
+            "level": 5,
+            "walls": "H4_floor5_walls.obj",
+            "ground": "H4_floor5_ground.obj",
+            "doors": "H4_floor5_doors.obj"
+        },
+        {
+            "level": 6,
+            "walls": "H4_floor6_walls.obj",
+            "ground": "H4_floor6_ground.obj",
+            "doors": "H4_floor6_doors.obj"
+        },
+        {
+            "level": 7,
+            "walls": "H4_floor7_walls.obj",
+            "ground": "H4_floor7_ground.obj",
+            "doors": "H4_floor7_doors.obj"
+        },
+        {
+            "level": 8,
+            "walls": "H4_floor8_walls.obj",
+            "ground": "H4_floor8_ground.obj",
+            "doors": "H4_floor8_doors.obj"
+        },
+        {
+            "level": 9,
+            "walls": "H4_floor9_walls.obj",
+            "ground": "H4_floor9_ground.obj",
+            "doors": "H4_floor9_doors.obj"
+        }
+    ]
+}

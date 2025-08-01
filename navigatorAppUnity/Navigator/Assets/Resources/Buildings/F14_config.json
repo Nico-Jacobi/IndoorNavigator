@@ -1,0 +1,30 @@
+{
+    "building": "F14",
+    "graph": "F14_graph.json",
+    "floors": [
+        {
+            "level": -1,
+            "walls": "F14_floor-1_walls.obj",
+            "ground": "F14_floor-1_ground.obj",
+            "doors": "F14_floor-1_doors.obj"
+        },
+        {
+            "level": 0,
+            "walls": "F14_floor0_walls.obj",
+            "ground": "F14_floor0_ground.obj",
+            "doors": "F14_floor0_doors.obj"
+        },
+        {
+            "level": 1,
+            "walls": "F14_floor1_walls.obj",
+            "ground": "F14_floor1_ground.obj",
+            "doors": "F14_floor1_doors.obj"
+        },
+        {
+            "level": 2,
+            "walls": "F14_floor2_walls.obj",
+            "ground": "F14_floor2_ground.obj",
+            "doors": "F14_floor2_doors.obj"
+        }
+    ]
+}

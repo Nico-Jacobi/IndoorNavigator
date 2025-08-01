@@ -1,0 +1,12 @@
+{
+    "building": "Radiologie",
+    "graph": "Radiologie_graph.json",
+    "floors": [
+        {
+            "level": -1,
+            "walls": "Radiologie_floor-1_walls.obj",
+            "ground": "Radiologie_floor-1_ground.obj",
+            "doors": "Radiologie_floor-1_doors.obj"
+        }
+    ]
+}
