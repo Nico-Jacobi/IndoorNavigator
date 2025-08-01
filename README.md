@@ -1,105 +1,132 @@
-# IndoorNavigator – Indoor-Navigation mit handelsüblichen Smartphones
+# IndoorNavigator – Indoor Navigation with Standard Smartphones
 
-Dieses Repository enthält die im Rahmen der Bachelorarbeit von Nico-Kevin Jacobi entwickelte Lösung zur Indoor-Positionierung und Navigation in Gebäuden der Philipps-Universität Marburg. Ziel ist eine skalierbare, wartbare und genaue Anwendung, die Orientierung in komplexen Innenräumen ermöglicht.
+This repository contains the solution developed by Nico-Kevin Jacobi as part of a Bachelor's thesis on indoor positioning and navigation within the buildings of Philipps-University Marburg. The objective is to create a scalable, maintainable, and accurate system that enables effective orientation in complex indoor environments. Images of the application and statistical results are below.
 
-## 🗂 Projektübersicht
 
-```text
-├── geoJsonParser/        → Python-Tool zur Umwandlung von GeoJSON in 3D-Modelle, Navigationsgraphen und Config Dateien
-├── navigatorAppUnity/    → Unity-App für die Indoor-Navigation mit WLAN & IMU-Sensorfusion
-├── posDataInspector/     → Auswertung und Visualisierung gesammelter Positionsdaten
-├── IndoorNavigator.apk   → Installierbare Android-Anwendung
+## 🗂 Project Overview
 ```
+├── geoJsonParser/        → Python tool to convert GeoJSON into 3D models, navigation graphs, and config files  
+├── navigatorAppUnity/    → Unity app for indoor navigation using Wi-Fi & IMU sensor fusion  
+├── posDataInspector/     → Analysis and visualization of collected position data  
+├── IndoorNavigator.apk   → Installable Android application  
+```
+
+<br>
+
 
 ## 📍 geoJsonParser
 
-Python-Modul zur automatisierten Verarbeitung von GeoJSON-Raumdaten:
+Python module for automated processing of GeoJSON spatial data:
 
-- Parsen der GeoJSON in sinvolle Datenstrukturen
-- Optimieren und Korrigieren der Daten
-- Erzeugung eines 2 stufigen Navigationsgraphen (gitter- und türbasiert)
-- Erzeugung von 3D Modellen für jede Etage (als .obj)
-- Export von Modellen, Graph und Config-Datei
+* Parsing GeoJSON into useful data structures
+* Optimizing and correcting the data
+* Generating a two-level navigation graph (grid- and door-based)
+* Generating 3D models for each floor (as `.obj`)
+* Exporting models, graph, and config file
 
-Siehe main.py für Details
+See `main.py` for details.
+
+
+<br>
+
 
 
 ## 🧭 navigatorAppUnity
 
-Unity-Projekt für Android zur Positionsbestimmung und Navigation:
+Unity project for Android for position estimation and navigation:
 
-- Darstellung der Nutzerposition auf einer interaktiven 3D-Karte
-- Sensorfusion: WLAN-Fingerprinting + IMU + Kalman-Filter (alt. eigener Filter)
-- Navigation zu beliebigem Raum
-- Gebäude einfach hinzufügbar mit generierten Daten aus geoJsonParser
-- Sammeln von WLAN-Fingerprint daten in der App
-- Verschiedene Einstellungen, import und export von Daten
+* Displays user location on an interactive 3D map
+* Sensor fusion: Wi-Fi fingerprinting + IMU + Kalman filter (alt: custom filter)
+* Navigate to any room
+* Add new buildings easily using data from geoJsonParser
+* Collect Wi-Fi fingerprints directly in the app
+* Various settings, import/export support
+
+
+
+<br>
 
 
 
 ## 📊 posDataInspector
 
-Python-Skript zur Analyse und Visualisierung von Positionsdaten:
+Python script for analysis and visualization of position data:
 
-- Enthält alle im Rahmen des Projektes gesammelte Daten
-- Berechnen von statistischen Kennzahlen
-- Erstellen von Grafiken aus den gesammelten Daten
+* Contains all data collected during the project
+* Calculates statistical metrics
+* Generates visualizations of the results
 
-Die wichtigsten Visualisierungen sind unter posDataInspector/resources/Graphics/interesting zu finden, durch ausführen von Main.py werden noch weit mehr generiert.
-Siehe main.py für Details
+The most relevant visualizations are located in `posDataInspector/resources/Graphics/interesting`. Running `main.py` will generate additional plots.
+See `main.py` for more info.
+
+
+
+<br>
 
 
 
 ## 📱 IndoorNavigator.apk
 
-Die finale Android-App zur Nutzung ohne Unity-Editor.
+The final Android app, usable without the Unity editor.
 
 ### Installation:
 
-1. APK auf ein Android-Gerät übertragen und installieren
-2. WLAN-Drosselung deaktivieren ("Wi-Fi scan throttling" -> off)
-3. Beim ersten Start initialisiert sich die Datenbank
-4. App fragt nach berechtigungen für Standort
-5. wenn positon ermittelt werden kann mit diese auf der karte angezeigt, sonst ein dialog fester
-6. oben kann ein geböude und stocwerk ausgwählt werden, unten rechts, "springe zur aktuellen position" und "navigation"
+1. Transfer the APK to an Android device and install it
+2. Disable Wi-Fi throttling ("Wi-Fi scan throttling" → off)
+3. The database initializes on first launch
+4. Grant location permissions when asked
+5. If a position can be determined, it will be shown on the map – otherwise, a dialog appears
+6. Select building and floor at the top; bottom right: "jump to current position" and "start navigation"
 
 
-## 🧪 Hinweise
 
-- Die App wurde für ausgewählte Gebäude der Philipps-Universität vorkonfiguriert
-- Neue Gebäude lassen sich einzufügen indem unter Ressources/Buildings die Config.json und graph.json hinzugefügt werden und unter Ressources/Prefabs der in geoJsonParser generierte ordner mit allen obj Geböudemodellen
-- über den Setup-Modus das geböude in der app einrichten. (daten können exportiert werden und über das Database skript zu intallation automatisch in die Datenbank initialisiert werden)
+<br>
 
+
+
+## 🧪 Notes
+
+* The app is preconfigured for selected university buildings
+* New buildings can be added by placing `config.json` and `graph.json` into `Resources/Buildings` and copying the folder with all generated `.obj` building models from `geoJsonParser` into `Resources/Prefabs`
+* Use Setup Mode in the app to initialize the building. Data can be exported or imported via the app’s Settings. To auto-import data on startup, see the `Database.cs` script.
+
+
+
+<br>
 
 ## 🖼 Screenshots
 
-### Standardansicht mit Nutzerposition und aktuellem Raum auf der 3D-Karte
-![Standardansicht](images/StandartView.jpg)
+### Standard view with user position and current room on 3D map
 
-### Aktive Navigation, zeigt nutzer wo er lang gehen soll
-![Navigationsdialog](images/ActiveNavigationRounded.jpg)
+<img src="images/StandartView.jpg" width="400"/>
 
-### Einstellungen in der App
-![Aktive Navigation](images/SettingsMenu.jpg)
+### Active navigation showing the path
 
-### Datenanalyse: Geschätze Wege vs tatsächlicher weg (6 Messungen, Kalman Filter, Accuracy-Wert 2)
-![Grafik](images/Kalman2WalkedPaths.png)
+<img src="images/ActiveNavigationRounded.jpg" width="400"/>
 
-### Datenanalyse: Tabelle mit statistischen Ergebnissen der Gesammtauswertung, angegeben sind Abweichungen zum nächsten Punkt auf der Tatsächlichen Strecke in Metern.
-![Ungenauigkeitstabelle](images/Statistics.png)
+### Settings menu
 
+<img src="images/SettingsMenu.jpg" width="400"/>
 
-## 📝 Weitere Informationen
+### Data analysis: estimated paths vs actual walked paths (6 samples, Kalman filter, accuracy = 2)
 
-Eine ausführliche Beschreibung der Umsetzung, Methodik und Evaluation befindet sich in der zugehörigen Bachelorarbeit.
+<img src="images/Kalman2WalkedPaths.png" width="500"/>
 
+### Statistical results table: deviation to next actual position (in meters)
 
-## 👤 Autor
+<img src="images/Statistics.png" width="500"/>
 
-**Nico-Kevin Jacobi**  
-Informatikstudent an der Philipps-Universität Marburg  
-Matrikelnummer: 3663174
+## 📝 More Information
+
+For implementation details, methodology, and evaluation, see the corresponding Bachelor's thesis.
+
+## 👤 Author
+
+**Nico-Kevin Jacobi**
+Computer Science Student at Philipps-University Marburg
+Student ID: 3663174
+Bachelor's Thesis, 2025
 
 ---
 
-© 2025 – Alle Rechte vorbehalten.
+© 2025 – All rights reserved.
