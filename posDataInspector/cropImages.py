@@ -4,9 +4,11 @@ from PIL import ImageChops
 
 
 def is_almost_white(pixel, tol=10):
+    """returns if given pixel color is white (white means it can be cropped in this context)"""
     return all(channel >= 255 - tol for channel in pixel[:3])  # nur RGB checken
 
 def trim_border(im: Image.Image, tol=10) -> Image.Image:
+    """will trim as much whitespaces a possible form around the given image"""
     pixels = im.load()
     width, height = im.size
 
@@ -44,6 +46,7 @@ def trim_border(im: Image.Image, tol=10) -> Image.Image:
 
 
 def batch_trim(input_folder: str, output_folder: str, tol=10):
+    """will trim all files in given input folder and save them in output folder"""
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 

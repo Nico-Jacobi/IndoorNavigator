@@ -36,12 +36,14 @@ class SessionData:
 
 
 def load_positions_from_file(json_file: Path) -> List[Position]:
+    """loads a list of position from a given filepath"""
     with json_file.open() as f:
         data = json.load(f)
         return [Position(X=point["X"], Y=point["Y"], Floor=point["Floor"]) for point in data]
 
 
 def load_position_data(base_path: Path) -> List[SessionData]:
+    """loads and initializes collected data into a list of SessionData"""
     sessions = []
     collected_data_path = base_path / "resources" / "CollectedData"
 
@@ -73,6 +75,7 @@ def load_position_data(base_path: Path) -> List[SessionData]:
 
 
 def plot_paths(paths: List[PathData], ground_truth: PathData, title: str, plot_points: bool = False, plot_ground_truth: bool = True, plot_background: bool = True):
+    """will show a plot for the given paths, only continues after plot is closed"""
     plt.figure(figsize=(12, 12))
 
     if plot_background:
@@ -247,6 +250,7 @@ def plot_and_save_paths(
 
 
 def save_all(sessions, real_path: PathData, plot_points=False, plot_ground_truth=True, plot_background=True):
+    """will make a graph for all sessions and save them"""
     output_dir = Path(__file__).parent / "resources" / "Graphics"
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -281,6 +285,7 @@ def save_all(sessions, real_path: PathData, plot_points=False, plot_ground_truth
 
 
 def save_individual_paths(sessions, real_path: PathData, plot_points=False, plot_ground_truth=True, plot_background=True):
+    """ will make a separate plot for each single path in resources and save it"""
     output_dir = Path(__file__).parent / "resources" / "Graphics" / "Individual"
     output_dir.mkdir(parents=True, exist_ok=True)
 
