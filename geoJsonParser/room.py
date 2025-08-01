@@ -226,6 +226,7 @@ class Room:
             return inner_coords_np, aligned_outer
 
         def is_clockwise(ring: List[Tuple[float, float]]) -> bool:
+            """ checks if the list of tuples is in clockwise configuration"""
             area = 0.0
             for i in range(len(ring)):
                 x1, y1 = ring[i]
@@ -236,6 +237,7 @@ class Room:
             # Ensure outer ring is clockwise
 
         def _generate_wall_faces(inner, outer, height, inside, outside):
+            """extrudes the walls from given inner and outer geometry"""
             for i in range(len(inner)):
                 next_i = (i + 1) % len(inner)
                 dx, dz = inner[next_i][0] - inner[i][0], inner[next_i][1] - inner[i][1]

@@ -1,6 +1,10 @@
 import math
 from typing import Tuple, List
 from shapely.geometry.polygon import Polygon
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon as MplPolygon
+import numpy as np
+from shapely.geometry import MultiPolygon
 
 class Wavefront:
     def __init__(self, merge_threshold=0.02, default_material=" "):
@@ -11,9 +15,11 @@ class Wavefront:
         self.default_material: str = default_material
 
     def _is_close(self, v1: Tuple[float, float, float], v2: Tuple[float, float, float]) -> bool:
+        """Check if two vertices are close enough to be considered the same."""
         return math.dist(v1, v2) < self.merge_threshold
 
     def _find_or_add_vertex(self, vertex: Tuple[float, float, float], normal: Tuple[float, float, float]) -> int:
+        """ Find an existing vertex or add a new one if it doesn't exist."""
         if normal is None:
             raise ValueError("Cannot add a vertex without a normal")
         for idx, (v, _) in enumerate(self.vertex_normal_pairs):
@@ -25,6 +31,7 @@ class Wavefront:
     def add_face(self, vertex_list: List[Tuple[float, float, float]],
                  normal_list: List[Tuple[float, float, float]],
                  material_name: str = None):
+        """Adds a face to the Wavefront object."""
         if normal_list is None or len(vertex_list) != len(normal_list):
             raise ValueError("The number of vertices and normals must match, and normals cannot be None")
 
@@ -33,6 +40,7 @@ class Wavefront:
         self.materials.append(material_name or self.default_material)
 
     def add_face_indices(self, vertex_indices: List[int], material_name: str = None):
+        """Adds a face to the Wavefront object using pre-existing vertex indices."""
         self.faces.append(vertex_indices)
         self.materials.append(material_name or self.default_material)
 
@@ -45,6 +53,7 @@ class Wavefront:
 
 
         def fix_overlaps(faces: List[List[int]], axis_index: int, depth_tolerance=self.merge_threshold) -> List[List[int]]:
+            """ Removes unnecessary faces that overlap along the specified axis."""
             # Sort faces by depth
 
             len_before = len(faces)
@@ -209,59 +218,57 @@ class Wavefront:
 
 
 
-@staticmethod
-def visualize_shapely_polygon(polygon, figsize=(10, 8), fill_color='lightblue',
-                              edge_color='blue', alpha=0.5, title='Shapely Polygon'):
-    """
-    Visualize a Shapely polygon or MultiPolygon using matplotlib.
+    @staticmethod
+    def visualize_shapely_polygon(polygon, figsize=(10, 8), fill_color='lightblue',
+                                  edge_color='blue', alpha=0.5, title='Shapely Polygon'):
+        """
+        Visualize a Shapely polygon or MultiPolygon using matplotlib. (debug function)
+        """
 
-    Parameters:
-    -----------
-    polygon : shapely.geometry.Polygon or shapely.geometry.MultiPolygon
-        The Shapely polygon or MultiPolygon to visualize
-    figsize : tuple, optional
-        Figure size as (width, height)
-    fill_color : str or list of str, optional
-        Color(s) to fill the polygons (if MultiPolygon, a list of colors is used)
-    edge_color : str, optional
-        Color for the polygon edge
-    alpha : float, optional
-        Transparency of the fill (0 to 1)
-    title : str, optional
-        Title for the plot
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize=figsize)
 
-    Returns:
-    --------
-    fig, ax : matplotlib figure and axes objects
-    """
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import Polygon as MplPolygon
-    import numpy as np
-    from shapely.geometry import MultiPolygon
+        # If polygon is a MultiPolygon, plot each individual polygon
+        if isinstance(polygon, MultiPolygon):
+            # If the fill_color is a single color, use it for all polygons
+            if isinstance(fill_color, str):
+                fill_color = [fill_color] * len(polygon.geoms)
 
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=figsize)
+            for i, poly in enumerate(polygon.geoms):
+                # Extract polygon exterior coordinates
+                x, y = poly.exterior.xy
 
-    # If polygon is a MultiPolygon, plot each individual polygon
-    if isinstance(polygon, MultiPolygon):
-        # If the fill_color is a single color, use it for all polygons
-        if isinstance(fill_color, str):
-            fill_color = [fill_color] * len(polygon.geoms)
+                # Create matplotlib polygon patch
+                patch = MplPolygon(np.array([x, y]).T,
+                                   closed=True,
+                                   facecolor=fill_color[i] if i < len(fill_color) else fill_color[-1],
+                                   edgecolor=edge_color,
+                                   alpha=alpha)
+                ax.add_patch(patch)
 
-        for i, poly in enumerate(polygon.geoms):
+                # If polygon has holes (interior rings)
+                for interior in poly.interiors:
+                    x_int, y_int = interior.xy
+                    hole_patch = MplPolygon(np.array([x_int, y_int]).T,
+                                            closed=True,
+                                            facecolor='white',
+                                            edgecolor=edge_color,
+                                            alpha=alpha)
+                    ax.add_patch(hole_patch)
+        else:
             # Extract polygon exterior coordinates
-            x, y = poly.exterior.xy
+            x, y = polygon.exterior.xy
 
             # Create matplotlib polygon patch
             patch = MplPolygon(np.array([x, y]).T,
                                closed=True,
-                               facecolor=fill_color[i] if i < len(fill_color) else fill_color[-1],
+                               facecolor=fill_color,
                                edgecolor=edge_color,
                                alpha=alpha)
             ax.add_patch(patch)
 
             # If polygon has holes (interior rings)
-            for interior in poly.interiors:
+            for interior in polygon.interiors:
                 x_int, y_int = interior.xy
                 hole_patch = MplPolygon(np.array([x_int, y_int]).T,
                                         closed=True,
@@ -269,53 +276,32 @@ def visualize_shapely_polygon(polygon, figsize=(10, 8), fill_color='lightblue',
                                         edgecolor=edge_color,
                                         alpha=alpha)
                 ax.add_patch(hole_patch)
-    else:
-        # Extract polygon exterior coordinates
-        x, y = polygon.exterior.xy
 
-        # Create matplotlib polygon patch
-        patch = MplPolygon(np.array([x, y]).T,
-                           closed=True,
-                           facecolor=fill_color,
-                           edgecolor=edge_color,
-                           alpha=alpha)
-        ax.add_patch(patch)
+        # Set axis limits with a small margin
+        if isinstance(polygon, MultiPolygon):
+            minx = min([p.bounds[0] for p in polygon.geoms])
+            miny = min([p.bounds[1] for p in polygon.geoms])
+            maxx = max([p.bounds[2] for p in polygon.geoms])
+            maxy = max([p.bounds[3] for p in polygon.geoms])
+        else:
+            minx, miny, maxx, maxy = polygon.bounds
 
-        # If polygon has holes (interior rings)
-        for interior in polygon.interiors:
-            x_int, y_int = interior.xy
-            hole_patch = MplPolygon(np.array([x_int, y_int]).T,
-                                    closed=True,
-                                    facecolor='white',
-                                    edgecolor=edge_color,
-                                    alpha=alpha)
-            ax.add_patch(hole_patch)
+        margin = max((maxx - minx), (maxy - miny)) * 0.05
+        ax.set_xlim(minx - margin, maxx + margin)
+        ax.set_ylim(miny - margin, maxy + margin)
 
-    # Set axis limits with a small margin
-    if isinstance(polygon, MultiPolygon):
-        minx = min([p.bounds[0] for p in polygon.geoms])
-        miny = min([p.bounds[1] for p in polygon.geoms])
-        maxx = max([p.bounds[2] for p in polygon.geoms])
-        maxy = max([p.bounds[3] for p in polygon.geoms])
-    else:
-        minx, miny, maxx, maxy = polygon.bounds
+        # Set equal aspect ratio
+        ax.set_aspect('equal')
 
-    margin = max((maxx - minx), (maxy - miny)) * 0.05
-    ax.set_xlim(minx - margin, maxx + margin)
-    ax.set_ylim(miny - margin, maxy + margin)
+        # Add title and labels
+        ax.set_title(title)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
 
-    # Set equal aspect ratio
-    ax.set_aspect('equal')
+        # Add grid
+        ax.grid(True, linestyle='--', alpha=0.7)
 
-    # Add title and labels
-    ax.set_title(title)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-
-    # Add grid
-    ax.grid(True, linestyle='--', alpha=0.7)
-
-    plt.tight_layout()
-    plt.plot()
-    plt.show()
-    return fig, ax
+        plt.tight_layout()
+        plt.plot()
+        plt.show()
+        return fig, ax

@@ -123,6 +123,8 @@ def visualize_level(rooms, stairs, level=3, max_features=10000):
     plt.show()
 
 
+# will read all geojson from resources and make 3d models + graph + config file from them
+# for each geojson a folder will be created
 if __name__ == "__main__":
 
     geojson_folder = "resources"
