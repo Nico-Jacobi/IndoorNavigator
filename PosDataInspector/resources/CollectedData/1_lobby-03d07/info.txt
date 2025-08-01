@@ -1,0 +1,7 @@
+1. Messung:
+
+Kalman filter measurementNoiseWifi = 0.7
+Simple filter samples per position = 5
+
+also vergleichbar mit accuracy-wert auf 1
+
