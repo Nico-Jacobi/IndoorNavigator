@@ -45,7 +45,11 @@ namespace view
             // Initialize the building dropdown after BuildingManager has loaded
             InitializeBuildingDropdown();
         }
-
+        
+        /// <summary>
+        /// Initializes the building dropdown list with available building names from BuildingManager.
+        /// Sets the dropdown to the currently active building.
+        /// </summary>
         private void InitializeBuildingDropdown()
         {
             List<string> buildingNames = registry.buildingManager.GetAvailableBuildingNames();
@@ -73,6 +77,9 @@ namespace view
             SetBuildingDropdownToActive();
         }
 
+        /// <summary>
+        /// Toggles the top menu visibility by sliding it in or out.
+        /// </summary>
         public void ToggleMenu()
         {
             if (open)
@@ -81,18 +88,27 @@ namespace view
                 OpenMenu();
         }
 
+        /// <summary>
+        /// Slides the menu into visible position with animation.
+        /// </summary>
         public void OpenMenu()
         {
             open = true;
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, visiblePos, slideDuration));
         }
 
+        /// <summary>
+        /// Slides the menu out to hidden position with animation.
+        /// </summary>
         public void CloseMenu()
         {
             open = false;
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, hiddenPos, slideDuration));
         }
 
+        /// <summary>
+        /// Coroutine that animates sliding a RectTransform from one position to another over a duration.
+        /// </summary>
         private IEnumerator SlideMenu(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             float time = 0f;
@@ -106,6 +122,9 @@ namespace view
             rect.anchoredPosition = to;
         }
         
+        /// <summary>
+        /// Updates the building dropdown selection to match the active building in BuildingManager.
+        /// </summary>
         private void SetBuildingDropdownToActive()
         {
             var activeBuilding = registry.buildingManager.GetShownBuilding();
@@ -120,6 +139,9 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Updates UI elements: floor text, floor button interactivity, and building dropdown selection.
+        /// </summary>
         public void UpdateUI()
         {
             UpdateFloorText();
@@ -127,6 +149,9 @@ namespace view
             SetBuildingDropdownToActive();
         }
 
+        /// <summary>
+        /// Updates the current room display text.
+        /// </summary>
         public void UpdateCurrentRoomDisplay(string roomName)
         {
             if (currentRoomText != null)
@@ -135,6 +160,9 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Updates the floor display text to show the current floor number.
+        /// </summary>
         private void UpdateFloorText()
         {
             if (currentFloorText != null && registry.buildingManager != null)
@@ -144,6 +172,9 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Updates the interactable state of floor up/down buttons based on BuildingManager limits.
+        /// </summary>
         private void UpdateFloorButtons()
         {
             if (registry.buildingManager != null)
@@ -160,11 +191,17 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Event handler for settings button click, toggles the settings menu visibility.
+        /// </summary>
         private void OnSettingsClicked()
         {
             registry.settingsMenu.ToggleMenu();
         }
 
+        /// <summary>
+        /// Event handler for increase floor button click, decreases the current floor in BuildingManager.
+        /// </summary>
         private void OnFloorDownClicked()
         {
             //Debug.Log("Floor down button clicked");
@@ -173,7 +210,9 @@ namespace view
                 registry.buildingManager.DecreaseFloor();
             }
         }
-
+        /// <summary>
+        /// Event handler for increase floor button click, increases the current floor in BuildingManager.
+        /// </summary>
         private void OnFloorUpClicked()
         {
             //Debug.Log("Floor up button clicked");
@@ -183,6 +222,9 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Event handler for building dropdown change, switches active building and resets camera position.
+        /// </summary>
         private void OnBuildingChanged(int index)
         {
             if (index >= 0 && index < buildingField.options.Count)

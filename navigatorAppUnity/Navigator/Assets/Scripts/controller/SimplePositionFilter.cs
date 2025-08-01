@@ -39,6 +39,9 @@ namespace Controller
             
         }
 
+        /// <summary>
+        /// Adds the new wifi prediction to the list and updates its prediction 
+        /// </summary>
         public void UpdateWithWifi(Position rawWifiPrediction)
         {
             if (rawWifiPrediction == null) return;
@@ -76,7 +79,10 @@ namespace Controller
         }
 
 
-
+        /// <summary>
+        /// updates the filter with imu data
+        /// (shifts all positions accordingly)
+        /// </summary>
         public void UpdateWithIMU(Vector2 ignored, float headingDegrees)
         {
             if (wifiPositions.Count == 0) return;
@@ -102,6 +108,10 @@ namespace Controller
             lastUpdateTimeIMU = Time.time;
         }
 
+        
+        /// <summary>
+        /// updates the floor history and makes a new floor prediction based on that
+        /// </summary>
         private void UpdateFloorHistory(int newFloor)
         {
             floorHistory.Add(newFloor);
@@ -111,6 +121,10 @@ namespace Controller
             UpdateFloorEstimate();
         }
 
+        
+        /// <summary>
+        /// updates the floor estimate based on the current floor history
+        /// </summary>
         private void UpdateFloorEstimate()
         {
             if (floorHistory.Count == 0) return;
@@ -139,7 +153,10 @@ namespace Controller
             currentFloor = mostFrequentFloor;
         }
 
-        // weighted average of recent positions
+        /// <summary>
+        /// returns the current position estimation
+        /// basically a weighted average of recent positions
+        /// </summary>
         public Position GetEstimate()
         {
             if (wifiPositions.Count == 0) return new Position(0, 0, 0);
@@ -159,6 +176,10 @@ namespace Controller
             return new Position(averagePosition.x, averagePosition.y, currentFloor);
         }
 
+        /// <summary>
+        /// returns the estimed velocity 
+        /// NOT the velocity based on imu, but based on his filters last received wifi positions
+        /// </summary>
         public Vector2 GetEstimatedVelocity()
         {
             if (wifiPositions.Count < 2) return Vector2.zero;

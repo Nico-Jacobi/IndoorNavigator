@@ -85,6 +85,9 @@ namespace controller
             }
         }
 
+        /// <summary>
+        /// imports wifidata from a json file, see use in innit
+        /// </summary>
         private void ImportFromJson(string jsonPath = "default_wifidata")
         {
             string json;
@@ -126,7 +129,11 @@ namespace controller
             Debug.Log($"Imported {coords.Coordinates.Count} coordinates from: {jsonPath}");
         }
 
-
+        
+        /// <summary>
+        /// opens a file picker to pick a file and import it to the database
+        /// also handles the case where the user cancels the import
+        /// </summary>
         public void PickFileAndImport()
         {
             // Allow only JSON files
@@ -145,7 +152,9 @@ namespace controller
             }, fileTypes);
         }
 
-
+        /// <summary>
+        /// exports all fingerprints from the database
+        /// </summary>
         public void ExportWithSimpleFilename()
         {
             string filename = "wifi_data_" + DateTime.Now.ToString("yyyyMMdd_HHmmssfff") + ".json";
@@ -166,7 +175,9 @@ namespace controller
 
 
 
-
+        /// <summary>
+        /// insert a coordinate with wifi infos into the database (fingerpint)
+         /// </summary>
         public void InsertCoordinateWithWifiInfos(Coordinate coord)
         {
             db.Insert(coord);
@@ -191,6 +202,10 @@ namespace controller
         }
 
         
+        /// <summary>
+        /// returns all coordinates with wifi infos from the db
+        /// (only use when necesarry, otherwise use the buildings managers caches)
+        /// </summary>
         public List<Coordinate> GetAllCoordinatesWithWifiInfos()
         {
             return db.Table<Coordinate>().ToList().Select(coord =>
@@ -200,6 +215,10 @@ namespace controller
             }).ToList();
         }
 
+        /// <summary>
+        /// deletes the coordinate with given id
+        /// will also remove the coordinate from the caches
+        /// </summary>
         public void DeleteCoordinate(int coordinateId)
         {
             var wifiInfos = db.Table<WifiInfo>().Where(w => w.CoordinateId == coordinateId).ToList();
@@ -244,7 +263,10 @@ namespace controller
             }
         }
 
-
+        
+        /// <summary>
+        /// get the coordinates for a building from the db
+         /// </summary>
         public List<Coordinate> GetCoordinatesForBuilding(string buildingName)
         {
 

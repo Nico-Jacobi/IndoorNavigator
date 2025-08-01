@@ -74,7 +74,7 @@ namespace view
             }
         }
 
-        
+        /// <summary>Start sliding panel up if hidden and not animating.</summary>
         public void Show()
         {
             if (!isVisible && currentSlideCoroutine == null)
@@ -82,7 +82,8 @@ namespace view
                 currentSlideCoroutine = StartCoroutine(SlideToPosition(visiblePos, true));
             }
         }
-
+        
+        /// <summary>Start sliding panel down if visible and not animating.</summary>
         public void Hide()
         {
             if (isVisible && currentSlideCoroutine == null)
@@ -91,6 +92,7 @@ namespace view
             }
         }
 
+        /// <summary>Toggle panel visibility.</summary>
         public void Toggle()
         {
             if (isVisible)
@@ -99,27 +101,32 @@ namespace view
                 Show();
         }
         
+        /// <summary>Enable the Go-To Position button.</summary>
         public void ActivateGotoPositionButton()
         {
             gotoPositionButton.interactable = true;
         }
 
+        /// <summary>Disable the Go-To Position button.</summary>
         public void DeactivateGotoPositionButton()
         {
             gotoPositionButton.interactable = false;
         }
         
+        /// <summary>Enable the Start Navigation button.</summary>
         public void ActivateNavigationButton()
         {
             startNavigationButton.interactable = true;
         }
 
+        /// <summary>Disable the Start Navigation button.</summary>
         public void DeactivateNavigationButton()
         {
             startNavigationButton.interactable = false;
         }
         
 
+        /// <summary>Animates panel sliding to target position and updates visibility state.</summary>
         private IEnumerator SlideToPosition(Vector2 targetPos, bool willBeVisible)
         {
             Vector2 startPos = rect.anchoredPosition;
@@ -145,18 +152,20 @@ namespace view
             currentSlideCoroutine = null;
         }
 
+        /// <summary>Shows the navigation dialog.</summary>
         private void OnStartNavigationClicked()
         {
             registry.navigationDialog.ShowDialog();
         }
 
+        /// <summary>Triggers camera to go to predicted position and updates UI.</summary>
         private void OnGotoPositionClicked()
         {
             registry.cameraController.GotoPrediction();
             registry.topMenu.UpdateUI();
         }
 
-        // Force stop any running animation
+        /// <summary>Stops any ongoing slide animation immediately.</summary>
         public void StopSliding()
         {
             if (currentSlideCoroutine != null)
@@ -166,7 +175,7 @@ namespace view
             }
         }
 
-        // Optional: Method to recalculate positions if canvas size changes
+        /// <summary>Recalculates hidden position based on canvas size changes.</summary>
         public void RecalculatePositions()
         {
             if (canvasRect != null)

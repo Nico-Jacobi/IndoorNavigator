@@ -53,11 +53,17 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Tilts the camera by setting its X-axis rotation.
+        /// </summary>
         private void SetCameraTilt(float angle)
         {
             registry.cam.transform.rotation = Quaternion.Euler(angle, 0f, 0f);
         }
 
+        /// <summary>
+        /// Updates camera and marker rotation based on compass and movement state.
+        /// </summary>
         private void HandleCameraRotation()
         {
             float compass_heading = registry.compassReader.GetHeading() + 180;
@@ -85,6 +91,9 @@ namespace view
             registry.cam.transform.rotation = Quaternion.Euler(cameraAngle, newHeading, 0f);
         }
 
+        /// <summary>
+        /// Switches between free movement and position tracking modes.
+        /// </summary>
         private void HandleMovementOrTracking()
         {
             if (freeMovement)
@@ -97,7 +106,9 @@ namespace view
             }
         }
 
-        // Rotate a 2D vector by the current heading to make movement relative to camera direction
+        /// <summary>
+        /// Rotate a 2D vector by the current heading to make movement relative to camera direction
+        /// </summary>
         private Vector2 RotateTouchVectorByHeading(Vector2 input)
         {
             // Convert heading to radians, negate to rotate in correct direction
@@ -114,6 +125,9 @@ namespace view
             );
         }
 
+        /// <summary>
+        /// Calculates movement delta from touch input for camera control.
+        /// </summary>
         private Vector2 GetTouchMovementInput()
         {
             Vector2 currentMovement = Vector2.zero;
@@ -155,6 +169,9 @@ namespace view
             return currentMovement;
         }
         
+        /// <summary>
+        /// Handles pinch-to-zoom input to adjust camera height.
+        /// </summary>
         private void HandleTouchZoom()
         {
             if (Input.touchCount == 2)
@@ -177,11 +194,17 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Moves to the current estimated position from the filter.
+        /// </summary>
         public void GotoPrediction()
         {
             GotoPosition(registry.GetPositionFilter().GetEstimate());
         }
 
+        /// <summary>
+        /// Toggles between free movement and tracking modes, updating orbit point if needed.
+        /// </summary>
         public void ToggleViewMode()
         {
             freeMovement = !freeMovement;
@@ -194,7 +217,10 @@ namespace view
             }
         }
 
-        // The key insight: The orbit point should be where the camera's center ray hits the target plane
+        /// <summary>
+        /// Positions the camera orbiting around the orbit point based on heading.
+        /// The key insight: The orbit point should be where the camera's center ray hits the target plane
+        /// </summary>
         private void PositionCameraOrbit(float heading)
         {
             // Convert heading to radians
@@ -208,7 +234,10 @@ namespace view
             registry.cam.transform.position = new Vector3(xPos, yPos, zPos);
         }
 
-        // Add this new method to calculate where the camera center ray hits the target plane:
+
+        /// <summary>
+        /// Calculates where the camera's forward ray intersects a horizontal plane at targetY.
+        /// </summary>
         private Vector3 CalculateGroundIntersection(Vector3 cameraPos, Vector3 cameraForward, float targetY)
         {
             // Ray from camera pointing forward
@@ -228,7 +257,10 @@ namespace view
             return new Vector3(intersection.x, targetY, intersection.z);
         }
 
-        // Update GetCrosshairPosition to return the actual center of screen in world coords:
+        
+        /// <summary>
+        /// Returns the world position where the camera’s center crosshair intersects the current floor.
+        /// </summary>
         public Vector3 GetCrosshairPosition()
         {
             if (registry.cam == null) return orbitPoint;
@@ -246,7 +278,10 @@ namespace view
             return pos;
         }
 
-        // Update HandleFreeMovement to maintain proper relationship:
+        
+        /// <summary>
+        /// Handles free movement input (keyboard & touch) and updates orbit point position.
+        /// </summary>
         private void HandleFreeMovement()
         {
             Vector3 movement = Vector3.zero;
@@ -281,7 +316,9 @@ namespace view
             orbitPoint = new Vector3(orbitPoint.x, targetY, orbitPoint.z);
         }
 
-        // Update HandlePositionTracking:
+        /// <summary>
+        /// Updates orbit point based on tracked position and marker movement at set intervals.
+        /// </summary>
         private void HandlePositionTracking()
         {
             positionUpdateTimer += Time.deltaTime;
@@ -310,6 +347,10 @@ namespace view
             }
         }
 
+        
+        /// <summary>
+        /// Moves orbit point so given position appears at 2/3 down the screen, considering camera heading and tilt.
+        /// </summary>
         public void GotoPosition(Position pos)
         {
             if (pos == null) return;
@@ -335,7 +376,10 @@ namespace view
             registry.buildingManager.SpawnBuildingFloor(registry.buildingManager.GetActiveBuilding().buildingName, pos.Floor);
         }
 
-        // Update OnViewModeButtonPressed:
+        
+        /// <summary>
+        /// Toggles between free movement and tracking modes, updating orbit point accordingly.
+        /// </summary>
         public void OnViewModeButtonPressed()
         {
             freeMovement = !freeMovement;

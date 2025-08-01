@@ -7,6 +7,12 @@ using UnityEngine;
 
 namespace controller
 {
+    
+    /// <summary>
+    /// coordinated the shown building and floor
+    /// also holds the building the user is in currently
+    /// call this to make changes to the buildings
+    /// </summary>
     public class BuildingManager : MonoBehaviour
     {
         private Dictionary<string, Building> buildings = new Dictionary<string, Building>();
@@ -75,6 +81,9 @@ namespace controller
             Debug.Log($"activeBuilding is: {currentBuilding?.buildingName}");
         }
 
+        /// <summary>
+        /// Will spawn the higher floor, if it exists
+        /// </summary>
         public void IncreaseFloor()
         {
             if (shownBuilding == null) return;
@@ -94,6 +103,9 @@ namespace controller
             NotifyUIUpdate();
         }
 
+        /// <summary>
+        /// will spawn the floor below, if it exists
+        /// </summary>
         public void DecreaseFloor()
         {
             if (shownBuilding == null) return;
@@ -113,6 +125,9 @@ namespace controller
             NotifyUIUpdate();
         }
 
+        /// <summary>
+        /// checks if there is a floor above
+        /// </summary>
         public bool CanIncreaseFloor()
         {
             if (shownBuilding == null) return false;
@@ -120,6 +135,10 @@ namespace controller
             return currentIndex < shownBuilding.floors.Count -1;
         }
 
+        
+        /// <summary>
+        /// checks if there is a floor below
+        /// </summary>
         public bool CanDecreaseFloor()
         {
             if (shownBuilding == null) return false;
@@ -127,6 +146,9 @@ namespace controller
             return currentIndex > 0;
         }
 
+        /// <summary>
+        /// changes the building to the given building
+        /// </summary>
         public void ChangeBuilding(string buildingName)
         {
             Debug.Log($"Changing Building to {buildingName}");
@@ -152,6 +174,9 @@ namespace controller
             }
         }
 
+        /// <summary>
+        /// updates the ui manually
+        /// </summary>
         private void NotifyUIUpdate()
         {
             if (registry.topMenu != null)
@@ -160,6 +185,9 @@ namespace controller
             }
         }
 
+        /// <summary>
+        /// gets the index of the floor in the shown building
+        /// </summary>
         private int GetFloorIndex(int floorLevel)
         {
             if (shownBuilding == null) return 0;
@@ -175,6 +203,9 @@ namespace controller
             return 0;
         }
 
+        /// <summary>
+        /// loads the buildings configs at startup
+        /// </summary>
         void LoadBuildingConfigs()
         {
             // Get all config.json files in the Resources/Buildings folder
@@ -268,6 +299,9 @@ namespace controller
             }
         }
 
+        /// <summary>
+        /// gets a building object by name
+        /// </summary>
         public Building GetBuilding(string buildingName)
         {
             if (buildings.ContainsKey(buildingName))
@@ -279,6 +313,10 @@ namespace controller
             return null;
         }
 
+        /// <summary>
+        /// spawn a specific floor of a specific building
+        /// will also update the caches with data, and all necesarry field
+        /// </summary>
         public void SpawnBuildingFloor(string buildingName, int floorLevel, bool updateCurrentBuilding = false)
         {
             // Check if the requested building and floor are already active

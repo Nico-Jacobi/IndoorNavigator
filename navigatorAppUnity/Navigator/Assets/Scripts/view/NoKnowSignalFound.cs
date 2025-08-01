@@ -51,6 +51,9 @@ namespace view
             Hide();
         }
         
+        /// <summary>
+        /// Calculate and set visible and hidden positions for the dialog sliding animation.
+        /// </summary>
         private void InitializePositions()
         {
             if (dialogRectTransform == null) return;
@@ -84,6 +87,10 @@ namespace view
             }
         }
 
+        
+        /// <summary>
+        /// Requests showing the dialog respecting cooldown to avoid spam.
+        /// </summary>
         public void Show()
         {
             var timeSinceLastShow = (DateTime.Now - lastShowTime).TotalSeconds;
@@ -98,11 +105,19 @@ namespace view
             shouldShow = true; // queue for main thread
         }
 
+        
+        /// <summary>
+        /// Requests hiding the dialog.
+        /// </summary>
         public void Hide()
         {
             shouldHide = true; // queue for main thread
         }
 
+        
+        /// <summary>
+        /// Activates dialog and starts slide-in animation.
+        /// </summary>
         private void ShowDialog()
         {
             if (dialogPanel != null)
@@ -112,6 +127,10 @@ namespace view
             }
         }
 
+        
+        /// <summary>
+        /// Starts slide-out animation and disables dialog after animation.
+        /// </summary>
         private void HideDialog()
         {
             if (dialogPanel != null)
@@ -120,6 +139,9 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Coroutine for sliding the dialog from one position to another.
+        /// </summary>
         private IEnumerator SlideDialog(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             float time = 0f;
@@ -132,6 +154,9 @@ namespace view
             rect.anchoredPosition = to;
         }
 
+        /// <summary>
+        /// Coroutine to slide dialog out and then disable the panel.
+        /// </summary>
         private IEnumerator SlideDialogAndHide(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             float time = 0f;

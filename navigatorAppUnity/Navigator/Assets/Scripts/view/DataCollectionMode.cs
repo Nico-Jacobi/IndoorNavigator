@@ -57,6 +57,10 @@ namespace view
             Deactivate();
         }
 
+        /// <summary>
+        /// Initializes slide animation positions for the managePointsDialogPanel,
+        /// setting it off-screen (hidden) and ready to slide up.
+        /// </summary>
         private void InitializeSlideAnimation()
         {
             if (managePointsDialogPanel != null)
@@ -93,6 +97,10 @@ namespace view
             }
         }
         
+        /// <summary>
+        /// Enables data collection mode: hides normal marker, shows crosshair at camera aim, slides panel up.
+        /// Skips if animating.
+        /// </summary>
         public void Activate()
         {
             if (isAnimating) return;
@@ -116,6 +124,10 @@ namespace view
             Refresh();
         }
 
+        /// <summary>
+        /// Disables data collection mode: hides crosshair, shows normal marker,
+        /// clears markers, and slides panel down. Skips if animating.
+        /// </summary>
         public void Deactivate()
         {
             if (isAnimating) return;
@@ -137,6 +149,10 @@ namespace view
             SlideDown();
         }
 
+        /// <summary>
+        /// Starts sliding the panel up to the visible position,
+        /// stopping any ongoing slide animation.
+        /// </summary>
         private void SlideUp()
         {
             if (panelRect == null) return;
@@ -149,6 +165,10 @@ namespace view
             currentSlideCoroutine = StartCoroutine(SlideToPosition(visiblePos));
         }
 
+        /// <summary>
+        /// Starts sliding the panel down to the hidden position,
+        /// stopping any ongoing slide animation.
+        /// </summary
         private void SlideDown()
         {
             if (panelRect == null) return;
@@ -161,6 +181,10 @@ namespace view
             currentSlideCoroutine = StartCoroutine(SlideToPosition(hiddenPos));
         }
 
+        /// <summary>
+        /// Smoothly animates the panel from its current position to the target position over slideDuration.
+        /// Keeps panel active during animation, deactivates if sliding down (hidden).
+        /// </summary>
         private IEnumerator SlideToPosition(Vector2 targetPos)
         {
             isAnimating = true;
@@ -198,6 +222,11 @@ namespace view
             currentSlideCoroutine = null;
         }
 
+        
+        /// <summary>
+        /// Clears existing markers and spawns new Wi-Fi markers for the current building floor.
+        /// Does nothing if not active.
+        /// </summary>
         public void Refresh()
         {
             if (!active) return;
@@ -222,6 +251,10 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Deletes the coordinate closest to the current crosshair position on the shown floor.
+        /// Refreshes markers after deletion.
+        /// </summary>
         public void DeleteAtCurrentPosition()
         {
             Vector3 crosshairPos = registry.cameraController.GetCrosshairPosition();
@@ -290,6 +323,10 @@ namespace view
             ));
         }
 
+        /// <summary>
+        /// Coroutine that collects a Wi-Fi data point at the given position and floor in the building,
+        /// waits for the data point creation to complete before continuing.
+        /// </summary>
         private IEnumerator CollectDataPointCoroutine(float x, float y, int floor, string building)
         {
             Debug.Log($"Starting data collection at ({x}, {y}, Floor: {floor})");
@@ -307,6 +344,11 @@ namespace view
             }
         }
         
+        
+        /// <summary>
+        /// Callback triggered after successfully collecting a Wi-Fi data point.
+        /// Updates UI and refreshes markers.
+        /// </summary>
         private void OnDataPointCollected(Coordinate dataPoint)
         {
             collectIcon.gameObject.SetActive(true);
@@ -321,12 +363,17 @@ namespace view
             collectButtonText.text = "Collect";
         }
 
-        // Public methods to manually control animation (useful for debugging)
+        /// <summary>
+        /// Manually start sliding panel up (debug)
+        /// </summary>
         public void ForceSlideUp()
         {
             SlideUp();
         }
 
+        /// <summary>
+        /// Manually start sliding panel down (debug)
+        /// </summary>
         public void ForceSlideDown()
         {
             SlideDown();

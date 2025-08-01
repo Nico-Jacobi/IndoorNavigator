@@ -30,6 +30,11 @@ namespace controller
         public FloatingButtons floatingButtons;
         public LocationPromptDialog locationPromptDialog;
         
+        
+        /// <summary>
+        /// returns the active position filter
+        /// (both filters are still updated, to keep them up to date, when switching)
+        /// </summary>
         public PositionFilter GetPositionFilter(bool getInactive = false)
         {
             if (getInactive)

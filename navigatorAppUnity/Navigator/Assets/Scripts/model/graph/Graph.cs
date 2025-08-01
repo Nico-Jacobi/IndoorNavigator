@@ -132,7 +132,9 @@ namespace model.graph
             return vertices;
         }
 
-        // Find shortest path by room name (Async version)
+        /// <summary>
+        /// Find shortest path by room name (Async version)
+        /// </summary>
         public async Task<List<Edge>> FindShortestPathByNameAsync(Vertex start, string targetName)
         {
             return await Task.Run(() =>
@@ -229,8 +231,9 @@ namespace model.graph
             });
         }
 
-
-        // Find shortest path to any edge in the given target edges list (Async version)
+        /// <summary>
+        /// Find shortest path to any edge in the given target edges list (Async version)
+        /// </summary>
         public async Task<List<Edge>> FindShortestPathToTargetEdgesAsync(Vertex start, List<Edge> targetEdges)
         {
             return await Task.Run(() =>
@@ -345,9 +348,10 @@ namespace model.graph
             });
         }
 
-
-        // fixes indirect paths which djikstra can return in this case, as a "normal" path is not always the shortest
-        // eg sometimes it visits but doesent use doors in a room, to be faster (which cant be directly stopped at that point)
+        /// <summary>
+        /// fixes indirect paths which djikstra can return in this case, as a "normal" path is not always the shortest
+        /// eg sometimes it visits but doesent use doors in a room, to be faster (which cant be directly stopped at that point)
+        /// </summary>
         public List<Edge> OptimizePath(List<Edge> pathEdges)
         {
             if (pathEdges.Count == 0) return new List<Edge>();

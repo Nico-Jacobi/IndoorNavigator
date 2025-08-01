@@ -29,20 +29,30 @@ namespace controller
 
             StartCoroutine(UpdatePath());
         }
-
+        
+        
+        /// <summary>
+        /// gets the angle for the first segment of the path
+        /// </summary>
         public float GetHeading()
         {
             float angle = currentPath?.FirstOrDefault()?.GetAngle() ?? 0f;
             angle += 90;
             return angle;
         }
-
+        
+        /// <summary>
+        /// opens the navigation dialog
+        /// </summary>
         public void OnNavigateButtonPressed()
         {
             registry.navigationDialog.ShowDialog();
             registry.cameraController.inMenu = true;
         }
 
+        /// <summary>
+        /// starts the navigation process
+         /// </summary>
         private void OnNavigationRequested(string destination)
         {
             registry.cameraController.GotoPrediction();
@@ -51,6 +61,11 @@ namespace controller
             registry.cameraController.inMenu = false;
         }
 
+        
+        /// <summary>
+        /// facilitates the navigation
+        /// will also recalculate the path in called often enough
+        /// </summary>
         public async void Navigate(Vertex fromVertex, string toRoom)
         {
             Debug.Log($"Navigating from {fromVertex} to {toRoom}");
@@ -82,6 +97,10 @@ namespace controller
             Debug.Log($"Path found with length {currentPath.Count}");
         }
 
+        
+        /// <summary>
+        /// find the start vertex to navigate from
+        /// </summary>
         public Vertex GetStart()
         {
             List<Vertex> verts = registry.buildingManager.GetActiveGraph().GetVertices();
@@ -224,6 +243,11 @@ namespace controller
             return Math.Pow((point1.lat - pos.X), 2) + Math.Pow((point1.lon - pos.Y), 2);
         }
 
+        
+        /// <summary>
+        /// gets the point form a list which is the closest to given position
+        /// (used for determining the best path to hook onto from the users pos when a navigation is started)
+         /// </summary>
         private Point GetClosestPoint(List<Point> points, Position pos)
         {
             double dist = double.PositiveInfinity;
@@ -242,6 +266,11 @@ namespace controller
             return closestPoint;
         }
 
+        /// <summary>
+        /// updates the path in regular updates, if the navigation is active
+        /// only needs to be called once at start
+        /// getstart is called anyways, as this also determines the location of the user and is useful for the ui
+        /// </summary>
         private IEnumerator UpdatePath()
         {
             while (true)
@@ -260,6 +289,12 @@ namespace controller
             }
         }
 
+        
+        /// <summary>
+        /// plots the current path if it exists
+        /// will remove the old if there is one
+        /// thus can be called to remove the path, if currentpath is empty
+        /// </summary>
         public void PlotCurrentPath()
         {
             foreach (GameObject obj in GameObject.FindGameObjectsWithTag("PlottedPath"))
@@ -322,18 +357,28 @@ namespace controller
             }
         }
 
+        /// <summary>
+        /// checks if the given edge is a star == both ends have different floors
+        /// </summary>
         private bool IsStairsEdge(Edge e)
         {
             return e.source.floor != e.target.floor;
         }
 
+        /// <summary>
+        /// refreshes the room options
+        /// (only needed after start)
+         /// </summary>
         public void RefreshRoomOptions()
         {
             List<string> allRoomNames = new List<string>(registry.buildingManager.GetActiveGraph().allRoomsNames);
             registry.navigationDialog.RefreshOptions(allRoomNames);
         }
         
-        
+        /// <summary>
+        /// cancels the active navigation
+        /// will also remove the plotted paths
+        /// </summary>
         public void CancelNavigation()
         {
             Debug.Log("Navigation cancelled");

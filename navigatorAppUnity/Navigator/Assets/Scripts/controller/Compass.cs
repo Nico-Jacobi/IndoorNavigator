@@ -140,12 +140,18 @@ namespace Controller
             return (avgRad * Mathf.Rad2Deg + 360f) % 360f;
         }
 
+        /// <summary>
+        /// Returns the raw heading of the compass.
+         /// </summary>
         public float GetRawHeading()
         {
             if (!_isInitialized) Initialize();
             return _isCompassAvailable ? _rawHeading : 0f;
         }
 
+        /// <summary>
+        /// Returns the smoothed heading of the compass.
+         /// </summary>
         public float GetHeading()
         {
             if (!active) return 0f;
@@ -169,6 +175,9 @@ namespace Controller
             return (_displayedHeading) % 360f;
         }
 
+        /// <summary>
+        /// returns the smoothed heading of the compas in radiants
+        /// </summary>
         public float GetHeadingRadians()
         {
             return -2f * Mathf.PI * (GetHeading() / 360f);

@@ -6,6 +6,10 @@ using UnityEngine.UI;
 
 namespace view
 {
+    /// <summary>
+    /// Controls a sliding dialog prompting the user about location services.
+    /// Slides in/out a panel with customizable prompt text and buttons for settings and discard.
+    /// </summary>givbe 
     public class LocationPromptDialog : MonoBehaviour
     {
         [SerializeField] private GameObject promptPanel;
@@ -32,6 +36,9 @@ namespace view
             Close();
         }
 
+        /// <summary>
+        /// Sets up references and default prompt text.
+        /// </summary>
         private void InitializeComponents()
         {
 
@@ -39,6 +46,9 @@ namespace view
             promptText.text = "Location services are disabled. Please enable GPS in your device settings.";
         }
 
+        /// <summary>
+        /// Calculates visible and off-screen hidden positions for sliding animation.
+        /// </summary>
         private void InitializePositions()
         {
             if (dialogRectTransform == null) return;
@@ -57,6 +67,9 @@ namespace view
             dialogRectTransform.anchoredPosition = hiddenPos;
         }
 
+        /// <summary>
+        /// Hooks up button clicks to their respective event triggers.
+        /// </summary>
         private void SetupEventHandlers()
         {
             if (settingsButton != null)
@@ -66,6 +79,9 @@ namespace view
                 discardButton.onClick.AddListener(OnDiscardButtonPressed);
         }
 
+        /// <summary>
+        /// Shows the dialog by sliding it into view.
+        /// </summary>
         public void Open()
         {
             if (promptPanel != null)
@@ -75,6 +91,9 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Hides the dialog by sliding it out and then disabling it.
+        /// </summary>
         public void Close()
         {
             if (promptPanel != null)
@@ -83,6 +102,9 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Updates the dialog's prompt message.
+        /// </summary>
         public void SetPromptText(string text)
         {
             if (promptText != null)
@@ -91,16 +113,25 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// opens the location / gps settings for the user to activate.
+        /// </summary>
         private void OnSettingsButtonPressed()
         {
             OnSettingsButtonClicked?.Invoke();
         }
 
+        /// <summary>
+        /// closes the dialog
+        /// </summary>
         private void OnDiscardButtonPressed()
         {
             OnDiscardButtonClicked?.Invoke();
         }
 
+        /// <summary>
+        /// Smoothly animates the dialog sliding from one position to another.
+        /// </summary>
         private IEnumerator SlideDialog(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             if (rect == null) yield break;
@@ -115,6 +146,9 @@ namespace view
             rect.anchoredPosition = to;
         }
 
+        /// <summary>
+        /// Slides the dialog out and disables the panel after animation.
+        /// </summary>
         private IEnumerator SlideDialogAndHide(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             if (rect == null) yield break;

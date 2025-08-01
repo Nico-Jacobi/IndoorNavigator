@@ -72,6 +72,11 @@ namespace view
         }
 
         
+        
+        /// <summary>
+        /// Checks if the marker's position is within the currently shown building and floor,
+        /// updates visibility and resets movement state if needed.
+        /// </summary>
         public void UpdateMarkerInShownBuilding()
         {
             var estimate = registry.GetPositionFilter().GetEstimate();
@@ -92,6 +97,9 @@ namespace view
             UpdateMarkerVisibility();
         }
         
+        /// <summary>
+        /// Handles periodic marker position updates based on position filter estimates.
+        /// </summary>
         private void HandleMarkerUpdate()
         {
             markerUpdateTimer += Time.deltaTime;
@@ -103,6 +111,11 @@ namespace view
             }
         }
         
+        
+        /// <summary>
+        /// Moves the marker to a new position, using smooth movement unless marker was hidden.
+        /// Skips movement if marker is inactive or outside shown building.
+        /// </summary>
         public void MoveMarkerToPosition(Position pos)
         {
             if (pos == null || !markerActive || !markerInShownBuilding) return;
@@ -140,6 +153,10 @@ namespace view
             }
         }
         
+        
+        /// <summary>
+        /// Smoothly interpolates the marker's position over time during movement animation.
+        /// </summary>
         private void HandleMarkerSmoothing()
         {
             if (markerIsMoving && positionMarker != null)
@@ -160,12 +177,19 @@ namespace view
             }
         }
         
+        /// <summary>
+        /// Activates the marker and updates visibility accordingly.
+        /// </summary>
         public void ActivateMarker()
         {
             markerActive = true;
             UpdateMarkerVisibility();
         }
         
+        
+        /// <summary>
+        /// Deactivates the marker, marks it as hidden, and updates visibility.
+        /// </summary>
         public void DeactivateMarker()
         {
             markerActive = false;
@@ -174,6 +198,9 @@ namespace view
         }
         
         
+        /// <summary>
+        /// Updates the active state of the marker GameObject based on current active and building/floor state.
+        /// </summary>
         private void UpdateMarkerVisibility()
         {
             //Debug.Log($"marker visible: {markerActive && markerInShownBuilding}");
@@ -183,6 +210,10 @@ namespace view
             }
         }
         
+        
+        /// <summary>
+        /// Sets the rotation of the marker to face the given heading in degrees.
+        /// </summary>
         public void SetMarkerRotation(float heading)
         {
             if (positionMarker != null)
@@ -191,6 +222,10 @@ namespace view
             }
         }
         
+        
+        /// <summary>
+        /// Returns the current world position of the marker.
+        /// </summary>
         public Vector3 GetMarkerPosition()
         {
             if (positionMarker != null)
@@ -200,11 +235,20 @@ namespace view
             return Vector3.zero;
         }
         
+        
+        /// <summary>
+        /// Returns whether the marker is currently moving smoothly.
+        /// </summary>
         public bool IsMoving()
         {
             return markerIsMoving;
         }
         
+        
+        /// <summary>
+        /// Gets the current target position the marker is moving towards,
+        /// or its current position if not moving.
+        /// </summary>
         public Vector3 GetCurrentTargetPosition()
         {
             return markerIsMoving ? markerTargetPosition : GetMarkerPosition();

@@ -35,6 +35,9 @@ namespace controller
             SetupLocationPromptDialog();
         }
 
+        /// <summary>
+        /// Initializes Android Wi-Fi access and location updates (only works on Android).
+        /// </summary>
         private void InitializeAndroidWifi()
         {
             try
@@ -54,6 +57,9 @@ namespace controller
             }
         }
 
+        /// <summary>
+        /// Sets up the location prompt dialog and its event handlers.
+        /// </summary>
         private void SetupLocationPromptDialog()
         {
             if (registry.locationPromptDialog != null)
@@ -71,7 +77,9 @@ namespace controller
             }
         }
 
-        // Check if location is activated
+        /// <summary>
+        /// Check if location is activated
+        /// </summary>
         private bool IsLocationEnabled()
         {
             if (context == null) return false;
@@ -80,8 +88,11 @@ namespace controller
             return locationManager.Call<bool>("isProviderEnabled", "gps") ||
                    locationManager.Call<bool>("isProviderEnabled", "network");
         }
-
-        // Show the location prompt dialog
+        
+        
+        /// <summary>
+        /// Show the location prompt dialog
+        /// </summary>
         public void PromptUserToEnableLocation()
         {
             if (registry.locationPromptDialog != null)
@@ -89,8 +100,10 @@ namespace controller
                 registry.locationPromptDialog.Open();
             }
         }
-
-        // Request coarse location privileges (just the app's privileges, not if it's actually on)
+        
+        /// <summary>
+        /// Request coarse location privileges (just the app's privileges, not if it's actually on)
+        /// </summary>
         private void RequestLocationPermission()
         {
             Debug.Log("Requested permission ACCESS_FINE_LOCATION");
@@ -362,7 +375,10 @@ namespace controller
             yield return dataPoint;
         }
         
-        // Coroutine that ensures UpdateLocation is called continuously but waits for the previous call to finish.
+        
+        /// <summary>
+        /// Coroutine that ensures UpdateLocation is called continuously but waits for the previous call to finish.
+        /// </summary>
         private IEnumerator UpdateLocationContinuously()
         {
             while (true)
@@ -384,6 +400,10 @@ namespace controller
             }
         }
 
+        
+        /// <summary>
+        /// Scans Wi-Fi networks and updates the estimated position asynchronously.
+        /// </summary>
         private IEnumerator UpdateLocationAsync()
         {
             Coordinate wifiNetworks = null;
@@ -417,7 +437,9 @@ namespace controller
             }
         }
 
-        // Event handler for settings button click
+        /// <summary>
+        /// Opens the Android location settings screen via intent.
+        /// </summary>
         private void OpenLocationSettings()
         {
             // Close the dialog first
@@ -442,7 +464,9 @@ namespace controller
             }));
         }
 
-        // Event handler for discard button click
+        /// <summary>
+        /// Handles user dismissing the location prompt.
+        /// </summary>
         private void OnDiscardPrompt()
         {
             if (registry.locationPromptDialog != null)

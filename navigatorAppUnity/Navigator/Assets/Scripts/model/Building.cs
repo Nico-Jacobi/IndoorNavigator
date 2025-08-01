@@ -20,7 +20,9 @@ namespace model
             this.floors = floors;
         }
 
-        // Method to spawn a floor by its level
+        /// <summary>
+        /// Method to spawn a floor by its level
+        /// </summary>
         public GameObject SpawnFloor(int level, Transform parent)
         {
             Floor floor = floors.Find(f => f.level == level);

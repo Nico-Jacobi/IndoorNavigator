@@ -11,6 +11,13 @@ using TMPro;
 
 namespace view
 {
+    
+    /// <summary>
+    /// this is a button designed for toggling data collection on and off.
+    /// When activated, it tracks and stores position data using Kalman and simple filters.
+    /// Usually remains deactivated by default, as its only for diagnosics / collecting position data / not for the "normal" user.
+    /// </summary>
+    
     public class SlidingButton : MonoBehaviour
     {
         public float slideDuration = 0.3f;
@@ -61,6 +68,9 @@ namespace view
             UpdateVisualState();
         }
 
+        /// <summary>
+        /// Calculates the hidden position to slide the button off-screen to the left.
+        /// </summary>
         private void CalculateHiddenPosition()
         {
             float canvasWidth = canvasRect != null ? canvasRect.rect.width : Screen.width;
@@ -68,18 +78,27 @@ namespace view
             hiddenPos = new Vector2(-canvasWidth / 2 - buttonWidth / 2 - hiddenOffsetX, visiblePos.y);
         }
 
+        /// <summary>
+        /// Slide the button to the visible position if currently hidden.
+        /// </summary
         public void Show()
         {
             if (!isVisible && currentSlideCoroutine == null)
                 currentSlideCoroutine = StartCoroutine(SlideToPosition(visiblePos, true));
         }
 
+        /// <summary>
+        /// Slide the button to the hidden position if currently visible.
+        /// </summary>
         public void Hide()
         {
             if (isVisible && currentSlideCoroutine == null)
                 currentSlideCoroutine = StartCoroutine(SlideToPosition(hiddenPos, false));
         }
 
+        /// <summary>
+        /// Toggles button visibility by sliding in or out.
+        /// </summary>
         public void ToggleVisibility()
         {
             if (isVisible)
@@ -88,6 +107,10 @@ namespace view
                 Show();
         }
 
+        
+        /// <summary>
+        /// Coroutine that animates sliding the button to a target anchored position.
+        /// </summary>
         private IEnumerator SlideToPosition(Vector2 targetPos, bool willBeVisible)
         {
             Vector2 startPos = rect.anchoredPosition;
@@ -106,6 +129,11 @@ namespace view
             currentSlideCoroutine = null;
         }
 
+        
+        /// <summary>
+        /// Button click handler toggling active/inactive state.
+        /// Starts or stops position tracking accordingly.
+        /// </summary>
         private void OnButtonPressed()
         {
             isActive = !isActive;
@@ -117,6 +145,9 @@ namespace view
                 OnDeactivated();
         }
 
+        /// <summary>
+        /// Updates the button's visual state including text and colors.
+        /// </summary>
         private void UpdateVisualState()
         {
             if (statusText != null)
@@ -130,23 +161,34 @@ namespace view
             button.colors = colors;
         }
 
+        /// <summary>
+        /// Called when the button is activated.
+        /// Clears previous tracking data and starts tracking coroutine.
+        /// </summary>
         private void OnActivated()
         {
-            Debug.Log("Button activated!");
+            //Debug.Log("Button activated!");
             kalmanPositions.Clear();
             simplePositions.Clear();
             trackingCoroutine = StartCoroutine(TrackPositions());
         }
 
+        /// <summary>
+        /// Called when the button is deactivated.
+        /// Stops tracking coroutine and dumps position data to JSON files.
+        /// </summary>
         private void OnDeactivated()
         {
-            Debug.Log("Button deactivated!");
+            //Debug.Log("Button deactivated!");
             if (trackingCoroutine != null)
                 StopCoroutine(trackingCoroutine);
 
             DumpPositionDataToJson();
         }
 
+        /// <summary>
+        /// Coroutine that periodically records position estimates from filters.
+        /// </summary>
         private IEnumerator TrackPositions()
         {
             WaitForSeconds interval = new(0.25f);
@@ -160,6 +202,9 @@ namespace view
         }
 
         
+        /// <summary>
+        /// Dumps tracked position lists to JSON files with timestamped filenames.
+        /// </summary>
         private void DumpPositionDataToJson()
         {
             string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmssfff");

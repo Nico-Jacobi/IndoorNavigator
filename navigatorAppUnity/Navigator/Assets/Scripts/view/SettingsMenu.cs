@@ -77,6 +77,9 @@ namespace view
             exportJson.onClick.AddListener(registry.database.ExportWithSimpleFilename);
         }
 
+        /// <summary>
+        /// toggles the menu (open if close, vice versa)
+        /// </summary>
         public void ToggleMenu()
         {
             if (open)
@@ -85,6 +88,9 @@ namespace view
                 OpenMenu();
         }
 
+        /// <summary>
+        /// Opens the menu
+        /// </summary>
         public void OpenMenu()
         {
             registry.topMenu.CloseMenu();
@@ -95,6 +101,9 @@ namespace view
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, visiblePos, slideDuration));
         }
 
+        /// <summary>
+        /// Closes the menu
+        /// </summary>
         public void CloseMenu()
         {
             registry.topMenu.OpenMenu();
@@ -105,6 +114,13 @@ namespace view
             StartCoroutine(SlideMenu(menu, menu.anchoredPosition, hiddenPos, slideDuration));
         }
 
+        /// <summary>
+        /// Slides the menu to the given position
+        /// </summary>
+        /// <param name="rect">The menu</param>
+        /// <param name="from">The starting position</param>
+        /// <param name="to">The ending position</param>
+        /// <param name="duration">The duration of the slide</param>
         private IEnumerator SlideMenu(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             float time = 0f;
@@ -118,16 +134,25 @@ namespace view
             rect.anchoredPosition = to;
         }
 
+        /// <summary>
+        /// changes the view mode of the camera
+         /// </summary>
         public void HandleFreeMovementToggle(bool freeMovementMode)
         {
             registry.cameraController.ToggleViewMode();
         }
 
+        /// <summary>
+        /// changes the view mode of the camera
+        /// </summary>
         public void HandleCompasActiveToggle(bool compasActiveMode)
         {
             registry.cameraController.compassActive = compasActiveMode;
         }
 
+        /// <summary>
+        /// toggles collect data mode
+        /// </summary>
         public void HandleCollectDataModeToggle(bool collectDataModeStart)
         {
             if (collectDataModeStart)
@@ -150,18 +175,26 @@ namespace view
             }
         }
 
+        /// <summary>
+        /// Toggles the passive data collection
+        /// </summary>
         public void HandleDbPassiveCollectionToggle(bool HandleDbPassiveCollection)
         {
             registry.wifiPositionTracker.passiveDataCollectionActive = HandleDbPassiveCollection;
         }
         
         
+        /// <summary>
+        /// Toggles the kalman filter (otherwise simple filter will be used)
+        /// </summary>
         private void HandleKalmanFilterToggle(bool active)
         {
             registry.kalmanFilterActive = active;
         }
         
-
+        /// <summary>
+        /// validates and sets the measure interval
+        /// </summary>
         private void OnMeasureIntervalCommitted(string input)
         {
             const float defaultValue = 2.0f;
@@ -187,6 +220,9 @@ namespace view
             SetMeasureInterval(Mathf.Clamp(value, 0.1f, 60f));
         }
 
+        /// <summary>
+        /// sets the measure interval in seconds
+        /// </summary>
         private void SetMeasureInterval(float value)
         {
             registry.wifiManager.updateInterval = value;

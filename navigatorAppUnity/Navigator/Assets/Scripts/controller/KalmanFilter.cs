@@ -74,6 +74,10 @@ namespace Controller
             Q.m33 = processNoiseVelocity;
         }
 
+        /// <summary>
+        /// update the kalman filter with a wifi prediction
+        /// will take the time passed into account by itself
+        /// </summary>
         public void UpdateWithWifi(Position rawWifiPrediction)
         {
             if (rawWifiPrediction == null)
@@ -137,7 +141,10 @@ namespace Controller
         }
 
         
-        
+        /// <summary>
+        /// update the kalman filter with the current IMU data
+        /// will also take the time passed since last into account
+         /// </summary>
         public void UpdateWithIMU(Vector2 acceleration, float headingDegrees)
         {
             float deltaTime = Time.time - lastUpdateTimeIMU;
@@ -170,7 +177,10 @@ namespace Controller
 
  
 
-
+        /// <summary>
+        /// update the history of floors from the last measurements
+        /// also makes a new floor prediction base on those
+        /// </summary>
         private void UpdateFloorHistory(int newFloor)
         {
             floorHistory.Add(newFloor);
@@ -181,6 +191,10 @@ namespace Controller
             UpdateFloorEstimate();
         }
 
+        
+        /// <summary>
+        /// runs the predict step to estimate the position
+        /// </summary>
         private void Predict(float deltaTime)
         {
             // Update state transition matrix
@@ -201,6 +215,10 @@ namespace Controller
             P = AddMatrices(MultiplyMatrices(MultiplyMatrices(F, P), FT), Q);
         }
 
+        
+        /// <summary>
+        /// updates the state given the measurement and noise (which can only be estimated)
+        /// </summary>
         private void UpdateWithPositionMeasurement(Vector2 measurement, float measurementNoise)
         {
             // Measurement matrix H - observes position only
@@ -216,6 +234,11 @@ namespace Controller
                                new Vector4(state.x, state.y, 0, 0));
         }
 
+        
+        /// <summary>
+        /// update the filter with velocity, but as it turns out this is quite inaccurate,
+        /// so this method guesses the velocity based walking speed which is based on wifi measurements
+        /// </summary>
         private void UpdateWithVelocityMeasurement(Vector2 velocityMeasurement, float measurementNoise)
         {
             // Convert heading to radians and get direction vector
@@ -236,6 +259,10 @@ namespace Controller
                                new Vector4(0, 0, state.z, state.w));
         }
 
+        
+        /// <summary>
+        /// Performs one Kalman filter update step using the given measurement.
+        /// </summary>
         private void PerformKalmanUpdate(Matrix4x4 H, Matrix4x4 R, Vector4 measurement, Vector4 predicted)
         {
             // Innovation: z - H*x
@@ -261,6 +288,9 @@ namespace Controller
             EnsurePositiveDefinite();
         }
 
+        /// <summary>
+        /// Keeps P positive definite by fixing tiny/negative diagonal values.
+        /// </summary>
         private void EnsurePositiveDefinite()
         {
             // Simple approach: add small diagonal term if needed
@@ -273,6 +303,9 @@ namespace Controller
             }
         }
 
+        /// <summary>
+        /// updated the floor prediction based on the floor history
+        /// </summary>
         private void UpdateFloorEstimate()
         {
             if (floorHistory.Count == 0) return;
@@ -298,7 +331,11 @@ namespace Controller
             currentFloor = mostFrequentFloor;
         }
 
-        // Public interface methods
+        
+        /// <summary>
+        /// returns the position estimate
+        /// might return 0,0,0 if not initialized or never updated
+        /// </summary>
         public Position GetEstimate()
         {
             if (!initialized)
@@ -307,6 +344,10 @@ namespace Controller
             return new Position(state.x, state.y, currentFloor);
         }
         
+        /// <summary>
+        /// returns the estimated velocity according to the filter
+        /// NOT the prediction based on imu or wifi
+        /// </summary>
         public Vector2 GetEstimatedVelocity()
         {
             return new Vector2(state.z, state.w);
@@ -316,6 +357,10 @@ namespace Controller
         public bool IsInitialized => initialized;
 
         // Matrix utility methods
+        
+        /// <summary>
+        /// multiplies the a matrix by the b vector
+        /// </summary>
         private Vector4 MultiplyMatrixVector(Matrix4x4 m, Vector4 v)
         {
             return new Vector4(
@@ -326,6 +371,9 @@ namespace Controller
             );
         }
 
+        /// <summary>
+        /// multiplies the a matrix by the b matrix
+        /// </summary>
         private Matrix4x4 MultiplyMatrices(Matrix4x4 a, Matrix4x4 b)
         {
             Matrix4x4 result = new Matrix4x4();
@@ -343,6 +391,9 @@ namespace Controller
             return result;
         }
 
+        /// <summary>
+        /// adds the b matrix to the a matrix
+        /// </summary>
         private Matrix4x4 AddMatrices(Matrix4x4 a, Matrix4x4 b)
         {
             Matrix4x4 result = new Matrix4x4();
@@ -353,6 +404,9 @@ namespace Controller
             return result;
         }
 
+        /// <summary>
+        /// well, this one subtracts the b matrix from the a matrix, who could have guessed
+         /// </summary>
         private Matrix4x4 SubtractMatrices(Matrix4x4 a, Matrix4x4 b)
         {
             Matrix4x4 result = new Matrix4x4();
@@ -363,6 +417,9 @@ namespace Controller
             return result;
         }
 
+        /// <summary>
+        /// utils function
+        /// </summary>
         private Matrix4x4 TransposeMatrix(Matrix4x4 m)
         {
             Matrix4x4 result = new Matrix4x4();
@@ -376,6 +433,10 @@ namespace Controller
             return result;
         }
 
+        
+        /// <summary>
+        /// utils function
+        /// </summary>
         private Matrix4x4 InvertMatrix(Matrix4x4 m)
         {
             // For block diagonal matrices, invert each 2x2 block separately
@@ -417,7 +478,10 @@ namespace Controller
         }
 
        
-
+        /// <summary>
+        /// Resets the kalman filter
+        /// eg when building is changed
+        /// </summary>
         public void Reset()
         {
             InitializeMatrices();

@@ -42,6 +42,9 @@ namespace view
             registry.navigationDialog.Initialize(allRoomNames);
         }
 
+        /// <summary>
+        /// initializes the dialog (so its is hidden off screen)
+        /// </summary>
         private void InitializePositions()
         {
             visiblePos = navigationDialog.anchoredPosition;
@@ -57,6 +60,9 @@ namespace view
             navigationDialog.anchoredPosition = hiddenPos;
         }
 
+        /// <summary>
+        /// Loads room names into dropdown and hides the dialog.
+        /// </summary>
         public void Initialize(List<string> roomNames)
         {
             allOptions = new List<string>(roomNames);
@@ -64,6 +70,9 @@ namespace view
             CloseDialog();
         }
 
+        /// <summary>
+        /// Shows and slides the dialog into view.
+        /// </summary>
         public void ShowDialog()
         {
             Debug.Log("showing navigation dialog");
@@ -73,11 +82,17 @@ namespace view
             StartCoroutine(SlideDialog(navigationDialog, navigationDialog.anchoredPosition, visiblePos, slideDuration));
         }
 
+        /// <summary>
+        /// Slides dialog out and hides it.
+        /// </summary>
         public void CloseDialog()
         {
             StartCoroutine(SlideDialogAndHide(navigationDialog, navigationDialog.anchoredPosition, hiddenPos, slideDuration));
         }
 
+        /// <summary>
+        /// Smoothly slides the dialog between two positions over a duration.
+        /// </summary>
         private IEnumerator SlideDialog(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             float time = 0f;
@@ -90,6 +105,9 @@ namespace view
             rect.anchoredPosition = to;
         }
 
+        /// <summary>
+        /// Slides dialog out and disables it after animation completes.
+        /// </summary>
         private IEnumerator SlideDialogAndHide(RectTransform rect, Vector2 from, Vector2 to, float duration)
         {
             float time = 0f;
@@ -106,6 +124,9 @@ namespace view
             navigationDialog.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// Returns the currently selected destination from the dropdown.
+        /// </summary>
         public string GetSelectedDestination()
         {
             if (toField.options.Count == 0 || toField.value >= toField.options.Count)
@@ -114,6 +135,9 @@ namespace view
             return toField.options[toField.value].text;
         }
 
+        /// <summary>
+        /// Populates dropdown with given options and updates start button interactability.
+        /// </summary>
         private void PopulateDropdownFromStrings(List<string> options)
         {
             toField.ClearOptions();
@@ -121,6 +145,9 @@ namespace view
             startNavigationButton.interactable = options.Count > 0;
         }
 
+        /// <summary>
+        /// Filters dropdown options based on search input.
+        /// </summary>
         private void OnSearchChanged(string input)
         {
             string lowerInput = input.ToLower();
@@ -131,6 +158,9 @@ namespace view
             PopulateDropdownFromStrings(matches);
         }
 
+        /// <summary>
+        /// Handles the start navigation button press and triggers navigation event.
+        /// </summary>
         private void OnStartNavigationButtonPressed()
         {
             string destination = GetSelectedDestination();
@@ -141,17 +171,28 @@ namespace view
             }
         }
         
+        /// <summary>
+        /// Handles closing the dialog when the close button is pressed.
+        /// </summary>
         private void OnCloseButtonPressed()
         {
             CloseDialog();
         }
         
+        /// <summary>
+        /// Cancels navigation and closes the dialog.
+        /// </summary>
         private void OnCancelNavigationButtonPressed()
         {
             registry.graphManager.CancelNavigation();
             CloseDialog();
         }
 
+        
+        /// <summary>
+        /// Refreshes dropdown options and reapplies search filter if active.
+        /// </summary>
+        /// <param name="newOptions">New list of options.</param>
         public void RefreshOptions(List<string> newOptions)
         {
             allOptions = new List<string>(newOptions);
