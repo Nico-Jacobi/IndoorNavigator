@@ -75,7 +75,7 @@ Notes:
 - Positioning accuracy achieves sub-meter error in most cases, demonstrating precise tracking performance in realistic indoor scenarios (see table below).
 - all values in meters; each data point based on 12 measurements:
 
-| Filter Type | Accuracy (m) | Mean | Std Dev | 25% | Median | 75% | 95% | Max |
+| Filter Type | Accuracy (Setting) | Mean | Std Dev | 25% | Median | 75% | 95% | Max |
 |-------------|--------------|------|---------|-----|--------|-----|-----|-----|
 | Kalman      | 0.5          | 0.79 | 0.59    |0.37 | 0.64   |1.09 |1.90 |4.26 |
 | Kalman      | 1            | 0.72 | 0.68    |0.24 | 0.51   |1.01 |2.10 |4.74 |
